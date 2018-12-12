@@ -1,0 +1,31 @@
+from urllib.request import Request, urlopen
+import re
+import pickle
+def downloadTopKPlayedSongs(k):
+    titleRegEx = re.compile("<td>Song:\s(.*?)<\/td>")
+    fileNameRegEx = re.compile("has-text-right\">Version:\s([0-9]+-[0-9]+)<\/td>")
+    illegalNameChars = re.compile("[\/\\:\*\?\"<>|]")
+    nbDownloaded = 0
+    while nbDownloaded < k:
+        # Get the HTML page. The page has 20 files on it
+        HTMLreq = Request('http://beatsaver.com/browse/played/'+str(nbDownloaded), headers={'User-Agent': 'Mozilla/5.0'})
+        response = urlopen(HTMLreq)
+        HTML = str(response.read())
+        titleMatches = re.findall(titleRegEx,HTML)  # Extract song titles
+        fileNameMatches = re.findall(fileNameRegEx,HTML)  # Extract file names (both very hacky)
+        for index, match in enumerate(fileNameMatches):
+            # Download the corresponding ZIP file
+            fileName = re.sub(illegalNameChars, "", titleMatches[index])
+            dataReq = Request('http://beatsaver.com/download/'+match, headers={'User-Agent': 'Mozilla/5.0'})
+            data = urlopen(dataReq).read()
+            try:
+                pickle.dump(data, open("Data/"+str(nbDownloaded+1)+")"+fileName+".zip", "wb"))  # Store file
+            except:
+                pickle.dump(data, open("Data/" + str(nbDownloaded + 1) + ").zip", "wb"))  # Safe file name choice
+            nbDownloaded += 1
+            print(nbDownloaded)
+            if nbDownloaded == k: # If Downloaded target number of zip files, stop
+                return
+
+
+downloadTopKPlayedSongs(1000)

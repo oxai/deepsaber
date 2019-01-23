@@ -1,5 +1,6 @@
 from urllib.request import Request, urlopen
 import re
+import zipfile
 import pickle
 def downloadTopKPlayedSongs(k):
     titleRegEx = re.compile("<td>Song:\s(.*?)<\/td>")
@@ -22,10 +23,14 @@ def downloadTopKPlayedSongs(k):
                 pickle.dump(data, open("Data/"+str(nbDownloaded+1)+")"+fileName+".zip", "wb"))  # Store file
             except:
                 pickle.dump(data, open("Data/" + str(nbDownloaded + 1) + ").zip", "wb"))  # Safe file name choice
+            # Extract the zipfile contents to other folder
+            zip_ref = zipfile.ZipFile("Data/"+str(nbDownloaded+1)+")"+fileName+".zip", 'r')
+            zip_ref.extractall("DataE/"+str(nbDownloaded+1)+")"+fileName)  # Need to create new folder DataE to work
+            zip_ref.close()
             nbDownloaded += 1
             print(nbDownloaded)
             if nbDownloaded == k: # If Downloaded target number of zip files, stop
-                return
+                return fileNameMatches, titleMatches
 
 
-downloadTopKPlayedSongs(1000)
+fileNamesA, titlesA = downloadTopKPlayedSongs(1000)

@@ -9,3 +9,13 @@ class TestModel(BaseModel):
 
     def name(self):
         return "TestModel"
+
+    @staticmethod
+    def modify_commandline_options(parser, is_train):
+        """
+        ABSTRACT METHOD
+        :param parser:
+        :param is_train:
+        :return:
+        """
+        return parser

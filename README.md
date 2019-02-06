@@ -16,11 +16,13 @@ file_directory_encode = 'C:\\Users\micha\Dropbox\\beatsaber\\believer\Believer\E
 dict = parse_json(file_directory)
 
 #main variables
+
 events = dict['_events']
 notes = dict['_notes']
 obstacles = dict['_obstacles']
 
 #additional information
+
 version = dict['_version']
 shufflePeriod = dict['_shufflePeriod']
 noteJumpSpeed = dict['_noteJumpSpeed']
@@ -39,8 +41,9 @@ obstacles_mod = obstacles
 
 # encode to json
 
+#create the right data format (dictionary within dictionary)
 
-# create the right data format (dictionary within dictionary)
 data_to_json = create_dataStructure(events_mod, notes_mod, obstacles_mod, version, shufflePeriod, noteJumpSpeed, beatsPerBar, shuffle, bpm)
-# write to file
+#write to file
+
 json_test = encode_json(data_to_json, file_directory_encode)

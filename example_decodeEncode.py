@@ -5,7 +5,10 @@ from featuresBase import *
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
 EXTRACT_DIR = os.path.join(THIS_DIR, 'DataE')
-
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
 
 def generate_baseline_level_from_ogg(song_identifier, difficulty):
     difficulties = ['Easy', 'Normal', 'Hard']

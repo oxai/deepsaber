@@ -15,6 +15,10 @@ import numpy as np
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
 EXTRACT_DIR = os.path.join(THIS_DIR, 'DataE')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
 
 def extract_beat_times_chroma_tempo_from_ogg(ogg_file):
     # Load sample song

@@ -1,12 +1,15 @@
 import json
 import numpy as np
 import pandas as pd
-file_directory = 'C:\\Users\micha\Dropbox\\beatsaber\\believer\Believer\Expert.json'
+import os
 
-def parse_json(file_directory):
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+FILE_DIR = os.path.join(THIS_DIR, os.path.join('believer', os.path.join('Believer', 'Expert.json')))
+
+def parse_json(FILE_DIR):
     # input json file
     # returns: dataframes of: events, notes, obstacles, as well as additional parameters (in the form of a dictionary)
-    json_data = open(file_directory).read()
+    json_data = open(FILE_DIR).read()
     data = json.loads(json_data)
     events = data.get('_events')
     notes = data.get('_notes')
@@ -23,15 +26,16 @@ def parse_json(file_directory):
     data['_obstacles'] = df_obstacles
     return data
 
-dict = parse_json(file_directory)
-#main variables
-events = dict['_events']
-notes = dict['_notes']
-obstacles = dict['_obstacles']
-#additional information
-version = dict['_version']
-shufflePeriod = dict['_shufflePeriod']
-noteJumpSpeed = dict['_noteJumpSpeed']
-beatsPerBar = dict['_beatsPerBar']
-shuffle = dict['_shuffle']
-bpm = dict['_beatsPerMinute']
+if __name__ == '__main__':
+    dict = parse_json(FILE_DIR)
+    # main variables
+    events = dict['_events']
+    notes = dict['_notes']
+    obstacles = dict['_obstacles']
+    # additional information
+    version = dict['_version']
+    shufflePeriod = dict['_shufflePeriod']
+    noteJumpSpeed = dict['_noteJumpSpeed']
+    beatsPerBar = dict['_beatsPerBar']
+    shuffle = dict['_shuffle']
+    bpm = dict['_beatsPerMinute']

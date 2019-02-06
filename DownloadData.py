@@ -37,8 +37,8 @@ def downloadTopKPlayedSongs(k):
             zip_ref.extractall(os.path.join(EXTRACT_DIR, str(nbDownloaded+1)+")"+fileName))  # Need to create new folder DataE to work
             zip_ref.close()
             nbDownloaded += 1
-            print(nbDownloaded)
-            if nbDownloaded == k: # If Downloaded target number of zip files, stop
+            print('Extracted song '+str(nbDownloaded)+' of '+str(k)+': '+fileName)
+            if nbDownloaded == k:  # If Downloaded target number of zip files, stop
                 return fileNameMatches, titleMatches
 
 

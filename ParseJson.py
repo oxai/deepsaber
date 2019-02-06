@@ -4,7 +4,12 @@ import pandas as pd
 import os
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FILE_DIR = os.path.join(THIS_DIR, os.path.join('believer', os.path.join('Believer', 'Expert.json')))
+DATA_DIR = os.path.join(THIS_DIR, 'Data')
+EXTRACT_DIR = os.path.join(THIS_DIR, 'DataE')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
 
 def parse_json(file_directory):
     # input json file
@@ -27,7 +32,9 @@ def parse_json(file_directory):
     return data
 
 if __name__ == '__main__':
-    dict = parse_json(FILE_DIR)
+    file_dir = os.path.join(EXTRACT_DIR, 'believer')
+    filename = os.path.join(file_dir, 'Expert.json')
+    dict = parse_json(filename)
     # main variables
     events = dict['_events']
     notes = dict['_notes']

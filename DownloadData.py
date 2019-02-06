@@ -4,9 +4,13 @@ import zipfile
 import pickle
 import os
 
-DATA_DIR = 'Data'
-EXTRACT_DIR = 'DataE'
-
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(THIS_DIR, 'Data')
+EXTRACT_DIR = os.path.join(THIS_DIR, 'DataE')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
 
 def download_top_k_played_songs(k):
     if not os.path.isdir(DATA_DIR):  # SUBJECT TO RACE CONDITION

@@ -1,6 +1,6 @@
 Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
 
-Example 
+# Example 
 
 from decodeJSON import parse_json
 from encodeJSON import create_dataStructure, encode_json
@@ -11,9 +11,8 @@ file_directory = 'C:\\Users\micha\Dropbox\\beatsaber\\believer\Believer\Expert.j
 file_directory_encode = 'C:\\Users\micha\Dropbox\\beatsaber\\believer\Believer\Expert_mod.json'
 
 
-#############################################
 # parse a json file and extrect the elements
-#############################################
+
 dict = parse_json(file_directory)
 
 #main variables
@@ -29,17 +28,17 @@ beatsPerBar = dict['_beatsPerBar']
 shuffle = dict['_shuffle']
 bpm = dict['_beatsPerMinute']
 
-##############################################
+
 # create new features
-##############################################
+
 
 notes_mod = baseline_notes_simple()
 events_mod = events
 obstacles_mod = obstacles
 
-#############################################
+
 # encode to json
-#############################################
+
 
 # create the right data format (dictionary within dictionary)
 data_to_json = create_dataStructure(events_mod, notes_mod, obstacles_mod, version, shufflePeriod, noteJumpSpeed, beatsPerBar, shuffle, bpm)

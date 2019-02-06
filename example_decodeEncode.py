@@ -29,7 +29,7 @@ bpm = dict['_beatsPerMinute']
 # create new features
 ##############################################
 
-notes_mod = baseline_notes_simple()
+notes_mod = baseline_notes(file_directory_song)
 events_mod = events
 obstacles_mod = obstacles
 

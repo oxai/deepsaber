@@ -87,5 +87,5 @@ def generate_baseline_level_from_ogg(song_identifier, difficulty):
 
 
 if __name__ == '__main__':
-    for difficulty in range(4):
+    for difficulty in range(5):
         generate_baseline_level_from_ogg('believer', difficulty)

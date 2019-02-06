@@ -164,14 +164,14 @@ def generate_note_types_from_line_index(line_index):
         else:
             type.append(0)
 
-def filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_length, difficulty=0):
+def filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_duration, difficulty=0):
     beats_per_bar = 4  # an assumption for now
-    pattern_length = 2 * beats_per_bar
+    pattern_length = 1 * beats_per_bar
     num_patterns_per_difficulty = 5
     num_beats = len(line_index)
     num_types = 3
 
-    pattern_template = np.zeros([3, pattern_length]) #3 types, 8 intermediates
+    pattern_template = np.zeros([3, 8]) #3 types, 8 intermediates
     easy_patterns = [pattern_template]*num_patterns_per_difficulty
     med_patterns = [pattern_template]*num_patterns_per_difficulty
     hard_patterns = [pattern_template]*num_patterns_per_difficulty
@@ -234,7 +234,7 @@ def filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_leng
     output_beat_times = []
 
     pattern_ids = np.random.randint(num_patterns, size=num_beats)
-    intermediate_beat_length = beat_length / pattern_length
+    intermediate_beat_duration = beat_duration / pattern_length
     for curr_beat in range(num_beats):
         this_pattern = these_patterns[pattern_ids[curr_beat]]
         for i in range(pattern_length):
@@ -257,7 +257,7 @@ def filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_leng
                             output_line_index.append(line_index[curr_beat])
                     output_line_layer.append(line_layer[curr_beat])
                     output_note_type.append(j)
-                    output_beat_times.append(beat_times_beats[curr_beat] + (intermediate_beat_length * i))
+                    output_beat_times.append(beat_times_beats[curr_beat] + (intermediate_beat_duration * i))
     return output_line_layer, output_line_index, output_note_type, output_beat_times
 
 
@@ -320,12 +320,13 @@ def generate_beatsaber_notes_from_beat_times_and_chroma(beat_times, beat_chroma,
     # %% Convert beat times to time in beats
     beat_length = (tempo / 60)
     beat_times_beats = beat_times * beat_length
+    beat_duration = np.mean(beat_times_beats[1:] - beat_times_beats[:-1])
 
     # %% Convert beat chroma t into line Index and Layer
     line_layer, line_index = convert_beatchroma_to_notes_position(beat_chroma)
     #note_type = generate_note_types_from_line_index(line_index)
-    line_layer, line_index, note_type, beat_times_beats  = \
-        filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_length, difficulty)
+    line_layer, line_index, note_type, beat_times_beats = \
+        filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_duration, difficulty)
     cut_direction = convert_note_positions_and_type_to_cut_direction(line_layer, line_index, note_type)
 
     num_beats = len(note_type)
@@ -385,7 +386,7 @@ def saveFile(object, filename=None, save_dir=None, append=False):
     savefile.close()
     return filename
 
-def generate_beatsaber_notes_from_ogg(ogg_file, difficulty):
+def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
     meta_dir = os.path.dirname(ogg_file)
     meta_filename = 'meta_info.pkl'
     meta_file = os.path.join(meta_dir, meta_filename)

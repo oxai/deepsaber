@@ -8,7 +8,10 @@ def make_integers(list_of_dict):
     for item in list_of_dict:
         for key, value in item.items():
             try:
-                item[key] = int(value)
+                if key == '_time':
+                    item[key] = float(value)
+                else:
+                    item[key] = int(value)
             except ValueError:
                 item[key] = float(value)
     return list_of_dict

@@ -11,13 +11,14 @@ if not os.path.isdir(EXTRACT_DIR):
     os.mkdir(EXTRACT_DIR)
 
 def generate_baseline_level_from_ogg(song_identifier, difficulty):
-    difficulties = ['Easy', 'Normal', 'Hard']
+    difficulties = ['Easy', 'Normal', 'Hard', 'Expert']
     song_directory = os.path.join(EXTRACT_DIR, song_identifier)
     song_json = os.path.join(song_directory, difficulties[difficulty]+'.json')
     song_mod_json = os.path.join(song_directory, difficulties[difficulty]+'_mod.json')
     song_ogg = os.path.join(EXTRACT_DIR, song_directory, 'song.ogg')
 
     if not os.path.isfile(song_json):
+        print('Skipped file; No file for difficulty: '+difficulties[difficulty])
         return 0
 
     #############################################
@@ -86,5 +87,5 @@ def generate_baseline_level_from_ogg(song_identifier, difficulty):
 
 
 if __name__ == '__main__':
-    for difficulty in range(3):
+    for difficulty in range(4):
         generate_baseline_level_from_ogg('believer', difficulty)

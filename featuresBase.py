@@ -166,94 +166,90 @@ def generate_note_types_from_line_index(line_index):
         else:
             type.append(0)
 
-def filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_duration, difficulty=0):
+def filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_duration, difficulty):
     beats_per_bar = 4  # an assumption for now
-    pattern_length = 1 * beats_per_bar
-    num_patterns_per_difficulty = 5
+    pattern_length = 2 * beats_per_bar
     num_beats = len(line_index)
     num_types = 3
 
-    pattern_template = np.zeros([3, 8]) #3 types, 8 intermediates
-    easy_patterns = [pattern_template]*num_patterns_per_difficulty
-    med_patterns = [pattern_template]*num_patterns_per_difficulty
-    hard_patterns = [pattern_template]*num_patterns_per_difficulty
+    easy_patterns = []
+    easy_patterns.append([[1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    easy_patterns.append([[0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    easy_patterns.append([[1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    easy_patterns.append([[1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    easy_patterns.append([[0, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
 
-    easy_patterns[0][0] = [0, 0, 0, 0, 1, 0, 0, 0]
-    easy_patterns[0][1] = [1, 0, 0, 0, 0, 0, 0, 0]
-    easy_patterns[0][2] = [0, 0, 0, 0, 0, 0, 0, 0]
-    easy_patterns[1][0] = [1, 0, 0, 0, 0, 0, 0, 0]
-    easy_patterns[1][1] = [0, 0, 0, 0, 1, 0, 0, 0]
-    easy_patterns[1][2] = [0, 0, 0, 0, 0, 0, 0, 0]
-    easy_patterns[2][0] = [1, 0, 0, 0, 1, 0, 0, 0]
-    easy_patterns[2][1] = [1, 0, 0, 0, 1, 0, 0, 0]
-    easy_patterns[2][2] = [0, 0, 0, 0, 0, 0, 0, 0]
-    easy_patterns[3][0] = [1, 0, 0, 0, 0, 0, 0, 0]
-    easy_patterns[3][1] = [0, 0, 0, 0, 1, 0, 0, 0]
-    easy_patterns[3][2] = [0, 0, 1, 0, 0, 0, 1, 0]
-    easy_patterns[4][0] = [0, 0, 0, 0, 1, 0, 0, 0]
-    easy_patterns[4][1] = [1, 0, 0, 0, 0, 0, 0, 0]
-    easy_patterns[4][2] = [0, 0, 1, 0, 0, 0, 1, 0]
+    med_patterns = []
+    med_patterns.append([[1, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    med_patterns.append([[1, 0, 0, 0, 1, 0, 0, 0], [0, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    med_patterns.append([[0, 0, 1, 0, 0, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    med_patterns.append([[1, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    med_patterns.append([[0, 0, 0, 0, 1, 0, 1, 0], [1, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    med_patterns.append([[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]])
 
-    med_patterns[0][0] = [1, 0, 0, 0, 1, 0, 1, 0]
-    med_patterns[0][1] = [1, 0, 0, 0, 0, 1, 0, 1]
-    med_patterns[0][2] = [0, 0, 1, 0, 0, 0, 0, 0]
-    med_patterns[1][0] = [1, 1, 0, 0, 1, 0, 1, 0]
-    med_patterns[1][1] = [1, 1, 0, 0, 1, 0, 1, 0]
-    med_patterns[1][2] = [0, 0, 0, 0, 0, 0, 0, 0]
-    med_patterns[2][0] = [1, 0, 1, 0, 1, 0, 0, 0]
-    med_patterns[2][1] = [1, 0, 1, 0, 0, 0, 1, 0]
-    med_patterns[2][2] = [0, 0, 0, 0, 0, 0, 0, 0]
-    med_patterns[3][0] = [1, 0, 1, 0, 0, 0, 1, 0]
-    med_patterns[3][1] = [1, 0, 1, 0, 1, 0, 0, 0]
-    med_patterns[3][2] = [0, 0, 0, 0, 0, 0, 0, 0]
-    med_patterns[4][0] = [1, 0, 1, 0, 0, 1, 0, 0]
-    med_patterns[4][1] = [0, 1, 0, 1, 0, 1, 0, 0]
-    med_patterns[4][2] = [0, 0, 0, 0, 0, 0, 0, 0]
+    hard_patterns = []
+    hard_patterns.append([[1, 0, 0, 0, 0, 0, 1, 0], [0, 0, 1, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    hard_patterns.append([[0, 0, 1, 0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    hard_patterns.append([[1, 0, 1, 0, 1, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    hard_patterns.append([[0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    hard_patterns.append([[1, 0, 1, 0, 0, 0, 0, 0], [1, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 1, 0]])
+    hard_patterns.append([[1, 0, 0, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    hard_patterns.append([[1, 0, 1, 0, 1, 0, 0, 0], [1, 0, 0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    hard_patterns.append([[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0]])
 
-    hard_patterns[0][0] = [1, 0, 1, 0, 1, 0, 0, 1]
-    hard_patterns[0][1] = [0, 1, 0, 1, 1, 0, 0, 1]
-    hard_patterns[0][2] = [0, 0, 0, 0, 0, 1, 1, 0]
-    hard_patterns[1][0] = [1, 0, 1, 0, 1, 0, 1, 0]
-    hard_patterns[1][1] = [0, 1, 0, 1, 0, 1, 0, 1]
-    hard_patterns[1][2] = [0, 0, 0, 0, 0, 0, 0, 0]
-    hard_patterns[2][0] = [0, 1, 0, 1, 0, 0, 1, 0]
-    hard_patterns[2][1] = [1, 0, 1, 0, 0, 1, 0, 1]
-    hard_patterns[2][2] = [0, 0, 0, 0, 0, 0, 0, 0]
-    hard_patterns[3][0] = [1, 1, 1, 0, 1, 1, 0, 1]
-    hard_patterns[3][1] = [1, 1, 0, 1, 1, 1, 1, 0]
-    hard_patterns[3][2] = [0, 0, 0, 0, 1, 0, 0, 0]
-    hard_patterns[4][0] = [1, 0, 1, 0, 0, 0, 0, 0]
-    hard_patterns[4][1] = [0, 0, 0, 0, 1, 0, 1, 0]
-    hard_patterns[4][2] = [0, 1, 0, 1, 0, 1, 0, 1]
+    expert_patterns = []
+    expert_patterns.append([[1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0]])
+    expert_patterns.append([[0, 1, 0, 1, 0, 1, 0, 1], [1, 0, 1, 0, 1, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    expert_patterns.append([[1, 1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 0], [0, 0, 0, 1, 0, 0, 0, 1]])
+    expert_patterns.append([[0, 0, 0, 0, 1, 1, 1, 0], [1, 1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 1]])
+    expert_patterns.append([[1, 0, 1, 0, 1, 1, 0, 0], [0, 1, 0, 1, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]])
+    expert_patterns.append([[0, 1, 0, 1, 0, 0, 1, 1], [1, 0, 1, 0, 1, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
+    expert_patterns.append([[1, 0, 0, 0, 1, 0, 0, 0], [0, 1, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]])
+    expert_patterns.append([[0, 1, 1, 1, 0, 1, 1, 1], [1, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]])
 
-    all_patterns = [easy_patterns, med_patterns, hard_patterns]
-    these_patterns = all_patterns[difficulty]
-    num_patterns = len(these_patterns)
+    all_patterns = [easy_patterns, med_patterns, hard_patterns, expert_patterns]
+    num_patterns = [len(easy_patterns), len(med_patterns), len(hard_patterns), len(expert_patterns)]
 
+    #The following decides the proportion of patterns in each difficulty
+    pattern_difficulty_splits = [[1, 1, 1, 1],  #easy
+                                 [0.4, 1, 1, 1],  #normal
+                                 [0.2, 0.6, 1, 1],  #hard
+                                 [0, 0.2, 0.6, 1],  #expert
+                                 [0, 0, 0.2, 1]]  #expert+
+
+    #The following performs sampling from the patterns according to the preceding probabilities
+    pattern_difficulty = np.random.rand(num_beats)
+
+    for i in range(num_beats):  # There's a better way to do this than a for loop, but i'm lazy right now
+        pattern_difficulty[i] = np.where(pattern_difficulty_splits[difficulty] > pattern_difficulty[i])[0][0]
+    # pattern_difficulty = np.where(pattern_difficulty_splits[difficulty] > pattern_difficulty)[1]
+    pattern_difficulty = pattern_difficulty.astype(int)
+
+    intermediate_beat_duration = beat_duration / pattern_length
     output_line_index = []
     output_line_layer = []
     output_note_type = []
     output_beat_times = []
 
-    pattern_ids = np.random.randint(num_patterns, size=num_beats)
-    intermediate_beat_duration = beat_duration / pattern_length
     for curr_beat in range(num_beats):
-        this_pattern = these_patterns[pattern_ids[curr_beat]]
+        these_patterns = all_patterns[pattern_difficulty[curr_beat]]
+        pattern_id = np.random.randint(num_patterns[pattern_difficulty[curr_beat]], size=1)[0]
+        this_pattern = these_patterns[pattern_id]
         for i in range(pattern_length):
             for j in range(num_types):
-                if this_pattern[j, i] == 1:
+                if this_pattern[j][i] == 1:
                     if j == 0:  # red
-                        if line_index[curr_beat] >= 2: #if right switch to left
+                        if line_index[curr_beat] >= 2:  #if right switch to left
                             output_line_index.append(3 - line_index[curr_beat])
                         else:
                             output_line_index.append(line_index[curr_beat])
                     if j == 1:  # blue
-                        if line_index[curr_beat] < 2: #if left switch to right
+                        if line_index[curr_beat] < 2:  #if left switch to right
                             output_line_index.append(3 - line_index[curr_beat])
                         else:
                             output_line_index.append(line_index[curr_beat])
                     if j == 2:  # bomb
-                        if np.random.randint(0, 2, 1)[0] == 1: #if randomly true switch sides
+                        if np.random.randint(0, 2, 1)[0] == 1:  #coin == heads
                             output_line_index.append(3 - line_index[curr_beat])
                         else:
                             output_line_index.append(line_index[curr_beat])

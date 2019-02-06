@@ -85,7 +85,9 @@ def extract_beat_times_chroma_tempo_from_ogg(ogg_file):
         pad         : boolean :: If `True`, `idx` is padded to span the full range `[0, data.shape[axis]]`
         axis        : int :: The axis along which to aggregate data
     """
-    beat_chroma = beat_chroma[:, :-1]  # Why do we chop here?
+    # Chop last column. Chroma features are computed between beat events  
+    # Each column beat_chroma[:, k] will be the average of input columns between beat_frames[k] and beat_frames[k+1].    
+    beat_chroma = beat_chroma[:, :-1]  
     return tempo, beat_times, beat_chroma
 
 def convert_beatchroma_to_notes_position(beat_chroma):

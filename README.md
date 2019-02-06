@@ -38,7 +38,7 @@ bpm = dict['_beatsPerMinute']
 # create new features
 
 
-notes_mod = baseline_notes_simple()
+notes_mod = baseline_notes()
 
 events_mod = events
 

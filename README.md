@@ -1,13 +1,17 @@
 Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
 
-# Example 
+# Example - see example_decodeEncode.py
 
 from decodeJSON import parse_json
+
 from encodeJSON import create_dataStructure, encode_json
+
 from featuresBase import *
 
 file_directory_song = 'C:\\Users\micha\Dropbox\\beatsaber\\believer\Believer\song.ogg'
+
 file_directory = 'C:\\Users\micha\Dropbox\\beatsaber\\believer\Believer\Expert.json'
+
 file_directory_encode = 'C:\\Users\micha\Dropbox\\beatsaber\\believer\Believer\Expert_mod.json'
 
 
@@ -35,7 +39,9 @@ bpm = dict['_beatsPerMinute']
 
 
 notes_mod = baseline_notes_simple()
+
 events_mod = events
+
 obstacles_mod = obstacles
 
 
@@ -44,6 +50,7 @@ obstacles_mod = obstacles
 #create the right data format (dictionary within dictionary)
 
 data_to_json = create_dataStructure(events_mod, notes_mod, obstacles_mod, version, shufflePeriod, noteJumpSpeed, beatsPerBar, shuffle, bpm)
+
 #write to file
 
 json_test = encode_json(data_to_json, file_directory_encode)

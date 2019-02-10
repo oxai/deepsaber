@@ -137,3 +137,7 @@ Steps for creating a custom model with custom command line options:
         return "WaveNetModel"
 ```
 *  !!! See base.models.wavenet_model.py for an example of a dataset that follows this API !!!
+
+# Notes
+1.  If the output of your dataset is a dictionary: data = {'input': input\_tensor, 'target': target\_tensor}, you can use model.set_input(data) to store input and target into your model for use in forward.
+2.  Store the nn.Module instance in another file (e.g. networks.py) for better abstraction.

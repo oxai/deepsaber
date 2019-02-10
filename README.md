@@ -69,10 +69,34 @@ Steps for creating a custom model with custom command line options:
 *  Append lossname to the self.loss\_names list as a string in \_\_init\_\_
 *  Add a backward() method where the optimizers are set up, gradients are computed on the losses using self.loss\_lossname.backward(), and an optimizer step is performed.
 *  Optimizers cna be stored in the list (self.optimizers)
-*  Add an optimize\_parameters() method where self.set\_requires\_grad(self.modelname\_net, requires\_grad=True), self.forward() and self.backward() are defined
-*  Create the 'modify commandline options method' to add your custom commandline options - e.g.:
+*  Add an optimize\_parameters() method where self.set\_requires\_grad(self.modelname\_net, requires\_grad=True), self.forward() and self.backward() are defined.
+*  Example:
 ```python
-    @staticmethod
+    def __init__(self, opt):
+        super().__init__(opt)
+        self.loss_names = ['crossentropy']
+        self.metric_names = []
+        self.module_names = ['wave']
+        self.image_paths = []
+        self.schedulers = []
+        self.net = WaveNet(layers=opt.layers,
+                           blocks=opt.blocks,
+                           dilation_channels=opt.dilation_channels,
+                           residual_channels=opt.residual_channels,
+                           skip_channels=opt.skip_channels,
+                           end_channels=opt.end_channels,
+                           input_channels=opt.input_channels,
+                           output_length=opt.output_length,
+                           kernel_size=opt.kernel_size,
+                           bias=opt.bias)
+        self.optimizers = [torch.optim.Adam([
+            {'params': [param for name, param in self.net.named_parameters() if name[-4:] == 'bias'],
+             'lr': 2 * opt.learning_rate},  # bias parameters change quicker - no weight decay is applied
+            {'params': [param for name, param in self.net.named_parameters() if name[-4:] != 'bias'],
+             'lr': opt.learning_rate, 'weight_decay': opt.weight_decay}  # filter parameters have weight decay
+        ])]
+    
+        @staticmethod
     def modify_commandline_options(parser, is_train):
         parser.add_argument('--layers', type=int, default=10, help="Number of layers in each block")
         parser.add_argument('--blocks', type=int, default=4, help="Number of residual blocks in network")
@@ -85,7 +109,28 @@ Steps for creating a custom model with custom command line options:
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
         return parser
+    
+    def forward(self):
+        self.output = self.wave_net.forward(self.input)
+        self.loss_crossentropy = F.cross_entropy(self.output, self.target)
+
+    def backward(self):
+        self.optimizers[0].zero_grad()
+        self.loss_crossentropy.backward()
+        self.optimizers[0].step()
+
+    def optimize_parameters(self):
+        self.set_requires_grad(self.net, requires_grad=True)
+        self.forward()
+        self.backward()
+        for scheduler in self.schedulers:
+            # step for schedulers that update after each iteration
+            try:
+                scheduler.batch_step()
+            except AttributeError:
+                pass
 ```
+*  Create the 'modify commandline options method' to add your custom commandline options - (e.g. look above)
 *  Add a name() method that returns the name of your class as a string, e.g.
 ```python
     def name(self):

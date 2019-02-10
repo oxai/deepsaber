@@ -1,5 +1,4 @@
-import json
-import numpy as np
+import json, re
 import pandas as pd
 import os
 import time
@@ -157,3 +156,18 @@ def encode_json(data, file_directory):
         json.dump(data, fp)
 
     return 0
+
+def get_all_json_level_files_from_data_directory(data_directory, include_autosaves=False):
+    '''@RA: Identify All JSON files in our data set.
+    Ref: https://stackoverflow.com/questions/2909975/python-list-directory-subdirectory-and-files '''
+    if include_autosaves:
+        file_regex = re.compile("^.*(Easy|Normal|Hard|Expert|ExpertPlus)\\.json$")
+    else:
+        file_regex = re.compile("^(Easy|Normal|Hard|Expert|ExpertPlus)\\.json$")
+    json_files = []
+    for root, subdirectories, files in os.walk(data_directory):
+        for name in files:
+            if bool(file_regex.match(name)):
+                json_path = os.path.join(root, name)
+                json_files.append(json_path)
+    return json_files

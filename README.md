@@ -8,16 +8,28 @@ Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2a
 - librosa
 - pytorch
 
-## Example usage
+## Minimal Example of Usage
 ```python
 from base.options.train_options import TrainOptions
 from base.data import create_dataset, create_dataloader
+from base.models import create_model
 
 opt = TrainOptions().parse()
 dataset = create_dataset(opt)
 dataloader = create_dataloader(dataset)
 data = dataloader[0]
-#{'input': songs, 'target': levels, 'features': beat_features}
+#{'input': songs, 'target': notes, 'features': beat_features}
+model = create_model(opt)
+
+for epoch in range(opt.epoch_count, opt.nepoch + opt.nepoch_decay):
+    for i, data in enumerate(dataloader)
+        model.set_input(data)
+        model.optimize_parameters()
+        if total_steps % opt.print_freq == 0:
+            losses = model.get_current_losses()
+            print(losses)
+    print(f'End of epoch {i}')
+    model.update_learning_rate()
 ```
 
 ### Dataset
@@ -44,6 +56,7 @@ def modify_commandline_options(parser, is_train):
         return "SongDataset"
 ```
 *  When launching your training script, add the command-line argument --dataset_name=yourDatasetName
+*  !!! See base.data.song_dataset.py for an example of a dataset that follows this API !!!
 
 ### Model
 Steps for creating a custom model with custom command line options:
@@ -78,3 +91,4 @@ Steps for creating a custom model with custom command line options:
     def name(self):
         return "WaveNetModel"
 ```
+*  !!! See base.models.wavenet_model.py for an example of a dataset that follows this API !!!

@@ -34,7 +34,9 @@ class BaseModel:
         self.image_paths = []
         self.optimizers = []
         self.schedulers = []
-        self.nets = None
+        self.input = None
+        self.target = None
+        self.output = None
 
     def name(self):
         return 'BaseModel'
@@ -57,7 +59,6 @@ class BaseModel:
         if self.opt.gpu_ids and (self.input.device.type == 'cpu' or self.target.device.type == 'cpu'):
             self.input = self.input.cuda()
             self.target = self.target.cuda()
-
 
     def forward(self):
         pass

@@ -15,5 +15,8 @@ class BaseDataset(data.Dataset):
     def __len__(self):
         return 0
 
+    def setup(self):
+        pass
+
     def make_subset(self, indices):
         return data.Subset(self, indices)

@@ -1,53 +1,52 @@
 ----------------- Options ---------------
                   augment: 0                             
               augment_dir:                               
-            augment_level: 0                             
                batch_size: 16                            
                     beta1: 0.5                           
+                     bias: True                          
+                   blocks: 4                             
           checkpoints_dir:                               
+                  classes: 256                           
+            compute_feats: False                         
            continue_train: False                         
                  data_dir: /Users/andreachatrian/Documents/Repositories/oxai/beatsaber/DataE
              dataset_name: song                          
-              display_env: main                          
-             display_freq: 400                           
-               display_id: 1                             
-            display_ncols: 4                             
-             display_port: 8097                          
-           display_server: http://localhost              
-          display_winsize: 256                           
+        dilation_channels: 32                            
+             end_channels: 256                           
               epoch_count: 1                             
                      eval: False                         
           experiment_name: experiment_name               
            fork_processes: False                         
                   gpu_ids: -1                            
-                init_gain: 0.02                          
-                init_type: normal                        
-           input_channels: 3                             
+               hop_length: 512                           
                  is_train: True                          	[default: None]
+              kernel_size: 2                             
+                   layers: 10                            
             learning_rate: 0.0001                        
    learning_rate_patience: 50                            
-               level_diff: Easy                          
+               level_diff: Expert                        
                load_epoch: latest                        
                 load_iter: 0                             
               loss_weight: None                          
-                 losstype: ce                            
                        lr: 0.0002                        
            lr_decay_iters: 50                            
                 lr_policy: lambda                        
-                    model: test                          
+                    model: wavenet                       
                    nepoch: 100                           
              nepoch_decay: 100                           
                   no_html: False                         
                 num_class: 2                             
               num_filters: 15                            
+            output_length: 256                           
                     phase: train                         
                print_freq: 100                           
+        residual_channels: 32                            
             sampling_rate: 22050                         
              save_by_iter: False                         
           save_epoch_freq: 50                            
          save_latest_freq: 5000                          
+            skip_channels: 256                           
                      task: base                          
-         update_html_freq: 1000                          
            val_batch_size: 20                            
            val_epoch_freq: 10                            
                   verbose: False                         

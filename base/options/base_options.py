@@ -17,21 +17,16 @@ class BaseOptions:
         parser.add_argument('--task', type=str, default='base', help="Module from which dataset and model are loaded")
         parser.add_argument('-d', '--data_dir', type=str, default='/Users/andreachatrian/Documents/Repositories/oxai/beatsaber/DataE')
         parser.add_argument('--dataset_name', type=str, default="song")
-        parser.add_argument('--input_channels', type=int, default=3)
-        parser.add_argument('--display_winsize', type=int, default=256, help='display window size for both visdom and HTML')
         parser.add_argument('--batch_size', default=16, type=int)
         parser.add_argument('--augment', type=int, default=0)
-        parser.add_argument('--model', type=str, default="test", help="The network model used for segmentation")
+        parser.add_argument('--model', type=str, default="wavenet", help="The network model used for segmentation")
         parser.add_argument('--eval', action='store_true', help='use eval mode during validation / test time.')
         parser.add_argument('--num_class', type=int, default=2)
         parser.add_argument('-nf', '--num_filters', type=int, default=15, help='mcd number of filters for unet conv layers')
         parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float)
         parser.add_argument('--learning_rate_patience', default=50, type=int)
         parser.add_argument('--weight_decay', default=5e-4, type=float)
-        parser.add_argument('--losstype', default='ce', choices=['dice', 'ce'])
         parser.add_argument('--loss_weight', default=None)
-        parser.add_argument('--init_type', type=str, default='normal', help='network initialization [normal|xavier|kaiming|orthogonal]')
-        parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
         parser.add_argument('--gpu_ids', default='-1', type=str, help='gpu ids (comma separated numbers - e.g. 1,2,3), =-1 for cpu use')
         parser.add_argument('--workers', default=4, type=int, help='the number of workers to load the data')
         parser.add_argument('--experiment_name', default="experiment_name", type=str)
@@ -41,7 +36,6 @@ class BaseOptions:
         parser.add_argument('-ad', '--augment_dir', type=str, default='')
         parser.add_argument('--verbose', action='store_true', help='if specified, print more debugging information')
         parser.add_argument('--fork_processes', action='store_true', help="Set method to create dataloader child processes to fork instead of spawn (could take up more memory)")
-        #parser.add_argument('--generated_only', action="store_true") # replace by making dataset
 
         self.parser = parser
         self.is_train = None

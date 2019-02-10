@@ -1,6 +1,7 @@
 from decodeJSON import parse_json
 from encodeJSON import create_dataStructure, encode_json
 from featuresBase import *
+from shutil import copyfile
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
@@ -14,8 +15,18 @@ def generate_baseline_level_from_ogg(song_identifier, difficulty):
     difficulties = ['Easy', 'Normal', 'Hard', 'Expert', 'ExpertPlus']
     song_directory = os.path.join(EXTRACT_DIR, song_identifier)
     song_json = os.path.join(song_directory, difficulties[difficulty]+'.json')
-    song_mod_json = os.path.join(song_directory, difficulties[difficulty]+'_mod.json')
-    song_ogg = os.path.join(EXTRACT_DIR, song_directory, 'song.ogg')
+    song_ogg = os.path.join(song_directory, 'song.ogg')
+    output_directory = song_directory + '_nonML_mod'
+    if not os.path.isdir(output_directory):
+        os.mkdir(output_directory)
+        copyfile(song_ogg, os.path.join(output_directory, 'song.ogg'))
+        try:
+            copyfile(os.path.join(song_directory, 'cover.jpg'), os.path.join(output_directory, 'cover.jpg'))
+        except Exception as e:
+            print('Cover image might not exist')
+            print(e)
+
+    song_mod_json = os.path.join(output_directory, difficulties[difficulty] + '.json')
 
     if not os.path.isfile(song_json):
         print('Skipped file; No file for difficulty: '+difficulties[difficulty])
@@ -89,3 +100,4 @@ def generate_baseline_level_from_ogg(song_identifier, difficulty):
 if __name__ == '__main__':
     for difficulty in range(5):
         generate_baseline_level_from_ogg('believer', difficulty)
+    print('done')

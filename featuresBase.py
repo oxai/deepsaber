@@ -95,7 +95,7 @@ def convert_beatchroma_to_notes_position(beat_chroma):
     num_beats = len(indexMax)
     # num_layers = 3  # rows
     nCols = 4  # columns
-    print(indexMax)
+    # print(indexMax)
 
     line_layer = np.ones(indexMax.shape, dtype=int)
     line_index = np.ones(indexMax.shape, dtype=int)
@@ -336,7 +336,7 @@ def generate_beatsaber_notes_from_beat_times_and_chroma(beat_times, beat_chroma,
     dict = {'_cutDirection': [], '_lineIndex': [], '_lineLayer': [], '_time': [], '_type': []}
     notes = pd.DataFrame.from_dict(dict)
 
-    print(np.shape(beat_times_beats))
+    # print(np.shape(beat_times_beats))
 
     for i in range(0, num_beats):
         new_note = {'_cutDirection': [cut_direction[i]], '_lineIndex': [line_index[i]], '_lineLayer': [line_layer[i]], '_time': [beat_times_beats[i]], '_type': [note_type[i]]}
@@ -369,7 +369,7 @@ def saveFile(object, filename=None, save_dir=None, append=False):
     if save_dir is None or save_dir is '':
         save_dir = os.path.join(os.getcwd(), 'Temp')
     if not os.path.isdir(save_dir):  # SUBJECT TO RACE CONDITION
-        os.makedirs(save_dir)
+        os.mkdir(save_dir)
     if filename is None or filename is '':
         filename = os.path.join(save_dir,
                                 getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H:%M:%S') + '.tmp')

@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 from glob import glob
+from IOFunctions import saveFile, loadFile
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
@@ -356,34 +357,6 @@ def baseline_notes_simple():
         notes_random = notes_random.append(df_new)
     return notes_random
 
-import os, time, getpass
-import pickle
-
-def loadFile(filename):
-    print('Loading file: ' + filename)
-    loadfile = open(filename, 'rb')
-    object = pickle.load(loadfile)
-    loadfile.close()
-    return object
-
-def saveFile(object, filename=None, save_dir=None, append=False):
-    if save_dir is None or save_dir is '':
-        save_dir = os.path.join(os.getcwd(), 'Temp')
-    if not os.path.isdir(save_dir):  # SUBJECT TO RACE CONDITION
-        os.mkdir(save_dir)
-    if filename is None or filename is '':
-        filename = os.path.join(save_dir,
-                                getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H:%M:%S') + '.tmp')
-    else:
-        filename = os.path.join(save_dir, filename)
-    print('Saving file: ' + filename)
-    if append is True:
-        savefile = open(filename, 'ab')
-    else:
-        savefile = open(filename, 'wb')
-    pickle.dump(object, savefile)
-    savefile.close()
-    return filename
 
 def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
     meta_dir = os.path.dirname(ogg_file)
@@ -403,5 +376,5 @@ def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
 if __name__ == '__main__':
     song_directory = os.path.join(EXTRACT_DIR, 'believer')
     song_ogg = glob(os.path.join(song_directory, '*.ogg'))[0]
-    song_name = song_ogg.split('/')[-1]
+    song_filename = song_ogg.split('/')[-1]
     notes = generate_beatsaber_notes_from_ogg(song_ogg)

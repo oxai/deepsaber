@@ -1,5 +1,4 @@
-from decodeJSON import parse_json
-from encodeJSON import create_dataStructure, encode_json
+from IOFunctions import parse_json, get_song_from_directory_by_identifier, create_dataStructure, encode_json
 from featuresBase import *
 from shutil import copyfile
 from glob import glob
@@ -14,14 +13,11 @@ if not os.path.isdir(EXTRACT_DIR):
 difficulties = ['Easy', 'Normal', 'Hard', 'Expert', 'ExpertPlus']
 
 def generate_baseline_level_from_ogg(song_identifier, difficulty):
-    song_directory = os.path.join(EXTRACT_DIR, song_identifier)
-    song_json = os.path.join(song_directory, difficulties[difficulty]+'.json')
-    song_ogg = glob(os.path.join(song_directory, '*.ogg'))[0]
-    song_name = song_ogg.split('/')[-1]
+    song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier(song_identifier, difficulties[difficulty])
     output_directory = song_directory + '_nonML_mod'
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
-        copyfile(song_ogg, os.path.join(output_directory, song_name))
+        copyfile(song_ogg, os.path.join(output_directory, song_filename))
         try:
             copyfile(os.path.join(song_directory, 'cover.jpg'), os.path.join(output_directory, 'cover.jpg'))
         except Exception as e:

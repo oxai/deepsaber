@@ -8,7 +8,7 @@ import IPython.display as ipd
 import matplotlib.pyplot as plt
 import math
 import numpy as np
-from decodeJSON import parse_json
+from IOFunctions import parse_json
 from glob import glob
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,30 +28,10 @@ def determine_minimum_block_interval(notes):
     return np.min(note_times[1:-1] - note_times[0:-2])
 
 if __name__ == '__main__':
-    tracks = os.listdir(EXTRACT_DIR)
-    searching = True
-    i = 0
-    while searching:
-        candidate = os.path.join(EXTRACT_DIR, tracks[i])
-        if os.path.isdir(candidate):
-            inner_dir = os.path.join(candidate, os.listdir(candidate)[0])
-            if os.path.isdir(inner_dir):
-                candidate_ogg = glob(os.path.join(inner_dir, '*.ogg'))[0]
-                if candidate_ogg:
-                    searching = False
-                    song_directory = inner_dir
-                    song_ogg = candidate_ogg
-        i+=1
-
-    song_filename = song_ogg.split('/')[-1]
-    song_json = dict()
-    for difficulty in difficulties:
-        json = os.path.join(song_directory, difficulty + '.json')
-        if os.path.isfile(json):
-            song_json[difficulty] = json
+    song_directory, song_ogg, song_json, song_filename = find_first_song_in_extract_directory()
     output_directory = song_directory + '_HMM_mod'
 
     for json in song_json.values():
         data = parse_json(json)
         #block_interval = determine_minimum_block_interval(['_notes'])
-        print('Minimum block interval for '+song_filename+': '+str(block_interval))
+        #print('Minimum block interval for '+song_filename+': '+str(block_interval))

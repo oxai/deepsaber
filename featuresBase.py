@@ -402,6 +402,6 @@ def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
 
 if __name__ == '__main__':
     song_directory = os.path.join(EXTRACT_DIR, 'believer')
-    song_ogg = glob(os.path.join(song_directory, '*.ogg'))
+    song_ogg = glob(os.path.join(song_directory, '*.ogg'))[0]
     song_name = song_ogg.split('/')[-1]
     notes = generate_beatsaber_notes_from_ogg(song_ogg)

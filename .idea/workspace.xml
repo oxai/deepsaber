@@ -2,22 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2a403a69-9156-4ec7-860c-90bf58b6bf9b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/base/aux/audio_data.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/base/models/wavenet_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/OxAI.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/OxAI.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/base/data/singlenote_dataset.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/base/models/convnet_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DownloadData.py" beforeDir="false" afterPath="$PROJECT_DIR$/DownloadData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/data/base_dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/data/base_dataset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/data/song_dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/data/song_dataset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/models/base_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/models/base_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/models/networks.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/models/networks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/options/base_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/options/base_options.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/options/train_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/options/train_options.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/train.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/experiment_name/opt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/test/experiment_name/opt.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/models/wavenet_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/models/wavenet_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/data_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test/data_test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -26,28 +15,16 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/beatsaber$train.coverage" NAME="train Coverage Results" MODIFIED="1549810058377" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/base" />
+    <SUITE FILE_PATH="coverage/beatsaber$train.coverage" NAME="train Coverage Results" MODIFIED="1549817452748" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/base" />
     <SUITE FILE_PATH="coverage/beatsaber$pytest_for_data_test_test_input.coverage" NAME="pytest for data_test.test_input Coverage Results" MODIFIED="1549808308698" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/base/models/networks.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="297">
-              <caret line="70" selection-start-line="70" selection-end-line="70" />
-              <folding>
-                <element signature="e#0#9#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/base/models/base_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="74" column="16" selection-start-line="74" selection-start-column="16" selection-end-line="74" selection-end-column="16" />
+            <state relative-caret-position="-630">
+              <caret line="94" column="22" selection-start-line="94" selection-start-column="22" selection-end-line="94" selection-end-column="22" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -58,8 +35,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/base/train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="328">
-              <caret line="43" column="18" selection-start-line="43" selection-start-column="18" selection-end-line="43" selection-end-column="18" />
+            <state relative-caret-position="168">
+              <caret line="33" selection-start-line="33" selection-end-line="33" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -68,22 +45,13 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/anaconda3/lib/python3.7/site-packages/torch/nn/modules/conv.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="192">
-              <caret line="186" selection-start-line="186" selection-end-line="186" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/test/data_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" selection-start-line="9" selection-end-line="9" />
+            <state relative-caret-position="165">
+              <caret line="11" selection-start-line="11" selection-end-line="11" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
-                <marker date="1548855107893" expanded="true" signature="49:50" ph="..." />
+                <marker date="1549815999246" expanded="true" signature="49:50" ph="..." />
               </folding>
             </state>
           </provider>
@@ -92,8 +60,20 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/base/data/song_dataset.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="290">
-              <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
+            <state relative-caret-position="225">
+              <caret line="31" column="22" lean-forward="true" selection-start-line="31" selection-start-column="22" selection-end-line="31" selection-end-column="22" />
+              <folding>
+                <element signature="e#0#24#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/base/data/singlenote_dataset.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="379">
+              <caret line="66" selection-start-line="66" selection-end-line="66" />
               <folding>
                 <element signature="e#0#24#0" expanded="true" />
               </folding>
@@ -104,7 +84,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/anaconda3/lib/python3.7/site-packages/torch/utils/data/dataloader.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="275">
+            <state relative-caret-position="2835">
               <caret line="205" column="40" selection-start-line="205" selection-start-column="40" selection-end-line="205" selection-end-column="40" />
             </state>
           </provider>
@@ -113,8 +93,20 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/base/models/wavenet_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="45" lean-forward="true" selection-start-line="16" selection-start-column="45" selection-end-line="16" selection-end-column="45" />
+            <state relative-caret-position="195">
+              <caret line="13" selection-start-line="13" selection-end-line="13" />
+              <folding>
+                <element signature="e#0#33#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/base/models/convnet_model.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="45">
+              <caret line="36" column="123" selection-start-line="36" selection-start-column="123" selection-end-line="36" selection-end-column="123" />
               <folding>
                 <element signature="e#0#33#0" expanded="true" />
               </folding>
@@ -160,19 +152,28 @@
       <find>308</find>
       <find>hop_length</find>
       <find>self.classes</find>
+      <find>conv_net</find>
+      <find>#training images</find>
     </findStrings>
     <replaceStrings>
       <replace>song</replace>
       <replace>data_dir</replace>
       <replace>opt.hop_length</replace>
       <replace>self.input_channels</replace>
+      <replace>netconv</replace>
     </replaceStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/base</dir>
     </dirStrings>
   </component>
   <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="achatrian &lt;chatrian.andrea@gmail.com&gt;" />
+      </list>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="SIGN_OFF_COMMIT" value="true" />
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
@@ -185,7 +186,6 @@
         <option value="$PROJECT_DIR$/test/conftest.py" />
         <option value="$PROJECT_DIR$/base/__init__.py" />
         <option value="$PROJECT_DIR$/README.md" />
-        <option value="$PROJECT_DIR$/test/data_test.py" />
         <option value="$PROJECT_DIR$/base/models/test_model.py" />
         <option value="$PROJECT_DIR$/base/options/train_options.py" />
         <option value="$PROJECT_DIR$/base/options/base_options.py" />
@@ -193,8 +193,12 @@
         <option value="$PROJECT_DIR$/base/models/base_model.py" />
         <option value="$PROJECT_DIR$/base/data/song_dataset.py" />
         <option value="$PROJECT_DIR$/base/models/networks.py" />
-        <option value="$PROJECT_DIR$/base/models/wavenet_model.py" />
         <option value="$PROJECT_DIR$/base/train.py" />
+        <option value="$PROJECT_DIR$/base/models/lstm_model.py" />
+        <option value="$PROJECT_DIR$/base/models/wavenet_model.py" />
+        <option value="$PROJECT_DIR$/test/data_test.py" />
+        <option value="$PROJECT_DIR$/base/data/singlenote_dataset.py" />
+        <option value="$PROJECT_DIR$/base/models/convnet_model.py" />
       </list>
     </option>
   </component>
@@ -219,6 +223,12 @@
               <item name="beatsaber" type="b2602c69:ProjectViewProjectNode" />
               <item name="beatsaber" type="462c0819:PsiDirectoryNode" />
               <item name="base" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="beatsaber" type="b2602c69:ProjectViewProjectNode" />
+              <item name="beatsaber" type="462c0819:PsiDirectoryNode" />
+              <item name="base" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="beatsaber" type="b2602c69:ProjectViewProjectNode" />
@@ -302,7 +312,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base/train.py" />
-      <option name="PARAMETERS" value="--gpu_ids=-1 --dataset_name=song --level_diff=Expert --workers=0 --batch_size=1" />
+      <option name="PARAMETERS" value="--gpu_ids=-1 --dataset_name=singlenote --level_diff=Expert --workers=0 --batch_size=1 --model=convnet" />
       <option name="SHOW_COMMAND_LINE" value="true" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -351,8 +361,18 @@
       <workItem from="1549539337742" duration="248000" />
       <workItem from="1549717550796" duration="5352000" />
       <workItem from="1549740295345" duration="3057000" />
-      <workItem from="1549804606153" duration="6167000" />
+      <workItem from="1549804606153" duration="6850000" />
+      <workItem from="1549812601253" duration="238000" />
+      <workItem from="1549813959357" duration="3623000" />
     </task>
+    <task id="LOCAL-00001" summary="Updated dataset to work with beats, create target with notes.&#10;Target is Nx4 tensor.&#10;WaveNetModel also added.">
+      <created>1549811158752</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1549811158752</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -388,26 +408,25 @@
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="18758000" />
+    <option name="totallyTimeSpent" value="23302000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1440" height="877" extended-state="0" />
-    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.1595136" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16380544" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.3299363" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.3299363" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.32356688" />
+      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.32356688" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Terminal" order="8" weight="0.2725322" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
-      <window_info anchor="bottom" id="Python Console" order="10" visible="true" weight="0.09171975" />
+      <window_info anchor="bottom" id="Python Console" order="10" weight="0.47515923" />
       <window_info anchor="bottom" id="Docker" order="11" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" order="12" show_stripe_button="false" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -423,6 +442,10 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Updated dataset to work with beats, create target with notes.&#10;Target is Nx4 tensor.&#10;WaveNetModel also added." />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated dataset to work with beats, create target with notes.&#10;Target is Nx4 tensor.&#10;WaveNetModel also added." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -464,47 +487,47 @@
     </expressions>
     <expressions id="evaluateExpression">
       <expression>
-        <expression-string>self.forward()</expression-string>
+        <expression-string>np.pad(y[start_idx: note_time_idx], (pad_extent, 0), mode='constant')</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>self.start_conv</expression-string>
+        <expression-string>note_time_idx - start_idx</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>target.shape</expression-string>
+        <expression-string>np.where(np.absolute(note_time - time_between_beats[beat_idx] - time) &lt; self.eps)[0][0]</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>target[note_time_idx] = torch.tensor(beat_time_to_note[note_beat_time])</expression-string>
+        <expression-string>np.where(np.absolute(note_time - time_between_beats[beat_idx] - time) &lt; self.eps)[0]</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>[[-1, -1, -1, -1]] * len(time)</expression-string>
+        <expression-string>np.where(np.absolute(note_time - time_between_beats[beat_idx] - time) &lt; self.eps)</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>len(beat_times)</expression-string>
+        <expression-string>a.any()</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>len(time_between_beats)</expression-string>
+        <expression-string>a = np.absolute(note_time - time_between_beats[beat_idx] - time) &lt; self.eps</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>level['_notes']</expression-string>
+        <expression-string>np.absolute(note_time - time_between_beats[beat_idx] - time) &lt; self.eps</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>beat_idx_to_note[beat_idx]</expression-string>
+        <expression-string>p.absolute(note_time - time_between_beats[beat_idx] - time) &lt; self.eps</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
@@ -621,6 +644,31 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/base/models/networks.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="900">
+          <caret line="70" selection-start-line="70" selection-end-line="70" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/base/models/lstm_model.py" />
+    <entry file="file://$USER_HOME$/anaconda3/lib/python3.7/site-packages/torch/nn/modules/conv.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2685">
+          <caret line="186" selection-start-line="186" selection-end-line="186" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/anaconda3/lib/python3.7/site-packages/torch/utils/data/dataloader.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2835">
+          <caret line="205" column="40" selection-start-line="205" selection-start-column="40" selection-end-line="205" selection-end-column="40" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/base/options/base_options.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="195">
@@ -635,45 +683,31 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/base/models/base_model.py">
+    <entry file="file://$PROJECT_DIR$/base/models/wavenet_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="74" column="16" selection-start-line="74" selection-start-column="16" selection-end-line="74" selection-end-column="16" />
+        <state relative-caret-position="195">
+          <caret line="13" selection-start-line="13" selection-end-line="13" />
           <folding>
-            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#0#33#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/lib/python3.7/site-packages/torch/utils/data/dataloader.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="275">
-          <caret line="205" column="40" selection-start-line="205" selection-start-column="40" selection-end-line="205" selection-end-column="40" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/test/data_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" selection-start-line="9" selection-end-line="9" />
+        <state relative-caret-position="165">
+          <caret line="11" selection-start-line="11" selection-end-line="11" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
-            <marker date="1548855107893" expanded="true" signature="49:50" ph="..." />
+            <marker date="1549815999246" expanded="true" signature="49:50" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/anaconda3/lib/python3.7/site-packages/torch/nn/modules/conv.py">
+    <entry file="file://$PROJECT_DIR$/base/models/base_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="192">
-          <caret line="186" selection-start-line="186" selection-end-line="186" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/base/models/networks.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="297">
-          <caret line="70" selection-start-line="70" selection-end-line="70" />
+        <state relative-caret-position="-630">
+          <caret line="94" column="22" selection-start-line="94" selection-start-column="22" selection-end-line="94" selection-end-column="22" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
@@ -682,28 +716,38 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/base/data/song_dataset.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="290">
-          <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
+        <state relative-caret-position="225">
+          <caret line="31" column="22" lean-forward="true" selection-start-line="31" selection-start-column="22" selection-end-line="31" selection-end-column="22" />
           <folding>
             <element signature="e#0#24#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/base/models/wavenet_model.py">
+    <entry file="file://$PROJECT_DIR$/base/models/convnet_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="45" lean-forward="true" selection-start-line="16" selection-start-column="45" selection-end-line="16" selection-end-column="45" />
+        <state relative-caret-position="45">
+          <caret line="36" column="123" selection-start-line="36" selection-start-column="123" selection-end-line="36" selection-end-column="123" />
           <folding>
             <element signature="e#0#33#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/base/data/singlenote_dataset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="379">
+          <caret line="66" selection-start-line="66" selection-end-line="66" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/base/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="328">
-          <caret line="43" column="18" selection-start-line="43" selection-start-column="18" selection-end-line="43" selection-end-column="18" />
+        <state relative-caret-position="168">
+          <caret line="33" selection-start-line="33" selection-end-line="33" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>

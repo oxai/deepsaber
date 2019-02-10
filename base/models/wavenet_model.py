@@ -11,7 +11,6 @@ class WaveNetModel(BaseModel):
         self.loss_names = ['ce']
         self.metric_names = []
         self.module_names = ['']  # changed from 'model_names'
-        self.image_paths = []
         self.schedulers = []
         self.net = WaveNet(layers=opt.layers,
                            blocks=opt.blocks,

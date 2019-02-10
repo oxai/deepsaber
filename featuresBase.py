@@ -121,10 +121,10 @@ def convert_note_positions_to_cut_direction(line_layer, line_index):
     for i in range(1, num_beats):
         if line_layer[i] > line_layer[i-1]:
             #up
-            if line_index[i] > line_index[i]:
+            if line_index[i] > line_index[i-1]:
                 #right
                 cut_direction.append(5)
-            elif line_index[i] < line_index[i]:
+            elif line_index[i] < line_index[i-1]:
                 #left
                 cut_direction.append(4)
             else:
@@ -132,10 +132,10 @@ def convert_note_positions_to_cut_direction(line_layer, line_index):
                 cut_direction.append(0)
         elif line_layer[i] < line_layer[i-1]:
             #down
-            if line_index[i] > line_index[i]:
+            if line_index[i] > line_index[i-1]:
                 #right
                 cut_direction.append(7)
-            elif line_index[i] < line_index[i]:
+            elif line_index[i] < line_index[i-1]:
                 #left
                 cut_direction.append(6)
             else:
@@ -143,10 +143,10 @@ def convert_note_positions_to_cut_direction(line_layer, line_index):
                 cut_direction.append(1)
         else:
             #no-vert change
-            if line_index[i] > line_index[i]:
+            if line_index[i] > line_index[i-1]:
                 #right
                 cut_direction.append(3)
-            elif line_index[i] < line_index[i]:
+            elif line_index[i] < line_index[i-1]:
                 #left
                 cut_direction.append(2)
             else:

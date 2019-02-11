@@ -67,7 +67,7 @@ def parse_json(file_directory):
 
 def get_song_from_directory_by_identifier(identifier, difficulty=None):
     song_directory = os.path.join(EXTRACT_DIR, identifier)
-    if len(os.listdir(song_directory)) == 1:
+    if len(os.listdir(song_directory)) == 1 and os.path.isdir(os.listdir(song_directory)[0]):
         song_directory = os.path.join(song_directory, os.listdir(song_directory)[0])
     song_json = dict()
     if difficulty is None:

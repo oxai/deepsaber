@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 from glob import glob
-from IOFunctions import saveFile, loadFile
+from IOFunctions import saveFile, loadFile, get_song_from_directory_by_identifier
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
@@ -374,7 +374,5 @@ def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
     return notes
 
 if __name__ == '__main__':
-    song_directory = os.path.join(EXTRACT_DIR, 'believer')
-    song_ogg = glob(os.path.join(song_directory, '*.ogg'))[0]
-    song_filename = song_ogg.split('/')[-1]
+    song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('believer')
     notes = generate_beatsaber_notes_from_ogg(song_ogg)

@@ -1,0 +1,60 @@
+----------------- Options ---------------
+                  augment: 0                             
+              augment_dir:                               
+               batch_size: 1                             	[default: 16]
+                    beta1: 0.5                           
+                     bias: True                          
+                   blocks: 4                             
+          checkpoints_dir:                               
+             chunk_length: 9000                          
+            compute_feats: False                         
+           continue_train: False                         
+                 data_dir: ../../oxai_beat_saber_data/   	[default: /Users/andreachatrian/Documents/Repositories/oxai/beatsaber/DataE]
+             dataset_name: windowed                      	[default: song]
+        dilation_channels: 32                            
+             display_freq: 100                           
+             end_channels: 256                           
+              epoch_count: 1                             
+                     eval: False                         
+          experiment_name: experiment_name               
+           fork_processes: False                         
+                  gpu_ids: -1                            
+               hop_length: 256                           
+           input_channels: 1                             
+                 is_train: True                          	[default: None]
+              kernel_size: 2                             
+                   layers: 10                            
+            learning_rate: 0.0001                        
+   learning_rate_patience: 50                            
+               level_diff: Expert                        
+               load_epoch: latest                        
+                load_iter: 0                             
+              loss_weight: None                          
+                       lr: 0.0002                        
+           lr_decay_iters: 50                            
+                lr_policy: lambda                        
+                    model: wavenet                       
+                   nepoch: 100                           
+             nepoch_decay: 100                           
+                  no_html: False                         
+              num_classes: 28                            
+              num_filters: 15                            
+              num_windows: 100                           
+          output_channels: 15                            
+            output_length: 1                             
+            padded_length: 3000000                       
+                    phase: train                         
+               print_freq: 1                             	[default: 100]
+        residual_channels: 32                            
+            sampling_rate: 16000.0                       	[default: 11025]
+             save_by_iter: False                         
+          save_epoch_freq: 50                            
+         save_latest_freq: 5000                          
+            skip_channels: 256                           
+                     task: base                          
+           val_batch_size: 20                            
+           val_epoch_freq: 10                            
+                  verbose: False                         
+             weight_decay: 0.0005                        
+                  workers: 4                             
+----------------- End -------------------

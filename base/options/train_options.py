@@ -7,6 +7,7 @@ class TrainOptions(BaseOptions):
         super(TrainOptions, self).__init__()
         parser = self.parser
         parser.add_argument('--print_freq', type=int, default=100, help='frequency of showing training results on console')
+        parser.add_argument('--display_freq', type=int, default=100, help='frequency of showing training results on console')
         parser.add_argument('--val_epoch_freq', type=int, default=10, help="epoch interval between rounds of evaluation on the validation set [-1 prevents validation] ")
         parser.add_argument('--val_batch_size', default=20, type=int)
         parser.add_argument('--save_latest_freq', type=int, default=5000, help='frequency of saving the latest results')
@@ -24,4 +25,3 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
         self.parser = parser
         self.is_train = True
-

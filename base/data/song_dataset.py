@@ -15,17 +15,21 @@ class SongDataset(BaseDataset):
         data_path = Path(opt.data_dir)
         if not data_path.is_dir():
             raise ValueError(f'Invalid directory: {opt.data_dir}')
-        self.audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
+        # self.audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
+        candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
-        audio_no_level = []  # store audios for which there is no json level
-        for i, path in enumerate(self.audio_files):
+        self.audio_files = []
+        # audio_no_level = []  # store audios for which there is no json level
+        for i, path in enumerate(candidate_audio_files):
             try:
                 level = list(path.parent.glob(f'./{self.opt.level_diff}.json'))[0]
                 self.level_jsons.append(level)
+                self.audio_files.append(path)
             except IndexError:
-                audio_no_level.append(i)
-        for i in reversed(audio_no_level):  # not to throw off preceding indices
-            self.audio_files.pop(i)
+                # audio_no_level.append(i)
+                pass
+        # for i in reversed(audio_no_level):  # not to throw off preceding indices
+        #     self.audio_files.pop(i)
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"
         assert len(self.audio_files) == len(self.level_jsons)

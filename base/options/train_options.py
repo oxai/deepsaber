@@ -9,7 +9,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--print_freq', type=int, default=100, help='frequency of showing training results on console')
         parser.add_argument('--display_freq', type=int, default=100, help='frequency of showing training results on console')
         parser.add_argument('--val_epoch_freq', type=int, default=10, help="epoch interval between rounds of evaluation on the validation set [-1 prevents validation] ")
-        parser.add_argument('--val_batch_size', default=20, type=int)
+        parser.add_argument('--val_batch_size', default=1, type=int)
         parser.add_argument('--save_latest_freq', type=int, default=5000, help='frequency of saving the latest results')
         parser.add_argument('--save_epoch_freq', type=int, default=50, help='frequency of saving checkpoints at the end of epochs')
         parser.add_argument('--save_by_iter', action='store_true', help='whether saves model by iteration')

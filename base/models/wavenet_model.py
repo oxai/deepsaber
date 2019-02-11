@@ -42,7 +42,7 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--residual_channels', type=int, default=32, help="Number of channels in the residual link")
         parser.add_argument('--skip_channels', type=int, default=256)
         parser.add_argument('--end_channels', type=int, default=256)
-        parser.add_argument('--input_channels', type=int, default=1)
+        parser.add_argument('--input_channels', type=int, default=(1+(9*3+1)*(5*3)))
         parser.add_argument('--output_length', type=int, default=1)
         parser.add_argument('--num_classes', type=int, default=(9*3+1))
         parser.add_argument('--output_channels', type=int, default=(5*3))
@@ -52,12 +52,12 @@ class WaveNetModel(BaseModel):
 
     def set_input(self, data):
         # move multiple samples of the same song to the second dimension and the reshape to batch dimension
-        input_ = data['input'].permute(0, 2, 1, 3)  # bring multiple chunks per song dimension close to batch dimension (0), and time at the end
+        input_ = data['input']
         target_ = data['target']
         input_shape = input_.shape
         target_shape = target_.shape
-        self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3]))
-        self.target = target_.reshape((target_shape[0]*target_shape[1]*target_shape[2]*target_shape[3]))
+        self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3])).to(self.device)
+        self.target = target_.reshape((target_shape[0]*target_shape[1]*target_shape[2]*target_shape[3])).to(self.device)
 
     def forward(self):
         self.output = self.net.forward(self.input)

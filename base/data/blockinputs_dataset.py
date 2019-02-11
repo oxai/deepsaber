@@ -7,7 +7,7 @@ from base.data.base_dataset import BaseDataset
 import json
 from math import floor, ceil
 
-class WindowedDataset(BaseDataset):
+class BlockinputsDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
         super().__init__()
@@ -67,7 +67,7 @@ class WindowedDataset(BaseDataset):
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
         blocks = -1*np.ones((len(y),15)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
-                                            # can fix this using gan
+        blocks_manyhot = np.zeros((len(y),15,28)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
         # from math import floor
         eps = self.eps
         for note in notes:
@@ -85,14 +85,20 @@ class WindowedDataset(BaseDataset):
                 else:
                     raise ValueError("I thought there was no notes with _type different from 0,1,3. Ahem, what are those??")
                 blocks[sample_index+sample_delta,note["_lineLayer"]*5+note["_lineIndex"]] = note_type*9+note["_cutDirection"]
+                blocks_manyhot[sample_index+sample_delta,note["_lineLayer"]*5+note["_lineIndex"], note_type*9+note["_cutDirection"]] = 1.0
         blocks += 1  # so that class range is > 0
         indices = np.random.choice(range(len(y)-receptive_field),size=self.opt.num_windows,replace=False)
         input_windows = [y[i:i+input_length] for i in indices]
         block_windows = [blocks[i+receptive_field:i+input_length+1,:] for i in indices]
+        blocks_manyhot_windows = [blocks_manyhot[i:i+input_length,:,:] for i in indices]
         block_windows = torch.tensor(block_windows,dtype=torch.long)
+        blocks_manyhot_windows = torch.tensor(blocks_manyhot_windows)
         input_windows = torch.tensor(input_windows).unsqueeze(1)  # adding channel dim
+        blocks_manyhot_windows = blocks_manyhot_windows.permute(0,2,3,1)
+        shape = blocks_manyhot_windows.shape
+        blocks_manyhot_windows = blocks_manyhot_windows.view(shape[0],shape[1]*shape[2],shape[3])
         input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
-        return {'input': input_windows, 'target': block_windows}
+        return {'input': torch.cat((input_windows.float(),blocks_manyhot_windows.float()),1), 'target': block_windows}
 
     def __len__(self):
         return len(self.audio_files)

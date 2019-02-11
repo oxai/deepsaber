@@ -123,7 +123,7 @@ class WaveNetModel(nn.Module):
                                   kernel_size=1,
                                   bias=True)
 
-        self.end_convs_2 = []
+        self.end_convs_2 = nn.ModuleList()
         for c in range(self.output_channels):
             self.end_convs_2.append(nn.Conv1d(in_channels=end_channels,
                                         out_channels=self.num_classes,

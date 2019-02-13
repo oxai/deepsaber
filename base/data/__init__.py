@@ -44,11 +44,11 @@ def get_option_setter(dataset_name, task_name):
     return dataset_class.modify_commandline_options
 
 
-def create_dataset(opt, validation_phase=False):
+def create_dataset(opt, validation_phase=False,*args,**kwargs):
     dataset = find_dataset_using_name(opt.dataset_name, opt.task)
     if validation_phase:
         opt.phase = "val"
-    instance = dataset(opt)
+    instance = dataset(opt,*args,**kwargs)
     print('dataset [{}] was created {}'.format(instance.name(), "(val)" if validation_phase else ''))
     return instance
 

@@ -78,10 +78,11 @@ class BaseModel:
             self.net = networks.init_net(self.net, self.opt.init_type, self.opt.init_gain,
                                 self.opt.gpu_ids)  # takes care of pushing net to cuda
             assert torch.cuda.is_available()
-            for loss_name in self.loss_names:
-                loss = getattr(self, loss_name).cuda()
-                loss = loss.to(self.device)
-                setattr(self, loss_name, loss)
+            ### what is this thing for?
+            # for loss_name in self.loss_names:
+            #     loss = getattr(self, loss_name).cuda()
+            #     loss = loss.to(self.device)
+            #     setattr(self, loss_name, loss)
         if self.is_train:
             self.schedulers = [networks.get_scheduler(optimizer, self.opt) for optimizer in self.optimizers]
         if not self.is_train or self.opt.continue_train:
@@ -194,7 +195,7 @@ class BaseModel:
                 net = getattr(self, 'net' + name)
 
                 if len(self.gpu_ids) > 0 and torch.cuda.is_available():
-                    torch.save(net.module.cpu().state_dict(), save_path)
+                    torch.save(net.module.state_dict(), save_path)
                     net.cuda(self.gpu_ids[0])
                 else:
                     torch.save(net.cpu().state_dict(), save_path)
@@ -267,7 +268,3 @@ class BaseModel:
             net = getattr(self, 'net' + module_name)
             if net is not None:
                 net.share_memory()
-
-
-
-

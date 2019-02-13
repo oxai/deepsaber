@@ -20,6 +20,8 @@ class WaveNetModel(BaseModel):
                            end_channels=opt.end_channels,
                            input_channels=opt.input_channels,
                            output_length=opt.output_length,
+                           output_channels=opt.output_channels,
+                           num_classes=opt.num_classes,
                            kernel_size=opt.kernel_size,
                            bias=opt.bias)
         self.optimizers = [torch.optim.Adam([
@@ -40,11 +42,22 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--residual_channels', type=int, default=32, help="Number of channels in the residual link")
         parser.add_argument('--skip_channels', type=int, default=256)
         parser.add_argument('--end_channels', type=int, default=256)
-        parser.add_argument('--input_channels', type=int, default=1)
+        parser.add_argument('--input_channels', type=int, default=(1+(9*3+1)*(5*3)))
         parser.add_argument('--output_length', type=int, default=1)
+        parser.add_argument('--num_classes', type=int, default=(9*3+1))
+        parser.add_argument('--output_channels', type=int, default=(5*3))
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
         return parser
+
+    def set_input(self, data):
+        # move multiple samples of the same song to the second dimension and the reshape to batch dimension
+        input_ = data['input']
+        target_ = data['target']
+        input_shape = input_.shape
+        target_shape = target_.shape
+        self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3])).to(self.device)
+        self.target = target_.reshape((target_shape[0]*target_shape[1]*target_shape[2]*target_shape[3])).to(self.device)
 
     def forward(self):
         self.output = self.net.forward(self.input)
@@ -65,7 +78,3 @@ class WaveNetModel(BaseModel):
                 scheduler.batch_step()
             except AttributeError:
                 pass
-
-
-
-

@@ -40,6 +40,8 @@ class WaveNetModel(nn.Module):
                  end_channels=256,
                  input_channels=256,
                  output_length=32,
+                 output_channels=1,
+                 num_classes=2,
                  kernel_size=2,
                  dtype=torch.FloatTensor,
                  bias=False):
@@ -54,6 +56,8 @@ class WaveNetModel(nn.Module):
         self.input_channels = input_channels
         self.kernel_size = kernel_size
         self.dtype = dtype
+        self.output_channels = output_channels
+        self.num_classes = num_classes
 
         # build model
         receptive_field = 1
@@ -119,10 +123,12 @@ class WaveNetModel(nn.Module):
                                   kernel_size=1,
                                   bias=True)
 
-        self.end_conv_2 = nn.Conv1d(in_channels=end_channels,
-                                    out_channels=input_channels,
-                                    kernel_size=1,
-                                    bias=True)
+        self.end_convs_2 = nn.ModuleList()
+        for c in range(self.output_channels):
+            self.end_convs_2.append(nn.Conv1d(in_channels=end_channels,
+                                        out_channels=self.num_classes,
+                                        kernel_size=1,
+                                        bias=True))
 
         # self.output_length = 2 ** (layers - 1)
         self.output_length = output_length
@@ -151,9 +157,9 @@ class WaveNetModel(nn.Module):
 
             # dilated convolution
             filter = self.filter_convs[i](residual)
-            filter = F.tanh(filter)
+            filter = torch.tanh(filter)
             gate = self.gate_convs[i](residual)
-            gate = F.sigmoid(gate)
+            gate = torch.sigmoid(gate)
             x = filter * gate
 
             # parametrized skip connection
@@ -172,8 +178,12 @@ class WaveNetModel(nn.Module):
 
         x = F.relu(skip)
         x = F.relu(self.end_conv_1(x))
-        x = self.end_conv_2(x)
+        xs = []
+        for c in range(self.output_channels):
+            xs.append(self.end_convs_2[c](x))
 
+        x = torch.stack(xs)
+        x = x.permute(1, 0, 2, 3)
         return x
 
     def wavenet_dilate(self, input, dilation, init_dilation, i):
@@ -194,11 +204,11 @@ class WaveNetModel(nn.Module):
                          dilation_func=self.wavenet_dilate)
 
         # reshape output
-        [n, c, l] = x.size()
+        [n, channels, classes, l] = x.size()
         l = self.output_length
-        x = x[:, :, -l:]
-        x = x.transpose(1, 2).contiguous()
-        x = x.view(n * l, c)
+        x = x[:, :, :, -l:]
+        x = x.transpose(1, 3).contiguous()
+        x = x.view(n * l * channels ,classes)
         return x
 
     def generate(self,
@@ -691,4 +701,3 @@ class CyclicLR(object):
                 lr = base_lr + base_height * self.scale_fn(self.last_batch_iteration)
             lrs.append(lr)
         return lrs
-

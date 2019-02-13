@@ -359,7 +359,7 @@ def baseline_notes_simple():
     return notes_random
 
 # beat_times: Time (in seconds) of each given frame number
-def generate_beatsaber_obstacles_from_beat_times (ogg_file, difficulty):
+def generate_beatsaber_obstacles_from_beat_times (beat_times, tempo, difficulty):
     numObstacles = 0
     #depending on difficulty the number of obstacles can increase, we can change this of course
     if difficulty == 1: # Normal
@@ -370,7 +370,7 @@ def generate_beatsaber_obstacles_from_beat_times (ogg_file, difficulty):
         numObstacles = 30
     elif difficulty == 4: # ExpertPlus
         numObstacles = 60
-    _, beat_times, _ = extract_beat_times_chroma_tempo_from_ogg(ogg_file) # we only want the beat_times here
+    #_, beat_times, _ = extract_beat_times_chroma_tempo_from_ogg(ogg_file) # we only want the beat_times here
     time = []
     lineIndex = []
     type = []
@@ -400,6 +400,7 @@ def generate_beatsaber_obstacles_from_beat_times (ogg_file, difficulty):
 
     return obstacles # time, lineIndex, type, duration, width
 
+
 def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
     meta_dir = os.path.dirname(ogg_file)
     meta_filename = 'meta_info.pkl'
@@ -415,7 +416,22 @@ def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
     notes = generate_beatsaber_notes_from_beat_times_and_chroma(beat_times, beat_chroma, tempo, difficulty)
     return notes
 
+def generate_beatsaber_obstacles_from_ogg(ogg_file, difficulty=0):
+    meta_dir = os.path.dirname(ogg_file)
+    meta_filename = 'meta_info.pkl'
+    meta_file = os.path.join(meta_dir, meta_filename)
+    if os.path.isfile(meta_file):
+        content = loadFile(meta_file)
+        tempo = content[0]
+        beat_times = content[1]
+        beat_chroma = content[2]
+    else:
+        tempo, beat_times, beat_chroma = extract_beat_times_chroma_tempo_from_ogg(ogg_file)
+        saveFile([tempo, beat_times, beat_chroma], meta_filename, meta_dir, append=False)
+    obstacles = generate_beatsaber_obstacles_from_beat_times(beat_times, tempo, difficulty)
+    return obstacles
+
 if __name__ == '__main__':
-    song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('4)Believer - Imagine Dragons/Believer')
-    obstacles = generate_beatsaber_obstacles_from_beat_times(song_ogg, difficulty)
+    song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('believer')
     notes = generate_beatsaber_notes_from_ogg(song_ogg)
+    obstacles = generate_beatsaber_obstacles_from_ogg(song_ogg)

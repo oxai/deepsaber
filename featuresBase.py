@@ -392,7 +392,7 @@ def generate_beatsaber_obstacles_from_beat_times (beat_times, tempo, difficulty)
         type.append(random.randint(0,1))
         duration.append(random.randint(1, 3))
         if(lineIndex[i] == 0 or lineIndex[i] == 1):
-            width.append(randint(1, 3))
+            width.append(random.randint(1, 3))
         elif(lineIndex[i] == 2):
             width.append(random.randint(1, 2))
         elif(lineIndex[i] == 3):
@@ -404,6 +404,33 @@ def generate_beatsaber_obstacles_from_beat_times (beat_times, tempo, difficulty)
         obstacles = obstacles.append(df_new)
 
     return obstacles # time, lineIndex, type, duration, width
+
+def filter_generated_notes(notes, events, obstacles):
+    
+    # First, elete notes at times of obstacles
+    obstacle_start_times = obstacles['_time'].values
+    obstacle_durations = obstacles['_duration'].values
+    obstacle_end_times = obstacle_start_times + obstacle_durations
+    note_times = notes['_time'].values
+    numObstacles = obstacle_start_times.shape[0]    
+    notes_to_keep = np.ones_like(note_times)
+        
+    for i in range(numObstacles):
+        
+        # Get notes within range of obstacle i
+        notes_to_discard_bool = np.logical_and(note_times >= obstacle_start_times[i],note_times <= obstacle_end_times[i])
+        #TODO: different processing for each obstacle type (ceiling vs walls)
+        
+        notes_to_keep[notes_to_discard_bool] = 0
+        
+    notes_to_keep_bool = notes_to_keep > 0
+       
+    filtered_notes = notes[notes_to_keep_bool]
+    
+    # Then, apply set of best practice rules
+    # TODO
+    
+    return filtered_notes
 
 
 def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
@@ -438,5 +465,6 @@ def generate_beatsaber_obstacles_from_ogg(ogg_file, difficulty=0):
 
 if __name__ == '__main__':
     song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('believer')
-    notes = generate_beatsaber_notes_from_ogg(song_ogg)
+    pre_notes = generate_beatsaber_notes_from_ogg(song_ogg)
     obstacles = generate_beatsaber_obstacles_from_ogg(song_ogg)
+    notes = filter_generated_notes(pre_notes, np.empty([1, 1]), obstacles)

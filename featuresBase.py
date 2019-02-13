@@ -391,7 +391,12 @@ def generate_beatsaber_obstacles_from_beat_times (beat_times, tempo, difficulty)
         lineIndex.append(random.randint(0, 3))
         type.append(random.randint(0,1))
         duration.append(random.randint(1, 3))
-        width.append(random.randint(1, 4))
+        if(lineIndex[i] == 0 or lineIndex[i] == 1):
+            width.append(randint(1, 3))
+        elif(lineIndex[i] == 2):
+            width.append(random.randint(1, 2))
+        elif(lineIndex[i] == 3):
+            width.append(1)
 
         # creating our new obstacle
         new_obstacle = {'_time': [time[i]], '_lineIndex': [lineIndex[i]], '_type': [type[i]], '_duration': [duration[i]], '_width': [width[i]]}

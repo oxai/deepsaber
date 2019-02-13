@@ -13,6 +13,7 @@ import math
 import numpy as np
 from glob import glob
 from IOFunctions import saveFile, loadFile, get_song_from_directory_by_identifier
+import random
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
@@ -357,6 +358,47 @@ def baseline_notes_simple():
         notes_random = notes_random.append(df_new)
     return notes_random
 
+# beat_times: Time (in seconds) of each given frame number
+def generate_beatsaber_obstacles_from_beat_times (ogg_file, difficulty):
+    numObstacles = 0
+    #depending on difficulty the number of obstacles can increase, we can change this of course
+    if difficulty == 1: # Normal
+        numObstacles = 5
+    elif difficulty == 2: # Hard
+        numObstacles = 15
+    elif difficulty == 3: # Expert
+        numObstacles = 30
+    elif difficulty == 4: # ExpertPlus
+        numObstacles = 60
+    _, beat_times, _ = extract_beat_times_chroma_tempo_from_ogg(ogg_file) # we only want the beat_times here
+    time = []
+    lineIndex = []
+    type = []
+    duration = []
+    width = []
+
+    # create data frames
+    dict = {'_time': [], '_lineIndex': [], '_type': [], '_duration': [], '_width': []}
+    obstacles = pd.DataFrame.from_dict(dict)
+
+    # where we create our new obstacle components and obstacles
+    for i in range(numObstacles):
+        #setting the values of our obstacle components
+        randomTime = random.choice(beat_times)
+        while randomTime in time:
+            randomTime = random.choice(beat_times)
+        time.append(randomTime)
+        lineIndex.append(random.randint(0, 3))
+        type.append(random.randint(0,1))
+        duration.append(random.randint(1, 3))
+        width.append(random.randint(1, 4))
+
+        # creating our new obstacle
+        new_obstacle = {'_time': [time[i]], '_lineIndex': [lineIndex[i]], '_type': [type[i]], '_duration': [duration[i]], '_width': [width[i]]}
+        df_new = pd.DataFrame.from_dict(new_obstacle)
+        obstacles = obstacles.append(df_new)
+
+    return obstacles # time, lineIndex, type, duration, width
 
 def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
     meta_dir = os.path.dirname(ogg_file)
@@ -374,5 +416,6 @@ def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
     return notes
 
 if __name__ == '__main__':
-    song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('believer')
+    song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('4)Believer - Imagine Dragons/Believer')
+    obstacles = generate_beatsaber_obstacles_from_beat_times(song_ogg, difficulty)
     notes = generate_beatsaber_notes_from_ogg(song_ogg)

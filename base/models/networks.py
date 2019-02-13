@@ -29,7 +29,7 @@ class WaveNetModel(nn.Module):
     Shape:
         - Input: :math:`(N, C_{in}, L_{in})`
         - Output: :math:`()`
-        L should be the length of the receptive field
+        L should be the length of the receptive field = blocks * layers * (kernel_size - 1)
     """
     def __init__(self,
                  layers=10,

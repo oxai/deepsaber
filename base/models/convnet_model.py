@@ -26,7 +26,7 @@ class ConvnetModel(BaseModel):
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
-        parser.add_argument('--layers', type=int, default=10, help="Number of layers in each block")
+        parser.add_argument('--layers', type=int, default=5, help="Number of layers in each block")
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--input_channels', type=int, default=1, help="Number of feature channels")
         parser.add_argument('--output_channels', type=int, default=4)
@@ -37,11 +37,13 @@ class ConvnetModel(BaseModel):
         input_ = data['input'].permute(0, 3, 1, 2)  # bring multiple chunks per song dimension close to batch dimension (0)
         shape = input_.shape
         self.input = input_.reshape((shape[0]*shape[1], shape[2], shape[3]))
-        self.target = data['target']
+        target = data['target'].permute(0, 2, 1)
+        shape = target.shape
+        self.target = target.reshape((shape[0]*shape[1], shape[2]))
 
     def forward(self):
         # transform into one batch:
-        self.output = self.net.forward(self.input)
+        self.output = self.netconv.forward(self.input)
         self.loss_ce = F.cross_entropy(self.output, self.target)
 
     def backward(self):

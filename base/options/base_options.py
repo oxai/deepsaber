@@ -13,7 +13,6 @@ class BaseOptions:
     def __init__(self):
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                          add_help=False)  # TODO - check that help is still displayed
-
         parser.add_argument('--task', type=str, default='base', help="Module from which dataset and model are loaded")
         parser.add_argument('-d', '--data_dir', type=str, default='/Users/andreachatrian/Documents/Repositories/oxai/beatsaber/DataE')
         parser.add_argument('--dataset_name', type=str, default="song")

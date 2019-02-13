@@ -3,7 +3,7 @@ from itertools import tee
 import numpy as np
 import torch
 import librosa
-from base.data.base_dataset import BaseDataset
+from .data.base_dataset import BaseDataset
 import json
 
 

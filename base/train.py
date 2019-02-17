@@ -1,4 +1,3 @@
-import sys
 import time
 from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
@@ -6,8 +5,6 @@ from models import create_model
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
-    # opt["output_length"] = 32
-    # opt["output_channels"] = 15
     model = create_model(opt)
     model.setup()
     if opt.gpu_ids == -1:

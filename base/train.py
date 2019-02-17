@@ -8,12 +8,16 @@ from models import create_model
 
 sys.argv.append("--data_dir=../../oxai_beat_saber_data/")
 sys.argv.append("--sampling_rate=16000")
-sys.argv.append("--dataset_name=blockinputs")
+sys.argv.append("--dataset_name=windowed")
 sys.argv.append("--batch_size=1")
 sys.argv.append("--gpu_ids=0")
-
-sys.argv.pop(1)
-sys.argv.pop(1)
+sys.argv.append("--nepoch=1")
+sys.argv.append("--nepoch_decay=1")
+sys.argv.append("--val_epoch_freq=1")
+sys.argv.append("--eval")
+#
+# sys.argv.pop(1)
+# sys.argv.pop(1)
 #
 # train_dataset
 # import librosa
@@ -89,7 +93,8 @@ if __name__ == '__main__':
         receptive_field = model.net.receptive_field
     else:
         receptive_field = model.net.module.receptive_field
-    print("Receptive field is "+str(receptive_field/opt.sampling_rate)+" seconds")
+    # print("Receptive field is "+str(receptive_field/opt.sampling_rate)+" seconds")
+    print("Receptive field is "+str(receptive_field)+" samples")
     train_dataset = create_dataset(opt,receptive_field = receptive_field)
     train_dataset.setup()
     train_dataloader = create_dataloader(train_dataset)
@@ -132,8 +137,6 @@ if __name__ == '__main__':
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
-            if i == 1:
-                break
 
         if epoch % opt.save_epoch_freq == 0:
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_steps))
@@ -152,9 +155,9 @@ if __name__ == '__main__':
                 for j, data in enumerate(val_dataloader):
                     val_start_time = time.time()
                     model.set_input(data)
-                    model.test()
-                    model.evaluate_parameters()
-                    update_validation_meters()
+                    # model.test()
+                    # model.evaluate_parameters()
+                    # update_validation_meters()
             losses_val = model.get_current_losses(is_val=True)
             metrics_val = model.get_current_metrics(is_val=True)
             print("Validated parameters at epoch {:d} \t Time Taken: {:d} sec".format(epoch, int(time.time() - val_start_time)))

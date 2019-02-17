@@ -370,7 +370,7 @@ def generate_beatsaber_obstacles_from_beat_times (beat_times, tempo, difficulty)
         numObstacles = 30
     elif difficulty == 4: # ExpertPlus
         numObstacles = 60
-    #_, beat_times, _ = extract_beat_times_chroma_tempo_from_ogg(ogg_file) # we only want the beat_times here
+
     time = []
     lineIndex = []
     type = []
@@ -391,17 +391,76 @@ def generate_beatsaber_obstacles_from_beat_times (beat_times, tempo, difficulty)
         lineIndex.append(random.randint(0, 3))
         type.append(random.randint(0,1))
         duration.append(random.randint(1, 3))
-        if(lineIndex[i] == 0 or lineIndex[i] == 1):
-            width.append(random.randint(1, 3))
-        elif(lineIndex[i] == 2):
-            width.append(random.randint(1, 2))
-        elif(lineIndex[i] == 3):
-            width.append(1)
 
-        # creating our new obstacle
-        new_obstacle = {'_time': [time[i]], '_lineIndex': [lineIndex[i]], '_type': [type[i]], '_duration': [duration[i]], '_width': [width[i]]}
-        df_new = pd.DataFrame.from_dict(new_obstacle)
-        obstacles = obstacles.append(df_new)
+        #check which type of obstacle we are dealing with
+        if(type[i] == 1): #if its a ceiling obstacle
+            width.append(1)
+        elif(type[i] == 0): #if its a wall obstacle
+            blockType = random.randint(1, 3)
+            duration[i] = 1
+            if(blockType == 1): # a single pillar
+                if(lineIndex[i] == 0 or lineIndex[i] == 1):
+                    width.append(random.randint(1, 3))
+                elif(lineIndex[i] == 2):
+                    width.append(random.randint(1, 2))
+                elif(lineIndex[i] == 3):
+                        width.append(1)
+            elif(blockType == 2): # two pillars with one or two columns of free space in between them
+                width.append(1)
+                lineIndex[i] = random.randint(0, 1)
+                #adding first obstacle
+                new_obstacle = {'_time': [time[i]], '_lineIndex': [lineIndex[i]], '_type': [type[i]],
+                                '_duration': [duration[i]], '_width': [width[i]]}
+                df_new = pd.DataFrame.from_dict(new_obstacle)
+                obstacles = obstacles.append(df_new)
+
+                #make second obstacle features
+                if(lineIndex[i] == 0):
+                    lineIndex.append(random.randint(2, 3))
+                elif(lineIndex[i] == 1):
+                    lineIndex.append(3)
+                width.append(1)
+                time.append(time[i])
+                type.append(type[i])
+                duration.append(duration[i])
+                i = i + 1
+                #adding second obstacle
+                new_obstacle2 = {'_time': [time[i]], '_lineIndex': [lineIndex[i]], '_type': [type[i]],
+                                '_duration': [duration[i]], '_width': [width[i]]}
+                df_new2 = pd.DataFrame.from_dict(new_obstacle2)
+                obstacles = obstacles.append(df_new2)
+                numObstacles = numObstacles + 1
+            elif(blockType == 3): # if two different pillar times where you have to shift back and forth
+                width.append(1)
+                lineIndex[i] = random.randint(1, 2)
+                # adding first obstacle
+                new_obstacle = {'_time': [time[i]], '_lineIndex': [lineIndex[i]], '_type': [type[i]],
+                                '_duration': [duration[i]], '_width': [width[i]]}
+                df_new = pd.DataFrame.from_dict(new_obstacle)
+                obstacles = obstacles.append(df_new)
+
+                # make second obstacle features
+                time.append(duration[i] + time[i])
+                duration.append(duration[i])
+                width.append(1)
+                type.append(type[i])
+                if(lineIndex[i] == 1):
+                    lineIndex.append(2)
+                elif(lineIndex[i] == 2):
+                    lineIndex.append(1)
+                i = i + 1
+                # adding second obstacle
+                new_obstacle2 = {'_time': [time[i]], '_lineIndex': [lineIndex[i]], '_type': [type[i]],
+                                 '_duration': [duration[i]], '_width': [width[i]]}
+                df_new2 = pd.DataFrame.from_dict(new_obstacle2)
+                obstacles = obstacles.append(df_new2)
+                numObstacles = numObstacles + 1
+
+        # creating our new obstacle if not already made
+        if (type[i] == 1 or blockType == 1):
+            new_obstacle = {'_time': [time[i]], '_lineIndex': [lineIndex[i]], '_type': [type[i]], '_duration': [duration[i]], '_width': [width[i]]}
+            df_new = pd.DataFrame.from_dict(new_obstacle)
+            obstacles = obstacles.append(df_new)
 
     return obstacles # time, lineIndex, type, duration, width
 
@@ -464,7 +523,7 @@ def generate_beatsaber_obstacles_from_ogg(ogg_file, difficulty=0):
     return obstacles
 
 if __name__ == '__main__':
-    song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('believer')
+    song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('4)Believer - Imagine Dragons/Believer')
     pre_notes = generate_beatsaber_notes_from_ogg(song_ogg)
     obstacles = generate_beatsaber_obstacles_from_ogg(song_ogg)
     notes = filter_generated_notes(pre_notes, np.empty([1, 1]), obstacles)

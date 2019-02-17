@@ -1,3 +1,4 @@
+import sys
 import time
 from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
@@ -5,14 +6,15 @@ from models import create_model
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
+    # opt["output_length"] = 32
+    # opt["output_channels"] = 15
     model = create_model(opt)
     model.setup()
     if opt.gpu_ids == -1:
         receptive_field = model.net.receptive_field
     else:
         receptive_field = model.net.module.receptive_field
-    # print("Receptive field is "+str(receptive_field/opt.sampling_rate)+" seconds")
-    print("Receptive field is "+str(receptive_field)+" samples")
+    print("Receptive field is "+str(receptive_field/opt.sampling_rate)+" seconds")
     train_dataset = create_dataset(opt,receptive_field = receptive_field)
     train_dataset.setup()
     train_dataloader = create_dataloader(train_dataset)
@@ -55,6 +57,8 @@ if __name__ == '__main__':
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
+            if i == 1:
+                break
 
         if epoch % opt.save_epoch_freq == 0:
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_steps))

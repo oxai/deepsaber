@@ -18,7 +18,6 @@ class BaseOptions:
         parser.add_argument('--dataset_name', type=str, default="song")
         parser.add_argument('--batch_size', default=1, type=int)
         parser.add_argument('--num_windows', default=16, type=int)
-        parser.add_argument('--beat_subdivision', default=16, type=int)
         parser.add_argument('--augment', type=int, default=0)
         parser.add_argument('--model', type=str, default="wavenet", help="The network model used for segmentation")
         parser.add_argument('--init_type', type=str, default="normal")

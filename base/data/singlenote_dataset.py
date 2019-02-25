@@ -64,10 +64,15 @@ class SinglenoteDataset(BaseDataset):
                 note_time_idx = np.where(np.absolute(time - note_time) < self.eps)[0][0]  # chunk end point
                 start_idx = np.where(np.absolute(note_time - time_between_beats[beat_idx] - time) < self.eps)[0][0]  # chunk starting point
                 pad_extent = self.opt.chunk_length - (note_time_idx - start_idx)
-                padded_chunk_before_beat = np.pad(y[start_idx: note_time_idx], (pad_extent, 0), mode='constant')
+                if pad_extent > 0:  # if need padding
+                    padded_chunk_before_beat = np.pad(y[start_idx: note_time_idx], (pad_extent, 0), mode='constant')
+                elif pad_extent < 0:   # if too long
+                    padded_chunk_before_beat = y[note_time_idx - self.opt.chunk_length: note_time_idx]
+                else:
+                    padded_chunk_before_beat = y[start_idx: note_time_idx]
                 yy.append(padded_chunk_before_beat)  # only pad beginning of sequence
                 target.append(beat_time_to_note[note_beat_time])  # write note at time position of beat
-        target = torch.tensor(target).unsqueeze(0)  # transform into (2+1)D tensor
+        target = torch.tensor(target).permute(1, 0)  # channels is second dim in pytorch
         target += 1  # so that class range is > 0
         yy = torch.tensor(yy).unsqueeze(0)  # adding channel dim
         yy = (yy - yy.mean())/torch.abs(yy).max()

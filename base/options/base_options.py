@@ -13,13 +13,11 @@ class BaseOptions:
     def __init__(self):
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                          add_help=False)  # TODO - check that help is still displayed
-
         parser.add_argument('--task', type=str, default='base', help="Module from which dataset and model are loaded")
         parser.add_argument('-d', '--data_dir', type=str, default='/Users/andreachatrian/Documents/Repositories/oxai/beatsaber/DataE')
         parser.add_argument('--dataset_name', type=str, default="song")
         parser.add_argument('--batch_size', default=1, type=int)
         parser.add_argument('--num_windows', default=16, type=int)
-        parser.add_argument('--beat_subdivision', default=16, type=int)
         parser.add_argument('--augment', type=int, default=0)
         parser.add_argument('--model', type=str, default="wavenet", help="The network model used for segmentation")
         parser.add_argument('--init_type', type=str, default="normal")

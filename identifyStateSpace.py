@@ -1,5 +1,6 @@
 import IOFunctions, os, numpy as np
 from collections import Counter
+import matplotlib.pyplot as plt
 ''' @RA: Trying to identify state patterns which appear in data, to determine an optimal state representation 
 Goal of this code: 
 1) Discretise the Beat Saber Levels into events at specific times
@@ -9,11 +10,12 @@ Based on the findings of this experiment, we can determine which representation 
 '''
 
 
-def compute_shortest_inter_event_beat_gap(data_directory):
+def compute_inter_event_beat_gap_distribution(data_directory, max_gap = 1, bucketise = True):
     json_files = IOFunctions.get_all_json_level_files_from_data_directory(data_directory)
     minimum_beat_gap = np.inf
+    beat_gaps = []
     for file in json_files:
-        # print("Analysing file " + file)
+        #print("Analysing file " + file)
         # Now go through them file by file
         json_representation = IOFunctions.parse_json(file)
         notes = json_representation["_notes"]  #
@@ -21,15 +23,37 @@ def compute_shortest_inter_event_beat_gap(data_directory):
         # Cumbersome, yes, but it works, and this is only for the sake of analytics
         note_times = np.sort(np.array(list(set(notes["_time"])))) # MUST BE SORTED
         event_onset_differences = np.diff(note_times)  # Step 2: Initialise the state representations
-        try:
+        event_onset_differences_filtered = event_onset_differences[event_onset_differences < 0.84] # Max_Gap
+        event_onset_differences_filtered = event_onset_differences_filtered[event_onset_differences_filtered > 0.83]
+        if bucketise: # Won't consider gaps smaller than 1/16th of a beat
+            bucketised = np.ceil(np.log2(event_onset_differences_filtered)) # Reduce to numbers
+            bucketised[bucketised < -6] = -6
+            beat_gaps.extend(bucketised)
+        # @RA Feb 12: Rather than compute the minimum beat gap, compute the distribution over beat gaps
+        else:
+            beat_gaps.extend(event_onset_differences_filtered)
+        '''try:
             smallest_onset = np.min(event_onset_differences)
         except:
             smallest_onset = minimum_beat_gap + 1
             print("FLAG" + file)
-
         if smallest_onset < minimum_beat_gap:
             minimum_beat_gap = smallest_onset
-    print(" The smallest beat gap between two events is " + str(minimum_beat_gap))
+    print(" The smallest beat gap between two events is " + str(minimum_beat_gap))'''
+    gap_frequencies = Counter(beat_gaps)  # Count the frequency of every state
+    x_axis = list(gap_frequencies.keys())
+    y_axis = list(gap_frequencies.values()) # Well, there are some huge beat gaps
+    # For 1/3rd analysis:
+    print(len(beat_gaps))
+    '''gap_frequencies_prominent = {x:y for x,y in gap_frequencies.items() if y > 500} # Identify the popular beat gaps
+    print(gap_frequencies_prominent)'''
+    plt.xlabel("Log 2 power of beat gap (discretised) ")
+    plt.ylabel("Number of Occurrences")
+    plt.yscale('log')
+    plt.scatter(x=x_axis, y=y_axis, color='g')
+    plt.show()
+    # This is not indicative ... need to "bucket-ise"
+    return gap_frequencies
 
 
 def produce_distinct_state_space_representations(data_directory, k = 1000):
@@ -55,12 +79,12 @@ def produce_distinct_state_space_representations(data_directory, k = 1000):
         # Step 3: Now Go Through dataFrame entries and update states accordingly
         for entry in notes.itertuples():
             entry_cut_direction = entry[1]  # Extract the individual note parts
-            entry_row = entry[2]
-            entry_column = entry[3]
+            entry_col = entry[2]
+            entry_row = entry[3]
             entry_time = entry[4]
             entry_type = entry[5]
             # The Computational Part
-            entry_index = 4 * entry_column + entry_row  # Compute Index to update in the state representation
+            entry_index = 4 * entry_row + entry_col  # Compute Index to update in the state representation
             if entry_type == 3: # This is a bomb
                 entry_representation = 19
             else: # This is a note
@@ -97,5 +121,5 @@ def produce_distinct_state_space_representations(data_directory, k = 1000):
 if __name__ == "__main__":
     THIS_DIR = os.path.dirname(os.path.abspath(__file__))
     EXTRACTED_DATA_DIR = os.path.join(THIS_DIR, 'DataE')
-    produce_distinct_state_space_representations(EXTRACTED_DATA_DIR, k=5)
-    # compute_shortest_inter_event_beat_gap(EXTRACTED_DATA_DIR)
+    produce_distinct_state_space_representations(EXTRACTED_DATA_DIR, k=100)
+    #compute_inter_event_beat_gap_distribution(EXTRACTED_DATA_DIR, bucketise=False)

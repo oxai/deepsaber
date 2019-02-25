@@ -3,18 +3,18 @@ from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
 from models import create_model
 
-# sys.argv.append("--data_dir=../../oxai_beat_saber_data/")
-# sys.argv.append("--dataset_name=mfcc")
-# sys.argv.append("--batch_size=1")
-# sys.argv.append("--num_windows=1")
-# sys.argv.append("--gpu_ids=0")
-# sys.argv.append("--nepoch=1")
-# sys.argv.append("--nepoch_decay=1")
-# sys.argv.append("--layers=5")
-# sys.argv.append("--blocks=3")
-# sys.argv.append("--print_freq=1")
-# sys.argv.append("--workers=0")
-# sys.argv.append("--output_length=1")
+#sys.argv.append("--data_dir=../../oxai_beat_saber_data/")
+#sys.argv.append("--dataset_name=mfcc")
+#sys.argv.append("--batch_size=1")
+#sys.argv.append("--num_windows=10")
+#sys.argv.append("--gpu_ids=0")
+##sys.argv.append("--nepoch=1")
+##sys.argv.append("--nepoch_decay=1")
+#sys.argv.append("--layers=5")
+#sys.argv.append("--blocks=3")
+##sys.argv.append("--print_freq=1")
+##sys.argv.append("--workers=0")
+##sys.argv.append("--output_length=1")
 
 #these are useful for debugging/playing with Hydrogen@Atom, which Guille use
 # sys.argv.pop(1)
@@ -46,8 +46,6 @@ if __name__ == '__main__':
         iter_data_time = time.time()
         epoch_iter = 0
         for i, data in enumerate(train_dataloader):
-            if i >=2:
-                break
             iter_start_time = time.time()
             if total_steps % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
@@ -73,8 +71,6 @@ if __name__ == '__main__':
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
-            if i == 1:
-                break
 
         if epoch % opt.save_epoch_freq == 0:
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_steps))

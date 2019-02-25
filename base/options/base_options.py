@@ -25,6 +25,7 @@ class BaseOptions:
         parser.add_argument('--init_type', type=str, default="normal")
         parser.add_argument('--init_gain', default=0.02, type=float)
         parser.add_argument('--eval', action='store_true', help='use eval mode during validation / test time.')
+        parser.add_argument('--do_validation', action='store_true', help='use eval mode during validation / test time.')
         parser.add_argument('-nf', '--num_filters', type=int, default=15, help='mcd number of filters for unet conv layers')
         parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float)
         parser.add_argument('--learning_rate_patience', default=50, type=int)

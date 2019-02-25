@@ -39,19 +39,21 @@ class MfccDataset(BaseDataset):
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
-        parser.add_argument('--sampling_rate', default=11025, type=float)
+        parser.add_argument('--sampling_rate', default=16000, type=float)
         parser.add_argument('--level_diff', default='Expert', help='Difficulty level for beatsaber level')
         parser.add_argument('--hop_length', default=256, type=int)  # Set the hop length; at 22050 Hz, 512 samples ~= 23ms
         parser.add_argument('--compute_feats', action='store_true', help="Whether to extract musical features from the song")
         parser.add_argument('--padded_length', type=int, default=3000000)
         parser.add_argument('--chunk_length', type=int, default=9000)
+        # parser.add_argument('--num_mfcc_features', type=int, default=20)
+        # parser.set_defaults(input_channels=(self.opt.num_mfcc_features+(9*3+1)*(4*3)), output_nc=2, direction='AtoB')
+        parser.set_defaults(input_channels=(20+(9*3+1)*(4*3)))
         return parser
 
     def name(self):
         return "SongDataset"
 
     def __getitem__(self, item):
-        # y = self.mfcc_features[item]
         level = json.load(open(self.level_jsons[item], 'r'))
 
         bpm = level['_beatsPerMinute']
@@ -67,7 +69,7 @@ class MfccDataset(BaseDataset):
             mel_window = 4*mel_hop
 
             # get mfcc feature
-            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=(self.opt.input_channels-(9*3+1)*(5*3)))
+            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=(self.opt.input_channels-(9*3+1)*(4*3)))
 
             self.mfcc_features[item] = mfcc
         else:
@@ -85,8 +87,8 @@ class MfccDataset(BaseDataset):
         receptive_field = self.receptive_field
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
-        blocks = -1*np.ones((y.shape[1],15)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
-        blocks_manyhot = np.zeros((y.shape[1],15,28)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+        blocks = -1*np.ones((y.shape[1],12)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+        blocks_manyhot = np.zeros((y.shape[1],12,28)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
         # from math import floor
         eps = self.eps
         for note in notes:
@@ -103,8 +105,8 @@ class MfccDataset(BaseDataset):
                     note_type = note["_type"]
                 else:
                     raise ValueError("I thought there was no notes with _type different from 0,1,3. Ahem, what are those??")
-                blocks[sample_index+sample_delta,note["_lineLayer"]*5+note["_lineIndex"]] = note_type*9+note["_cutDirection"]
-                blocks_manyhot[sample_index+sample_delta,note["_lineLayer"]*5+note["_lineIndex"], note_type*9+note["_cutDirection"]] = 1.0
+                blocks[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"]] = note_type*9+note["_cutDirection"]
+                blocks_manyhot[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"], note_type*9+note["_cutDirection"]] = 1.0
         blocks += 1  # so that class range is > 0
         indices = np.random.choice(range(y.shape[1]-receptive_field),size=self.opt.num_windows,replace=False)
         input_windows = [y[:,i:i+input_length] for i in indices]

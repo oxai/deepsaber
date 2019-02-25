@@ -80,9 +80,15 @@ def generate_baseline_level_from_ogg(song_identifier, difficulty):
     # create new features
     ##############################################
 
-    notes_mod = generate_beatsaber_notes_from_ogg(song_ogg, difficulty)
+    pre_notes_mod = generate_beatsaber_notes_from_ogg(song_ogg, difficulty)
     events_mod = events
-    obstacles_mod = obstacles
+       
+    if (not difficulty == 1):
+        obstacles_mod = generate_beatsaber_obstacles_from_ogg(song_ogg, difficulty)
+    else:
+        obstacles_mod = obstacles
+        
+    notes_mod = filter_generated_notes(pre_notes_mod,events_mod,obstacles_mod)
 
     #############################################
     # encode to json
@@ -97,5 +103,5 @@ def generate_baseline_level_from_ogg(song_identifier, difficulty):
 
 if __name__ == '__main__':
     for difficulty in range(5):
-        generate_baseline_level_from_ogg('believer', difficulty)
+        generate_baseline_level_from_ogg('Believer', difficulty=3)
     print('done')

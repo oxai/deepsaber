@@ -1,20 +1,23 @@
 import time
+import sys
+#sys.path.append("/home/guillefix/code/beatsaber/base")
+sys.path.append("/home/guillefix/code/beatsaber")
 from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
 from models import create_model
 
-#sys.argv.append("--data_dir=../../oxai_beat_saber_data/")
-#sys.argv.append("--dataset_name=mfcc")
-#sys.argv.append("--batch_size=1")
-#sys.argv.append("--num_windows=10")
-#sys.argv.append("--gpu_ids=0")
-##sys.argv.append("--nepoch=1")
-##sys.argv.append("--nepoch_decay=1")
-#sys.argv.append("--layers=5")
-#sys.argv.append("--blocks=3")
-##sys.argv.append("--print_freq=1")
-##sys.argv.append("--workers=0")
-##sys.argv.append("--output_length=1")
+sys.argv.append("--data_dir=../../oxai_beat_saber_data/")
+sys.argv.append("--dataset_name=mfcc")
+sys.argv.append("--batch_size=1")
+sys.argv.append("--num_windows=10")
+sys.argv.append("--gpu_ids=0")
+#sys.argv.append("--nepoch=1")
+#sys.argv.append("--nepoch_decay=1")
+sys.argv.append("--layers=5")
+sys.argv.append("--blocks=3")
+#sys.argv.append("--print_freq=1")
+#sys.argv.append("--workers=0")
+#sys.argv.append("--output_length=1")
 
 #these are useful for debugging/playing with Hydrogen@Atom, which Guille use
 # sys.argv.pop(1)

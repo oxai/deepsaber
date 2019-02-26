@@ -9,7 +9,7 @@ class WaveNetModel(BaseModel):
     def __init__(self, opt):
         super().__init__(opt)
         self.loss_names = ['ce']
-        self.metric_names = []
+        self.metric_names = ['accuracy']
         self.module_names = ['']  # changed from 'model_names'
         self.schedulers = []
         self.net = WaveNet(layers=opt.layers,

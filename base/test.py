@@ -19,6 +19,7 @@ sys.argv.append("--print_freq=1")
 sys.argv.append("--workers=0")
 sys.argv.append("--output_length=1")
 
+
 #these are useful for debugging/playing with Hydrogen@Atom, which Guille use
 sys.argv.pop(1)
 sys.argv.pop(1)
@@ -36,9 +37,10 @@ model.load_networks('latest')
 
 import librosa
 
-y, sr = librosa.load("../../test_song.wav", sr=1600)
+# y, sr = librosa.load("../../test_song.wav", sr=1600)
+y, sr = librosa.load("../../song2.ogg", sr=1600)
 
-bpm=129
+bpm=125
 
 beat_duration = int(60*sr/bpm) #beat duration in samples
 
@@ -53,14 +55,21 @@ song = torch.tensor(mfcc).unsqueeze(0)
 
 song.size(-1)
 
-output = model.net.module.generate(song.size(-1)-receptive_field,song)
+output = model.net.module.generate(100,song, temperature=0.1)
+# output = model.net.module.generate(song.size(-1)-receptive_field,song, temperature=0.1)
 
-output[0,:,100]
+# output[0,:,100]
 
-list(enumerate(list(enumerate(output[0,:,:].permute(1,0)))[100][1]))[0][1]
+list(enumerate(output[0,:,:].permute(1,0)))[120][1]
+#
+# list(enumerate(list(enumerate(output[0,:,:].permute(1,0)))[100][1]))
 
-notes = [[{"_time":float(i/16.0), "_cutDirection":int(y%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int(y//9)} for j,y in enumerate(x) if y!=0] for i,x in enumerate(output[0,:,:].permute(1,0))]
+notes = [[{"_time":float(i/16.0), "_cutDirection":int(y%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":(int(y//9) if int(y//9) !=2 else 3)} for j,y in enumerate(x) if y!=0] for i,x in enumerate(output[0,:,:].permute(1,0))]
 notes = sum(notes,[])
+
+# 100//9 if 100//9 !=2 else 3
+
+print(len(notes))
 
 song_json = {u'_beatsPerBar': 16,
  u'_beatsPerMinute': bpm,
@@ -74,5 +83,12 @@ song_json = {u'_beatsPerBar': 16,
 
 import json
 
-with open("Easy.json", "w") as f:
+with open("Easy2.json", "w") as f:
     f.write(json.dumps(song_json))
+
+
+# import json
+#
+# level_json = json.load(open("Easy.json","r"))
+#
+# len(level_json["_notes"])

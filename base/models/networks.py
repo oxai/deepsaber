@@ -218,18 +218,24 @@ class WaveNetModel(nn.Module):
                  temperature=1.):
         self.eval()
         if first_samples is None:
-            first_samples = torch.zeros((12,1)) #self.dtype(1).zero_()
+            # first_samples = torch.zeros((1,12)) #self.dtype(1).zero_()
+            first_samples = torch.ones((1,12,94)) #self.dtype(1).zero_()
         generated = Variable(first_samples, volatile=True)
 
-        num_pad = self.receptive_field - generated.size(0)
+        num_pad = self.receptive_field - generated.size(2)
         if num_pad > 0:
-            generated = constant_pad_1d(generated.permute(1,0), self.receptive_field, pad_start=True).permute(1,0)
+            # generated = constant_pad_1d(generated.permute(1,0), self.receptive_field, pad_start=True).permute(1,0)
+            generated = constant_pad_1d(generated.permute(0,1), self.receptive_field, pad_start=True,value=1).permute(0,1)
             generated = generated.unsqueeze(0)
             print("pad zero")
 
         for i in range(num_samples):
-            input = Variable(torch.FloatTensor(1, self.input_channels-20, self.receptive_field).zero_())
-            input = input.scatter_(1, generated[:,:,-self.receptive_field:].view(1, -1, self.receptive_field).long(), 1.)
+            input = Variable(torch.FloatTensor(1, 12, 28, self.receptive_field).zero_())
+            # input = input.scatter_(1, generated[:,:,-self.receptive_field:].long(), 1.)
+            input = input.scatter_(2, (generated[:,:,-self.receptive_field:].view(1,12,-1,self.receptive_field).long()+1)%28, 1.)
+
+            shape = input.shape
+            input = input.view(shape[0],shape[1]*shape[2],shape[3])
 
             input = torch.cat((conditioning_seq[:,:,-self.receptive_field:].float(),input.float()),1).cuda() #eeh need to have it work without cuda too
 

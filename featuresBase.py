@@ -14,6 +14,7 @@ import numpy as np
 from glob import glob
 from IOFunctions import saveFile, loadFile, get_song_from_directory_by_identifier
 import random
+from identifyStateSpace import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
@@ -313,6 +314,90 @@ def convert_note_positions_and_type_to_cut_direction(line_layer, line_index, not
         last_of_type[note_type[i]] = i
     return cut_direction
 
+def generate_beatsaber_events_from_beat_times(beat_times, beat_chroma, tempo, difficulty):
+
+    # all difficulties have the same lighting effects
+    time = []
+    type = []
+    value = []
+
+    # create data frames
+    dict = {'_time': [], '_type': [], '_value': []}
+    events = pd.DataFrame.from_dict(dict)
+
+    beat_length = (tempo / 60)
+    beat_times_beats = beat_times * beat_length #convert ot beat times
+    beat_duration = np.mean(beat_times_beats[1:] - beat_times_beats[:-1])
+
+    numBeats = len(beat_times_beats)
+    # where we create our new event components and events
+    beat_times_half_beats = beat_times -  0.5
+    counter = -1
+    for i in range(numBeats):
+        counter +=1
+
+        # change the light effect type every 16 beats
+        if counter % 8 == 0:
+            light_effects_list = [0,1,2,3,4, 12, 13]
+            light_random = random.sample(light_effects_list, 3)
+
+
+        color_effect_list = [0,1,2,3,5,6,7]
+        color_random = random.sample(color_effect_list,3)
+        '''
+
+        Types of events
+        0-4:Light effects
+        5-7: unused
+        8: Turning of large object in the middle
+        9: Zoom in effect on the large sqaure/triangle (depending on map)
+        10-11: unused
+        12: Makes light 2 move.
+        13: makes light 3 move.
+        Movement values (12, 13)
+        0: stop moving
+        1-infinity: speed for the movement, ranges from super slow to HOLY HECK SEIZURE
+        '''
+
+        '''
+        COLOR VALUES
+        these are used for light effects
+
+        0- Off
+        1-2: blue
+        3: blue + fade out
+        4: unused?
+        5-6:red
+        7:red _ fade out
+        (unsure about the difference between 1-2, and 5,6)'''
+
+        # each  beat append 3 lighting effects
+        time.append(beat_times_beats[i])
+        type.append(light_random[0])
+        value.append(color_random[0])
+        time.append(beat_times_beats[i])
+        type.append(light_random[1])
+        value.append(color_random[1])
+        time.append(beat_times_beats[i])
+        type.append(light_random[2])
+        value.append(color_random[2])
+        # each  half beat append 2 lighting effects
+        time.append(beat_times_half_beats[i])
+        type.append(light_random[0])
+        value.append(color_random[0])
+        time.append(beat_times_half_beats[i])
+        type.append(light_random[1])
+        value.append(color_random[1])
+
+    # creating our new events
+
+    for time_idx in range(len(time)):
+        new_events = {'_time': [time[time_idx]], '_type': [type[time_idx]], '_value': [value[time_idx]]}
+        df_new = pd.DataFrame.from_dict(new_events)
+        events = events.append(df_new)
+    return events # time, lineIndex, type, duration, width
+
+
 
 def generate_beatsaber_notes_from_beat_times_and_chroma(beat_times, beat_chroma, tempo, difficulty):
     #beat_times_t = beat_times[:, None]
@@ -324,6 +409,8 @@ def generate_beatsaber_notes_from_beat_times_and_chroma(beat_times, beat_chroma,
     beat_duration = np.mean(beat_times_beats[1:] - beat_times_beats[:-1])
 
     # %% Convert beat chroma t into line Index and Layer
+    # HARD CODED APPROACH FROM TIM
+    '''
     line_layer, line_index = convert_beatchroma_to_notes_position(beat_chroma)
     #note_type = generate_note_types_from_line_index(line_index)
     line_layer, line_index, note_type, beat_times_beats = \
@@ -347,6 +434,78 @@ def generate_beatsaber_notes_from_beat_times_and_chroma(beat_times, beat_chroma,
         notes = notes.append(df_new)
 
     return notes
+    '''
+    sorted_states, states_counts = produce_distinct_state_space_representations(EXTRACTED_DATA_DIR, k=2000)
+
+
+    #states_per_song = 20
+    #updated_states = sorted_states[:states_per_song]
+    #updated_states_counts = states_counts[:states_per_song]
+    updated_states = sorted_states
+    updated_states_counts = states_counts
+    p_states = [i/sum(updated_states_counts) for i in updated_states_counts]
+    numBeatsTotal = len(beat_times)
+
+    new_states = []
+
+    for i in range(0,numBeatsTotal):
+        change_set_of_states = 16 # number of beats within which only certain number of different states are allwoed
+        num_states_per_period = 6 #number of different states allowed within chage set of states
+        if i%16 ==0:
+            # draw from probabilitz of states occuring. choose indices and later convert incies to states
+            new_states_indices = np.random.choice(list(range(0, len(updated_states))), num_states_per_period, p=p_states)
+        list_index_drawn = np.random.choice(new_states_indices, 1) # draw from available indices, assume same likely hood, the different likely hood is already previously implemented in the drawing of avilabe indices
+        new_state_index = list_index_drawn[0]
+        new_states.append(updated_states[new_state_index])
+
+    print(len(new_states))
+    print('NEW STATES ABOVE')
+    print(numBeatsTotal)
+    print('BEATS TOTAL ABOVE')
+
+    dict = {'_cutDirection': [], '_lineIndex': [], '_lineLayer': [], '_time': [], '_type': []}
+    notes = pd.DataFrame.from_dict(dict)
+
+
+    for i in range(0, numBeatsTotal):
+        new_state_temp = new_states[i]
+        #iterate over the array of new sates to get events that happen at the same time
+        for index, state_value in enumerate(new_state_temp):
+            # convert list of new states to the dataframe format
+            # state value is between 0 and 20, 0 being nothing happens
+            if state_value == 0:
+                pass
+            else:
+                nCols = 4
+                temp_lineIndex= np.mod(index, nCols).astype(int)
+                temp_lineLayer= np.floor(index/nCols).astype(int)
+                if temp_lineLayer == nCols:
+                    raise('linelayer out of bounds')
+                elif temp_lineIndex ==4:
+                    raise('lineIndex out of bounds')
+                #print(temp_lineIndex, temp_lineLayer)              # check wether the right states are printed
+
+                if state_value in list(range(1,10)):
+                    temp_type = 0
+                    state_value_mod = state_value
+                elif state_value in list(range(10,19)):
+                    temp_type = 1
+                    state_value_mod = state_value-9
+                elif state_value == 19:
+                    temp_type = 3
+                    state_value_mod = 9 #makes the bomp cut direction to no direction
+                else:
+                    raise("you havent defined what type should be assigned to this event")
+
+                temp_cut_direction = state_value_mod-1
+                temp_time= beat_times_beats[i]
+
+
+                new_note = {'_cutDirection': [temp_cut_direction], '_lineIndex': [temp_lineIndex], '_lineLayer': [temp_lineLayer], '_time': [temp_time], '_type': [temp_type]}
+                df_new = pd.DataFrame.from_dict(new_note)
+                notes = notes.append(df_new)
+    return notes
+
 
 def baseline_notes_simple():
     dict = {'_cutDirection': [], '_lineIndex': [], '_lineLayer': [], '_time': [], '_type': []}
@@ -522,8 +681,27 @@ def generate_beatsaber_obstacles_from_ogg(ogg_file, difficulty=0):
     obstacles = generate_beatsaber_obstacles_from_beat_times(beat_times, tempo, difficulty)
     return obstacles
 
+
+def generate_beatsaber_events_from_ogg(ogg_file, difficulty=0):
+    meta_dir = os.path.dirname(ogg_file)
+    meta_filename = 'meta_info.pkl'
+    meta_file = os.path.join(meta_dir, meta_filename)
+    if os.path.isfile(meta_file):
+        content = loadFile(meta_file)
+        tempo = content[0]
+        beat_times = content[1]
+        beat_chroma = content[2]
+    else:
+        tempo, beat_times, beat_chroma = extract_beat_times_chroma_tempo_from_ogg(ogg_file)
+        saveFile([tempo, beat_times, beat_chroma], meta_filename, meta_dir, append=False)
+    events = generate_beatsaber_events_from_beat_times(beat_times, beat_chroma, tempo, difficulty)
+    #print(events)
+    return events
+
 if __name__ == '__main__':
     song_directory, song_ogg, song_json, song_filename = get_song_from_directory_by_identifier('4)Believer - Imagine Dragons/Believer')
     pre_notes = generate_beatsaber_notes_from_ogg(song_ogg)
     obstacles = generate_beatsaber_obstacles_from_ogg(song_ogg)
+    events = generate_beatsaber_events_from_ogg(song_ogg)
+
     notes = filter_generated_notes(pre_notes, np.empty([1, 1]), obstacles)

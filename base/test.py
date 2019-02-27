@@ -9,20 +9,20 @@ from models import create_model
 sys.argv.append("--data_dir=../../oxai_beat_saber_data/")
 sys.argv.append("--dataset_name=mfcc")
 sys.argv.append("--batch_size=1")
-sys.argv.append("--num_windows=1")
+sys.argv.append("--num_windows=10")
 sys.argv.append("--gpu_ids=0")
-sys.argv.append("--nepoch=1")
-sys.argv.append("--nepoch_decay=1")
+#sys.argv.append("--nepoch=1")
+#sys.argv.append("--nepoch_decay=1")
 sys.argv.append("--layers=5")
 sys.argv.append("--blocks=3")
-sys.argv.append("--print_freq=1")
-sys.argv.append("--workers=0")
-sys.argv.append("--output_length=1")
+#sys.argv.append("--print_freq=1")
+#sys.argv.append("--workers=0")
+#sys.argv.append("--output_length=1")
 
 
 #these are useful for debugging/playing with Hydrogen@Atom, which Guille use
-sys.argv.pop(1)
-sys.argv.pop(1)
+# sys.argv.pop(1)
+# sys.argv.pop(1)
 
 opt = TrainOptions().parse()
 model = create_model(opt)
@@ -34,13 +34,14 @@ else:
     receptive_field = model.net.module.receptive_field
 
 model.load_networks('latest')
+# model.load_networks('latest')
 
 import librosa
 
-# y, sr = librosa.load("../../test_song.wav", sr=1600)
-y, sr = librosa.load("../../song2.ogg", sr=1600)
+y, sr = librosa.load("../../test_song2.wav", sr=11025)
+# y, sr = librosa.load("../../song2.ogg", sr=11025)
 
-bpm=125
+bpm=203.13999938964844
 
 beat_duration = int(60*sr/bpm) #beat duration in samples
 
@@ -55,12 +56,16 @@ song = torch.tensor(mfcc).unsqueeze(0)
 
 song.size(-1)
 
-output = model.net.module.generate(100,song, temperature=0.1)
-# output = model.net.module.generate(song.size(-1)-receptive_field,song, temperature=0.1)
+# output = model.net.module.generate(300,song, temperature=0.01)
+output = model.net.module.generate(song.size(-1)-receptive_field,song,temperature=1.25)
+
+# receptive_field = model.net.module.receptive_field
 
 # output[0,:,100]
 
-list(enumerate(output[0,:,:].permute(1,0)))[120][1]
+# output
+
+list(enumerate(output[0,:,:].permute(1,0)))[-79][1]
 #
 # list(enumerate(list(enumerate(output[0,:,:].permute(1,0)))[100][1]))
 
@@ -78,7 +83,7 @@ song_json = {u'_beatsPerBar': 16,
  u'_notes': notes,
  u'_obstacles': [],
  u'_shuffle': 0,
- u'_shufflePeriod': 0.25,
+ u'_shufflePeriod': 0.5,
  u'_version': u'1.5.0'}
 
 import json

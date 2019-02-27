@@ -34,6 +34,7 @@ class BaseOptions:
         parser.add_argument('--workers', default=4, type=int, help='the number of workers to load the data')
         parser.add_argument('--experiment_name', default="experiment_name", type=str)
         parser.add_argument('--checkpoints_dir', default='', type=str, help='checkpoint folder')
+        parser.add_argument('--load', action='store_true', help='whether to load model or not.')
         parser.add_argument('--load_epoch', type=str, default='latest', help='which epoch to load? set to latest to use latest cached model')
         parser.add_argument('--load_iter', type=int, default=0, help='which iteration to load? if load_iter > 0, whether load models by iteration')
         parser.add_argument('-ad', '--augment_dir', type=str, default='')

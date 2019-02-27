@@ -1,10 +1,6 @@
 import time
 import sys
-<<<<<<< HEAD
-sys.path.append("/home/guillefix/code/beatsaber/base")
-=======
 #sys.path.append("/home/guillefix/code/beatsaber/base")
->>>>>>> b56bfd190d3c5dba707b0a9d04414c4059088593
 sys.path.append("/home/guillefix/code/beatsaber")
 from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
@@ -13,19 +9,8 @@ from models import create_model
 sys.argv.append("--data_dir=../../oxai_beat_saber_data/")
 sys.argv.append("--dataset_name=mfcc")
 sys.argv.append("--batch_size=1")
-<<<<<<< HEAD
-sys.argv.append("--num_windows=1")
-sys.argv.append("--gpu_ids=0")
-sys.argv.append("--nepoch=1")
-sys.argv.append("--nepoch_decay=1")
-sys.argv.append("--layers=5")
-sys.argv.append("--blocks=3")
-sys.argv.append("--print_freq=1")
-sys.argv.append("--workers=0")
-sys.argv.append("--output_length=1")
-=======
 sys.argv.append("--num_windows=10")
-sys.argv.append("--gpu_ids=0")
+sys.argv.append("--gpu_ids=-1")
 #sys.argv.append("--nepoch=1")
 #sys.argv.append("--nepoch_decay=1")
 sys.argv.append("--layers=5")
@@ -33,7 +18,7 @@ sys.argv.append("--blocks=3")
 #sys.argv.append("--print_freq=1")
 #sys.argv.append("--workers=0")
 #sys.argv.append("--output_length=1")
->>>>>>> b56bfd190d3c5dba707b0a9d04414c4059088593
+sys.argv.append("--load")
 
 #these are useful for debugging/playing with Hydrogen@Atom, which Guille use
 # sys.argv.pop(1)
@@ -48,6 +33,7 @@ if __name__ == '__main__':
         receptive_field = model.net.receptive_field
     else:
         receptive_field = model.net.module.receptive_field
+    # opt.receptive_field = receptive_field
     print("Receptive field is "+str(receptive_field)+" samples")
     train_dataset = create_dataset(opt,receptive_field = receptive_field)
     train_dataset.setup()
@@ -57,6 +43,9 @@ if __name__ == '__main__':
         val_dataset.setup()
         val_dataloader = create_dataloader(val_dataset)
     print('#training songs = {:d}'.format(len(train_dataset)))
+
+    if opt.load:
+        model.load_networks(opt.load_epoch)
 
     total_steps = 0
 

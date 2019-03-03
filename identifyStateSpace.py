@@ -7,10 +7,37 @@ Goal of this code:
 2) Identify "states" at each time and determine the distinct ones 
 
 Based on the findings of this experiment, we can determine which representation serves our objectives best :)
+
+MAR 3 UPDATE: Code refactored to avoid state space computation code repetition
 '''
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 EXTRACTED_DATA_DIR = os.path.join(THIS_DIR, 'DataE')
+
+
+def compute_explicit_states_from_json(level_json, as_tuple = True):
+    json_representation = IOFunctions.parse_json(level_json)
+    notes = json_representation["_notes"]  # Parse the JSON notes to use the notes representation
+    note_times = set(notes["_time"])  # Extract the distinct note times
+    state_dict = {eventTime: np.zeros(12) for eventTime in note_times}  # Initialise a state at every time event
+    for entry in notes.itertuples():
+        entry_cut_direction = entry[1]  # Extract the individual note parts
+        entry_col = entry[2]
+        entry_row = entry[3]
+        entry_time = entry[4]
+        entry_type = entry[5]
+        entry_index = 4 * entry_row + entry_col  # Compute Index to update in the state representation
+        if entry_type == 3:  # This is a bomb
+            entry_representation = 19
+        else:  # This is a note
+            entry_representation = 1 + 9 * entry_type + entry_cut_direction
+        # Now Retrieve and update the corresponding state representation
+        state_dict[entry_time][entry_index] = entry_representation
+    if not as_tuple:
+        return state_dict
+    else: # Tuples can be hashed
+        states_as_tuples = {time: tuple(state) for time, state in state_dict.items()}
+        return states_as_tuples
 
 
 def compute_shortest_inter_event_beat_gap(data_directory):
@@ -49,42 +76,16 @@ def produce_distinct_state_space_representations(data_directory=EXTRACTED_DATA_D
     list_of_states = []  # Initialise the set of states
     for file in json_files:
         print("Analysing file " + file)
-        # Now go through them file by file
-        json_representation = IOFunctions.parse_json(file)
-        notes = json_representation["_notes"]  # Will Ignore Obstacles and Events for now
-        # Step 1: Extract the DISTINCT times (hence the set structure)
-        note_times = set(notes["_time"])  # Can Also Use This to compute minimal time difference between two note events
-        # Step 2: Initialise the state representations
-        state_dict = {eventTime: np.zeros(12) for eventTime in note_times}
-        # Step 3: Now Go Through dataFrame entries and update states accordingly
-        for entry in notes.itertuples():
-            entry_cut_direction = entry[1]  # Extract the individual note parts
-            entry_row = entry[2]
-            entry_column = entry[3]
-            entry_time = entry[4]
-            entry_type = entry[5]
-            # The Computational Part
-            entry_index = 4 * entry_column + entry_row  # Compute Index to update in the state representation
-            if entry_type == 3:  # This is a bomb
-                entry_representation = 19
-            else:  # This is a note
-                entry_representation = 1 + 9 * entry_type + entry_cut_direction
-            # Now Retrieve and update the corresponding state representation
-            state_dict[entry_time][entry_index] = entry_representation
-        # Now, all state representations at all events are computed and are stored (by time) in state_dict
-        states = state_dict.values()  # Get all state representations
-        states_as_tuples = [tuple(i) for i in states]  # Convert to tuples (Needed to enable hashing)
+        state_dict = compute_explicit_states_from_json(file, as_tuple=True)
+        states_as_tuples = state_dict.values()
         list_of_states.extend(states_as_tuples)  # Add to overall state list
 
     # Now all files are analysed, identify distinct sets
     total_nb_states = len(list_of_states)
     state_frequencies = Counter(list_of_states)  # Count the frequency of every state
-    print(state_frequencies)
     distinct_states = state_frequencies.keys()  # Get distinct states. This avoids a set method which loses count info
     nb_of_distinct_states = len(distinct_states)
     distinct_state_frequencies = state_frequencies.values()
-    '''count_distribution = Counter(distinct_state_frequencies)
-    # print(count_distribution)'''
     # Sort Dictionary by number of states
     # We now have the states sorted by frequency
     sorted_states_by_frequency = sorted(state_frequencies, key=state_frequencies.get, reverse=True)
@@ -104,44 +105,11 @@ def produce_distinct_state_space_representations(data_directory=EXTRACTED_DATA_D
 def produce_transition_probability_matrix_from_distinct_state_spaces(states=None, data_directory=EXTRACTED_DATA_DIR):
     if states is None:
         states = produce_distinct_state_space_representations(2000, data_directory)
-
     json_files = IOFunctions.get_all_json_level_files_from_data_directory(data_directory)
-    '''Definition of a state representation 
-            @RA: This is a 12-dimensional array, such that every dimension represents a position in the grid
-            If 0, position is empty, otherwise for a note: type * 9(numberOfDirections) + cutDirection + 1
-            19: Bomb
-        Statistics for states is very important
-
-        Feb 12: Compute Top K states' total representation in overall state count
-    '''
-    list_of_states = []  # Initialise the set of states
     for file in json_files:
         print("Analysing file " + file)
-        # Now go through them file by file
-        json_representation = IOFunctions.parse_json(file)
-        notes = json_representation["_notes"]  # Will Ignore Obstacles and Events for now
-        # Step 1: Extract the DISTINCT times (hence the set structure)
-        note_times = set(notes["_time"])  # Can Also Use This to compute minimal time difference between two note events
-        # Step 2: Initialise the state representations
-        state_dict = {eventTime: np.zeros(12) for eventTime in note_times}
-        # Step 3: Now Go Through dataFrame entries and update states accordingly
-        last_entry_representation = None
         transition_table = np.zeros((len(states), len(states)), dtype='uint8')
-        for entry in notes.itertuples():
-            entry_cut_direction = entry[1]  # Extract the individual note parts
-            entry_col = entry[2]
-            entry_row = entry[3]
-            entry_time = entry[4]
-            entry_type = entry[5]
-            # The Computational Part
-            entry_index = 4 * entry_row + entry_col  # Compute Index to update in the state representation
-            if entry_type == 3:  # This is a bomb
-                entry_representation = 19
-            else:  # This is a note
-                entry_representation = 1 + 9 * entry_type + entry_cut_direction
-            # Now Retrieve and update the corresponding state representation
-            state_dict[entry_time][entry_index] = entry_representation
-        # file done
+        state_dict = compute_explicit_states_from_json(file,as_tuple=False)
         these_states = state_dict.values()  # Get all state representations
         states_as_tuples = [tuple(i) for i in these_states]  # Convert to tuples (Needed to enable hashing)
         state_times = [i for i in state_dict.keys()]  # Get state_times
@@ -166,9 +134,9 @@ def produce_transition_probability_matrix_from_distinct_state_spaces(states=None
 
 
 if __name__ == "__main__":
-    sorted_states, states_counts = produce_distinct_state_space_representations(EXTRACTED_DATA_DIR, k=2000)
+    sorted_states, states_counts = produce_distinct_state_space_representations(EXTRACTED_DATA_DIR, k=1000)
     sorted_states_prior_probability = np.divide(states_counts, sum(states_counts))
-    output_path = os.path.join(THIS_DIR, 'tmp')
+    output_path = os.path.join(THIS_DIR, 'stateSpace')
     if not os.path.isdir(output_path):
         os.mkdir(output_path)
     IOFunctions.saveFile(sorted_states, 'sorted_states.pkl', output_path, append=False)

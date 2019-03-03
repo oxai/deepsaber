@@ -43,6 +43,16 @@ def saveFile(object, filename=None, save_dir=None, append=False):
     savefile.close()
     return filename
 
+def loadFile(filename,load_dir=None):
+    if load_dir is None or load_dir is '':
+        load_dir = os.path.join(os.getcwd(),'Temp')
+    if not os.path.isdir(load_dir):  # SUBJECT TO RACE CONDITION
+        print("Directory does not exist.")
+        return
+    filename = os.path.join(load_dir,filename)
+    with open(filename,'rb') as f:
+        data = pickle.load(f)
+        return data
 def parse_json(file_directory):
     # input json file
     # returns: dataframes of: events, notes, obstacles, as well as additional parameters (in the form of a dictionary)

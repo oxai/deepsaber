@@ -1,51 +1,25 @@
 import time
-import sys
-#sys.path.append("/home/guillefix/code/beatsaber/base")
-sys.path.append("/home/guillefix/code/beatsaber")
 from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
 from models import create_model
-
-sys.argv.append("--data_dir=../../oxai_beat_saber_data/")
-sys.argv.append("--dataset_name=mfcc")
-sys.argv.append("--batch_size=1")
-sys.argv.append("--num_windows=10")
-sys.argv.append("--gpu_ids=-1")
-#sys.argv.append("--nepoch=1")
-#sys.argv.append("--nepoch_decay=1")
-sys.argv.append("--layers=5")
-sys.argv.append("--blocks=3")
-#sys.argv.append("--print_freq=1")
-#sys.argv.append("--workers=0")
-#sys.argv.append("--output_length=1")
-sys.argv.append("--load")
-
-#these are useful for debugging/playing with Hydrogen@Atom, which Guille use
-# sys.argv.pop(1)
-# sys.argv.pop(1)
-
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
     model = create_model(opt)
     model.setup()
-    if opt.gpu_ids == -1:
+    if not opt.gpu_ids:
         receptive_field = model.net.receptive_field
     else:
         receptive_field = model.net.module.receptive_field
-    # opt.receptive_field = receptive_field
-    print("Receptive field is "+str(receptive_field)+" samples")
-    train_dataset = create_dataset(opt,receptive_field = receptive_field)
+    print("Receptive field is "+str(receptive_field/opt.sampling_rate)+" seconds")
+    train_dataset = create_dataset(opt, receptive_field=receptive_field)
     train_dataset.setup()
     train_dataloader = create_dataloader(train_dataset)
     if opt.val_epoch_freq:
-        val_dataset = create_dataset(opt, validation_phase=True,receptive_field = receptive_field)
+        val_dataset = create_dataset(opt, validation_phase=True, receptive_field=receptive_field)
         val_dataset.setup()
         val_dataloader = create_dataloader(val_dataset)
     print('#training songs = {:d}'.format(len(train_dataset)))
-
-    if opt.load:
-        model.load_networks(opt.load_epoch)
 
     total_steps = 0
 
@@ -53,6 +27,7 @@ if __name__ == '__main__':
         epoch_start_time = time.time()
         iter_data_time = time.time()
         epoch_iter = 0
+
         for i, data in enumerate(train_dataloader):
             iter_start_time = time.time()
             if total_steps % opt.print_freq == 0:
@@ -89,7 +64,7 @@ if __name__ == '__main__':
               (epoch, opt.nepoch + opt.nepoch_decay, time.time() - epoch_start_time))
         model.update_learning_rate()
 
-        if opt.do_validation and opt.val_epoch_freq and epoch % opt.val_epoch_freq == 0:
+        if opt.val_epoch_freq and epoch % opt.val_epoch_freq == 0:
             val_start_time = time.time()
             with model.start_validation() as update_validation_meters:
                 if opt.eval:
@@ -102,6 +77,4 @@ if __name__ == '__main__':
                     update_validation_meters()
             losses_val = model.get_current_losses(is_val=True)
             metrics_val = model.get_current_metrics(is_val=True)
-            print(losses_val)
-            print(metrics_val)
             print("Validated parameters at epoch {:d} \t Time Taken: {:d} sec".format(epoch, int(time.time() - val_start_time)))

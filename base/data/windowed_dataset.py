@@ -7,6 +7,7 @@ from base.data.base_dataset import BaseDataset
 import json
 from math import floor, ceil
 
+
 class WindowedDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
@@ -66,15 +67,14 @@ class WindowedDataset(BaseDataset):
         receptive_field = self.receptive_field
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
-        blocks = -1*np.ones((len(y),15)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+        blocks = -1*np.ones((len(y), 15)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
                                             # can fix this using gan
-        # from math import floor
         eps = self.eps
         for note in notes:
             sample_index = int((note['_time']*60/bpm)*self.opt.sampling_rate)
             # blocks[sample_index] = 1
             tolerance_window_width = ceil(eps*sr)
-            for sample_delta in np.arange(-tolerance_window_width,tolerance_window_width+1):
+            for sample_delta in range(-tolerance_window_width, tolerance_window_width+1):
                 # blocks[sample_index+sample_delta] = np.exp(-np.abs(sample_delta)/(2.0*tolerance_window_width))
                 if sample_index+sample_delta >= len(blocks):
                     break
@@ -88,8 +88,8 @@ class WindowedDataset(BaseDataset):
         blocks += 1  # so that class range is > 0
         indices = np.random.choice(range(len(y)-receptive_field),size=self.opt.num_windows,replace=False)
         input_windows = [y[i:i+input_length] for i in indices]
-        block_windows = [blocks[i+receptive_field:i+input_length+1,:] for i in indices]
-        block_windows = torch.tensor(block_windows,dtype=torch.long)
+        block_windows = [blocks[i+receptive_field:i+input_length+1, :] for i in indices]
+        block_windows = torch.tensor(block_windows, dtype=torch.long)
         input_windows = torch.tensor(input_windows).unsqueeze(1)  # adding channel dim
         input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
         return {'input': input_windows, 'target': block_windows}

@@ -30,6 +30,7 @@ class WaveNetModel(BaseModel):
             {'params': [param for name, param in self.net.named_parameters() if name[-4:] != 'bias'],
              'lr': opt.learning_rate, 'weight_decay': opt.weight_decay}  # filter parameters have weight decay
         ])]
+        self.loss_ce = None
 
     def name(self):
         return "WaveNet"

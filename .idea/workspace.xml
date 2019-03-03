@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2a403a69-9156-4ec7-860c-90bf58b6bf9b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/stateSpace/sorted_states.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/stateSpace/sorted_states_prior_probability.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/stateSpace/sorted_states_transition_probabilities.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/stateSpaceFunctions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IOFunctions.py" beforeDir="false" afterPath="$PROJECT_DIR$/IOFunctions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identifyStateSpace.py" beforeDir="false" afterPath="$PROJECT_DIR$/identifyStateSpace.py" afterDir="false" />
-    </list>
+    <list default="true" id="2a403a69-9156-4ec7-860c-90bf58b6bf9b" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,8 +37,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/stateSpaceFunctions.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="414">
-              <caret line="53" selection-start-line="53" selection-end-line="53" />
+            <state relative-caret-position="234">
+              <caret line="41" column="19" lean-forward="true" selection-start-line="41" selection-start-column="19" selection-end-line="41" selection-end-column="19" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -258,8 +250,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/stateSpaceFunctions.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="414">
-          <caret line="53" selection-start-line="53" selection-end-line="53" />
+        <state relative-caret-position="234">
+          <caret line="41" column="19" lean-forward="true" selection-start-line="41" selection-start-column="19" selection-end-line="41" selection-end-column="19" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>

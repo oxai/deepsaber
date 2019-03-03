@@ -7,6 +7,7 @@ class TrainOptions(BaseOptions):
         super(TrainOptions, self).__init__()
         parser = self.parser
         parser.add_argument('--print_freq', type=int, default=100, help='frequency of showing training results on console')
+        parser.add_argument('--update_html_freq', type=int, default=100, help='frequency of showing training results on console')
         parser.add_argument('--display_freq', type=int, default=100, help='frequency of showing training results on console')
         parser.add_argument('--val_epoch_freq', type=int, default=10, help="epoch interval between rounds of evaluation on the validation set [-1 prevents validation] ")
         parser.add_argument('--val_batch_size', default=1, type=int)

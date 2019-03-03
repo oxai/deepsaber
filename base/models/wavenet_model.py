@@ -9,7 +9,7 @@ class WaveNetModel(BaseModel):
     def __init__(self, opt):
         super().__init__(opt)
         self.loss_names = ['ce']
-        self.metric_names = []
+        self.metric_names = ['accuracy']
         self.module_names = ['']  # changed from 'model_names'
         self.schedulers = []
         self.net = WaveNet(layers=opt.layers,
@@ -45,7 +45,7 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--input_channels', type=int, default=(1+(9*3+1)*(5*3)))
         parser.add_argument('--output_length', type=int, default=1)
         parser.add_argument('--num_classes', type=int, default=(9*3+1))
-        parser.add_argument('--output_channels', type=int, default=(5*3))
+        parser.add_argument('--output_channels', type=int, default=(4*3))
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
         return parser

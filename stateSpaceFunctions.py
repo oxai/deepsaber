@@ -1,6 +1,7 @@
 import IOFunctions
 from identifyStateSpace import compute_explicit_states_from_json
 import math, numpy as np
+from featuresBase import extract_beat_times_chroma_tempo_from_ogg
 '''
 This file contains all helper functions to take a JSON level file and convert it to the current note representation
 Requirements: The stateSpace directory. It contains sorted_states.pkl, which stores all identified states in the dataset.
@@ -50,4 +51,42 @@ def compute_discretized_state_sequence_from_json(json_file, top_k=2000,beat_disc
     '''
     print(list(output_sequence))
     return output_sequence
+
+def chroma_feature_extraction(ogg_file, json_file, beat_discretization = 1/16):
+    # Load sample song
+    y, fs = librosa.load(ogg_file, sr=None)
+
+    bsLevel = parse_json(json_file)
+    bpm = bsLevel["_beatsPerMinute"]
+    hop = int((44100 * 60 * (beat_discretization)) / bpm)
+    # hop_length      : int > 0 :: number of samples between successive chroma frames
+
+    # Separate harmonics and percussives into two waveforms
+    y_harmonic, y_percussive = librosa.effects.hpss(y)
+
+    # Beat track on the percussive signal
+    tempo, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=fs, onset_envelope=None, hop_length=hop,
+                                                 start_bpm=bpm, tightness=100., trim=True, bpm=None, units='frames')
+    # print('Estimated tempo: {:.2f} beats per minute'.format(tempo))]
+
+    # Convert the frame indices of beat events into timestamps
+    beat_times = librosa.frames_to_time(beat_frames, sr=fs, hop_length=hop, n_fft=None)
+
+    chromagram = librosa.feature.chroma_cqt(y=y_harmonic, sr=fs, C=None, hop_length=hop, fmin=None,
+                                            norm=np.inf, threshold=0.0, tuning=None, n_chroma=12,
+                                            n_octaves=7, window=None, bins_per_octave=None, cqt_mode='full')
+
+    # Aggregate chroma features between beat events
+    # We'll use the median value of each feature between beat frames
+    beat_chroma = librosa.util.sync(chromagram, beat_frames, aggregate=np.median, pad=True, axis=-1)
+
+    # Chop last column. Chroma features are computed between beat events
+    # Each column beat_chroma[:, k] will be the average of input columns between beat_frames[k] and beat_frames[k+1].
+    beat_chroma = beat_chroma[:, :-1]
+
+    return beat_chroma
+
+
+
+
 

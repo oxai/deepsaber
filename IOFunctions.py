@@ -73,7 +73,6 @@ def parse_json(file_directory):
     data['_obstacles'] = df_obstacles
     return data
 
-
 def get_song_from_directory_by_identifier(identifier, difficulty=None):
     song_directory = os.path.join(EXTRACT_DIR, identifier)
     if len(os.listdir(song_directory)) == 1 and os.path.isdir(os.listdir(song_directory)[0]):
@@ -132,6 +131,7 @@ def make_integers(list_of_dict):
                 item[key] = float(value)
     return list_of_dict
 
+
 def create_dataStructure(df_events, df_notes, df_obstacles, version, shufflePeriod, noteJumpSpeed, beatsPerBar, shuffle, bpm):
     #takes in the data information and returns a dictionary that can be encoded to json via encode_json()
 
@@ -160,12 +160,29 @@ def create_dataStructure(df_events, df_notes, df_obstacles, version, shufflePeri
     dict = {'_obstacles': obstacles, '_beatsPerMinute': bpm, '_noteJumpSpeed': noteJumpSpeed, '_version': version, '_events': events, '_shuffle': shuffle, '_shufflePeriod': shufflePeriod, '_beatsPerBar': beatsPerBar, '_notes': notes}
     return dict
 
+
 def encode_json(data, file_directory):
     #encode the dictionary
     with open(file_directory, 'w') as fp:
         json.dump(data, fp)
 
     return 0
+
+
+'''@RA: There is some redundancy in the getting OGG and JSON. I recommend switching to the below two functions, ,
+which are optimised. (Technically these two fcts can be made one with an extra param, but this is simpler)'''
+
+
+def get_all_ogg_files_from_data_directory(data_directory):
+    file_regex = re.compile("^.*\\.json$")
+    ogg_files = []
+    for root, subdirectories, files in os.walk(data_directory):
+        for name in files:
+            if bool(file_regex.match(name)):
+                ogg_path = os.path.join(root, name)
+                ogg_files.append(ogg_path)
+    return ogg_files
+
 
 def get_all_json_level_files_from_data_directory(data_directory, include_autosaves=False):
     '''@RA: Identify All JSON files in our data set.
@@ -181,3 +198,4 @@ def get_all_json_level_files_from_data_directory(data_directory, include_autosav
                 json_path = os.path.join(root, name)
                 json_files.append(json_path)
     return json_files
+

@@ -1,4 +1,7 @@
 .idea
 .idea
 Data/
+DataE/
+Readings/
 wavenet/speech-to-text-wavenet/features_list.p
+Driver.py

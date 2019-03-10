@@ -43,9 +43,9 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--residual_channels', type=int, default=32, help="Number of channels in the residual link")
         parser.add_argument('--skip_channels', type=int, default=256)
         parser.add_argument('--end_channels', type=int, default=256)
-        parser.add_argument('--input_channels', type=int, default=(1+(9*3+1)*(5*3)))
+        parser.add_argument('--input_channels', type=int, default=(1+20))
         parser.add_argument('--output_length', type=int, default=1)
-        parser.add_argument('--num_classes', type=int, default=(9*3+1))
+        parser.add_argument('--num_classes', type=int, default=20)
         parser.add_argument('--output_channels', type=int, default=(4*3))
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
@@ -63,6 +63,7 @@ class WaveNetModel(BaseModel):
     def forward(self):
         self.output = self.net.forward(self.input)
         self.loss_ce = F.cross_entropy(self.output, self.target)
+        self.metric_accuracy = (torch.argmax(self.output,1) == self.target).sum().float()/len(self.target)
 
     def backward(self):
         self.optimizers[0].zero_grad()

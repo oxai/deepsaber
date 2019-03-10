@@ -47,7 +47,9 @@ class MfccDataset(BaseDataset):
         parser.add_argument('--chunk_length', type=int, default=9000)
         # parser.add_argument('--num_mfcc_features', type=int, default=20)
         # parser.set_defaults(input_channels=(self.opt.num_mfcc_features+(9*3+1)*(4*3)), output_nc=2, direction='AtoB')
-        parser.set_defaults(input_channels=(20+(9*3+1)*(4*3)))
+        parser.set_defaults(input_channels=(20+12*20))
+        parser.set_defaults(num_classes=20)
+        parser.set_defaults(output_channels=12)
         return parser
 
     def name(self):
@@ -59,6 +61,7 @@ class MfccDataset(BaseDataset):
         bpm = level['_beatsPerMinute']
         notes = level['_notes']
 
+        sr = self.opt.sampling_rate
         beat_duration = int(60*sr/bpm) #beat duration in samples
 
         mel_hop = beat_duration//self.opt.beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
@@ -68,9 +71,10 @@ class MfccDataset(BaseDataset):
 
             y, sr = librosa.load(self.audio_files[item], sr=self.opt.sampling_rate)
 
-
             # get mfcc feature
-            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=(self.opt.input_channels-(9*3+1)*(4*3)))
+            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=(self.opt.input_channels-self.opt.output_channels*self.opt.num_classes))
+
+            # print(len(y),mel_hop,len(y)/mel_hop,mfcc.shape[1])
 
             self.mfcc_features[item] = mfcc
         else:
@@ -88,25 +92,25 @@ class MfccDataset(BaseDataset):
         receptive_field = self.receptive_field
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
-        blocks = -1*np.ones((y.shape[1],12)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
-        blocks_manyhot = np.zeros((y.shape[1],12,20)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+
+        blocks = np.zeros((y.shape[1],12)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+        blocks_manyhot = np.zeros((y.shape[1],self.opt.output_channels,self.opt.num_classes)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+        blocks_manyhot[:,:,0] = 1.0 #default is the "nothing" class
         # eps = self.eps
         for note in notes:
-            sample_index = floor((note['_time']*60/bpm)*self.opt.sampling_rate/mel_hop)
-            # blocks[sample_index] = 1
-            # tolerance_window_width = ceil(eps*features_rate)
-            # for sample_delta in np.arange(-tolerance_window_width,tolerance_window_width+1):
-            # blocks[sample_index+sample_delta] = np.exp(-np.abs(sample_delta)/(2.0*tolerance_window_width))
-            # if sample_index+sample_delta >= len(blocks):
-            #     break
+            sample_index = floor((note['_time']*60/bpm)*sr/(mel_hop+1))
+            if sample_index > y.shape[1]:
+                print("note beyond the end of time")
+                continue
             if note["_type"] == 3:
                 note_representation = 19
             elif note["_type"] == 0 or note["_type"] == 1:
-                note_representation = 1 + note_type*9+note["_cutDirection"]
+                note_representation = 1 + note["_type"]*9+note["_cutDirection"]
             else:
                 raise ValueError("I thought there was no notes with _type different from 0,1,3. Ahem, what are those??")
-            blocks[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"]] = note_representation
-            blocks_manyhot[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"], note_representation] = 1.0
+            blocks[sample_index,note["_lineLayer"]*4+note["_lineIndex"]] = note_representation
+            blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], 0] = 0.0 #remove the one hot at the zero class
+            blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], note_representation] = 1.0
 
         indices = np.random.choice(range(y.shape[1]-receptive_field),size=self.opt.num_windows,replace=False)
 

@@ -219,7 +219,7 @@ class WaveNetModel(nn.Module):
         self.eval()
         if first_samples is None:
             # first_samples = torch.zeros((1,12)) #self.dtype(1).zero_()
-            first_samples = torch.zeros((1,12,94)) #self.dtype(1).zero_()
+            first_samples = torch.zeros((1,self.output_channels,self.receptive_field)) #self.dtype(1).zero_()
         generated = Variable(first_samples, volatile=True)
 
         num_pad = self.receptive_field - generated.size(2)
@@ -231,15 +231,17 @@ class WaveNetModel(nn.Module):
         conditioning_seq = constant_pad_1d(conditioning_seq.permute(2,1,0),conditioning_seq.size(2)+self.receptive_field,pad_start=True).permute(2,1,0)
 
         for i in range(num_samples):
-            input = Variable(torch.FloatTensor(1, 12, 28, self.receptive_field).zero_())
+            input = Variable(torch.FloatTensor(1, self.output_channels, self.num_classes, self.receptive_field).zero_())
             # input = input.scatter_(1, generated[:,:,-self.receptive_field:].long(), 1.)
             # input = input.scatter_(2, (generated[:,:,-self.receptive_field:].view(1,12,-1,self.receptive_field).long()-1)%28, 1.)
-            input = input.scatter_(2, generated[:,:,-self.receptive_field:].view(1,12,-1,self.receptive_field).long(), 1.)
+            input = input.scatter_(2, generated[:,:,-self.receptive_field:].view(1,self.output_channels,-1,self.receptive_field).long(), 1.)
 
             shape = input.shape
             input = input.view(shape[0],shape[1]*shape[2],shape[3])
-            for j in range(12):
-                input[:,28*j+27,:]=0
+            # #this is because "nothing" is a class, but I haven't put a one on the many_hot vector in its position
+            # #fixed that now
+            # for j in range(self.output_channels):
+            #     input[:,self.num_classes*j,:]=0
 
             mfcc_features = conditioning_seq[:,:,i:i+self.receptive_field].float()
             if torch.abs(mfcc_features).max() > 0: mfcc_features = (mfcc_features - mfcc_features.mean())/torch.abs(mfcc_features).max()
@@ -248,7 +250,7 @@ class WaveNetModel(nn.Module):
 
             x = self.wavenet(input,dilation_func=self.wavenet_dilate)[0:1, :, :, -1:]
             x = x.transpose(1, 3).contiguous() # need to undertand why transposing here makes a difference.. This line is necessary..
-            x = x.view(12 ,28)
+            x = x.view(self.output_channels ,self.num_classes)
 
             if temperature > 0:
                 x /= temperature

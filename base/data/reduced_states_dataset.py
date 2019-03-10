@@ -7,6 +7,9 @@ from base.data.base_dataset import BaseDataset
 import json
 from math import floor, ceil
 
+import pickle
+unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
+
 class ReducedStatesDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
@@ -47,7 +50,9 @@ class ReducedStatesDataset(BaseDataset):
         parser.add_argument('--chunk_length', type=int, default=9000)
         # parser.add_argument('--num_mfcc_features', type=int, default=20)
         # parser.set_defaults(input_channels=(self.opt.num_mfcc_features+(9*3+1)*(4*3)), output_nc=2, direction='AtoB')
-        parser.set_defaults(input_channels=(20+(9*3+1)*(4*3)))
+        parser.set_defaults(input_channels=(20+2001))
+        parser.set_defaults(num_classes=2001)
+        parser.set_defaults(output_channels=1)
         return parser
 
     def name(self):
@@ -59,17 +64,20 @@ class ReducedStatesDataset(BaseDataset):
         bpm = level['_beatsPerMinute']
         notes = level['_notes']
 
+        sr = self.opt.sampling_rate
+        beat_duration = int(60*sr/bpm) #beat duration in samples
+
+        mel_hop = beat_duration//self.opt.beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+        mel_window = 4*mel_hop
+
         if item not in self.mfcc_features: #cache
 
             y, sr = librosa.load(self.audio_files[item], sr=self.opt.sampling_rate)
 
-            beat_duration = int(60*sr/bpm) #beat duration in samples
-
-            mel_hop = beat_duration//self.opt.beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-            mel_window = 4*mel_hop
-
             # get mfcc feature
-            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=(self.opt.input_channels-(9*3+1)*(4*3)))
+            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=(self.opt.input_channels-self.opt.output_channels*self.opt.num_classes))
+
+            # print(len(y),mel_hop,len(y)/mel_hop,mfcc.shape[1])
 
             self.mfcc_features[item] = mfcc
         else:
@@ -87,40 +95,51 @@ class ReducedStatesDataset(BaseDataset):
         receptive_field = self.receptive_field
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
-        blocks = -1*np.ones((y.shape[1],12)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
-        blocks_manyhot = np.zeros((y.shape[1],12,28)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
-        # from math import floor
-        eps = self.eps
+
+        blocks = np.zeros((y.shape[1],12)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+        blocks_reduced = np.zeros((y.shape[1],2001))
+        blocks_reduced_classes = np.zeros((y.shape[1],1))
         for note in notes:
-            sample_index = int((note['_time']*60/bpm)*self.opt.sampling_rate)
-            # blocks[sample_index] = 1
-            tolerance_window_width = ceil(eps*features_rate)
-            for sample_delta in np.arange(-tolerance_window_width,tolerance_window_width+1):
-                # blocks[sample_index+sample_delta] = np.exp(-np.abs(sample_delta)/(2.0*tolerance_window_width))
-                if sample_index+sample_delta >= len(blocks):
-                    break
-                if note["_type"] == 3:
-                    note_type = 2
-                elif note["_type"] == 0 or note["_type"] == 1:
-                    note_type = note["_type"]
-                else:
-                    raise ValueError("I thought there was no notes with _type different from 0,1,3. Ahem, what are those??")
-                blocks[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"]] = note_type*9+note["_cutDirection"]
-                blocks_manyhot[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"], note_type*9+note["_cutDirection"] + 1] = 1.0
-        blocks += 1  # so that range of classes corresponding to note is > 0, and 0 means no note
+            sample_index = floor((note['_time']*60/bpm)*self.opt.sampling_rate/(mel_hop+1))
+            if sample_index > y.shape[1]:
+                print("note beyond the end of time")
+                continue
+            if note["_type"] == 3:
+                note_representation = 19
+            elif note["_type"] == 0 or note["_type"] == 1:
+                note_representation = 1 + note["_type"]*9+note["_cutDirection"]
+            else:
+                raise ValueError("I thought there was no notes with _type different from 0,1,3. Ahem, what are those??")
+
+            blocks[sample_index,note["_lineLayer"]*4+note["_lineIndex"]] = note_representation
+            # blocks_manyhot[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"], note_representation] = 1.0
+
+        for i,block in enumerate(blocks):
+            try:
+                state_index = unique_states.index(tuple(block))
+                blocks_reduced[i,1+state_index] = 1.0
+                blocks_reduced_classes[i,0] = 1+state_index
+            except:
+                blocks_reduced[i,0] = 1.0
+                blocks_reduced_classes[i,0] = 0
+
         indices = np.random.choice(range(y.shape[1]-receptive_field),size=self.opt.num_windows,replace=False)
+
         input_windows = [y[:,i:i+input_length] for i in indices]
-        block_windows = [blocks[i+receptive_field:i+input_length+1,:] for i in indices]
-        blocks_manyhot_windows = [blocks_manyhot[i:i+input_length,:,:] for i in indices]
-        block_windows = torch.tensor(block_windows,dtype=torch.long)
-        blocks_manyhot_windows = torch.tensor(blocks_manyhot_windows)
         input_windows = torch.tensor(input_windows)
-        blocks_manyhot_windows = blocks_manyhot_windows.permute(0,2,3,1)
-        # input_windows = input_windows.permute(0,2,1)
-        shape = blocks_manyhot_windows.shape
-        blocks_manyhot_windows = blocks_manyhot_windows.view(shape[0],shape[1]*shape[2],shape[3])
         input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
-        return {'input': torch.cat((input_windows.float(),blocks_manyhot_windows.float()),1), 'target': block_windows}
+
+        block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
+        block_reduced_classes_windows = torch.tensor(block_reduced_classes_windows,dtype=torch.long)
+
+        blocks_reduced_windows = [blocks_reduced[i:i+input_length,:] for i in indices]
+        blocks_reduced_windows = torch.tensor(blocks_reduced_windows)
+        blocks_reduced_windows = blocks_reduced_windows.permute(0,2,1)
+        # # input_windows = input_windows.permute(0,2,1)
+        # shape = blocks_manyhot_windows.shape
+        # blocks_manyhot_windows = blocks_manyhot_windows.view(shape[0],shape[1]*shape[2],shape[3])
+
+        return {'input': torch.cat((input_windows.float(),blocks_reduced_windows.float()),1), 'target': block_reduced_classes_windows}
 
     def __len__(self):
         return len(self.audio_files)

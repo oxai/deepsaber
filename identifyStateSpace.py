@@ -1,10 +1,10 @@
 import IOFunctions, os, numpy as np
 from collections import Counter
 
-''' @RA: Trying to identify state patterns which appear in data, to determine an optimal state representation 
-Goal of this code: 
+''' @RA: Trying to identify state patterns which appear in data, to determine an optimal state representation
+Goal of this code:
 1) Discretise the Beat Saber Levels into events at specific times
-2) Identify "states" at each time and determine the distinct ones 
+2) Identify "states" at each time and determine the distinct ones
 
 Based on the findings of this experiment, we can determine which representation serves our objectives best :)
 
@@ -65,7 +65,7 @@ def compute_shortest_inter_event_beat_gap(data_directory):
 
 def produce_distinct_state_space_representations(data_directory=EXTRACTED_DATA_DIR, k=2000):
     json_files = IOFunctions.get_all_json_level_files_from_data_directory(data_directory)
-    '''Definition of a state representation 
+    '''Definition of a state representation
             @RA: This is a 12-dimensional array, such that every dimension represents a position in the grid
             If 0, position is empty, otherwise for a note: type * 9(numberOfDirections) + cutDirection + 1
             19: Bomb
@@ -97,7 +97,7 @@ def produce_distinct_state_space_representations(data_directory=EXTRACTED_DATA_D
         100 * top_k_representation / total_nb_states) +
           " % of the total state appearances")
     '''
-    Next step : Compute Distribution over these states? Could be used as a reliability metric 
+    Next step : Compute Distribution over these states? Could be used as a reliability metric
     How good is our generator? KL Divergence with the distribution?'''
     return sorted_states_by_frequency, sorted_states_count
 

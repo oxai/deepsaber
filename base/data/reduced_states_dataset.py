@@ -7,7 +7,7 @@ from base.data.base_dataset import BaseDataset
 import json
 from math import floor, ceil
 
-class MfccDataset(BaseDataset):
+class ReducedStatesDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
         super().__init__()
@@ -106,8 +106,8 @@ class MfccDataset(BaseDataset):
                 else:
                     raise ValueError("I thought there was no notes with _type different from 0,1,3. Ahem, what are those??")
                 blocks[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"]] = note_type*9+note["_cutDirection"]
-                blocks_manyhot[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"], note_type*9+note["_cutDirection"]] = 1.0
-        blocks += 1  # so that class range is > 0, and 0 is nothing
+                blocks_manyhot[sample_index+sample_delta,note["_lineLayer"]*4+note["_lineIndex"], note_type*9+note["_cutDirection"] + 1] = 1.0
+        blocks += 1  # so that range of classes corresponding to note is > 0, and 0 means no note
         indices = np.random.choice(range(y.shape[1]-receptive_field),size=self.opt.num_windows,replace=False)
         input_windows = [y[:,i:i+input_length] for i in indices]
         block_windows = [blocks[i+receptive_field:i+input_length+1,:] for i in indices]

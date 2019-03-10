@@ -233,7 +233,8 @@ class WaveNetModel(nn.Module):
         for i in range(num_samples):
             input = Variable(torch.FloatTensor(1, 12, 28, self.receptive_field).zero_())
             # input = input.scatter_(1, generated[:,:,-self.receptive_field:].long(), 1.)
-            input = input.scatter_(2, (generated[:,:,-self.receptive_field:].view(1,12,-1,self.receptive_field).long()-1)%28, 1.)
+            # input = input.scatter_(2, (generated[:,:,-self.receptive_field:].view(1,12,-1,self.receptive_field).long()-1)%28, 1.)
+            input = input.scatter_(2, generated[:,:,-self.receptive_field:].view(1,12,-1,self.receptive_field).long(), 1.)
 
             shape = input.shape
             input = input.view(shape[0],shape[1]*shape[2],shape[3])

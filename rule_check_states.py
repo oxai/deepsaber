@@ -14,34 +14,13 @@ def check_state_rules(data_directory, k):
             If 0, position is empty, otherwise for a note: type * 9(numberOfDirections) + cutDirection + 1
             19: Bomb
         Statistics for states is very important
-
-        Feb 12: Compute Top K states' total representation in overall state count
     '''
-    list_of_states = []  # Initialise the set of states
+
     for file in json_files:
         print("Analysing file " + file)
-        # Now go through them file by file
-        json_representation = IOFunctions.parse_json(file)
-        notes = json_representation["_notes"]  # Will Ignore Obstacles and Events for now
-        # Step 1: Extract the DISTINCT times (hence the set structure)
-        note_times = set(notes["_time"])  # Can Also Use This to compute minimal time difference between two note events
-        # Step 2: Initialise the state representations
-        state_dict = {eventTime: np.zeros(12) for eventTime in note_times}
-        # Step 3: Now Go Through dataFrame entries and update states accordingly
-        for entry in notes.itertuples():
-            entry_cut_direction = entry[1]  # Extract the individual note parts
-            entry_row = entry[2]
-            entry_column = entry[3]
-            entry_time = entry[4]
-            entry_type = entry[5]
-            # The Computational Part
-            entry_index = 4 * entry_column + entry_row  # Compute Index to update in the state representation
-            if entry_type == 3:  # This is a bomb
-                entry_representation = 19
-            else:  # This is a note
-                entry_representation = 1 + 9 * entry_type + entry_cut_direction
-            # Now Retrieve and update the corresponding state representation
-            state_dict[entry_time][entry_index] = entry_representation
+
+        # use function from identifyStateSpace to extract states from json
+        state_dict, note_times = compute_explicit_states_from_json(file, as_tuple = False)
 
         # for current song we will do some checks for good practices
         for i in note_times:

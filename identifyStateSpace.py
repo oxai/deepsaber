@@ -34,7 +34,7 @@ def compute_explicit_states_from_json(level_json, as_tuple = True):
         # Now Retrieve and update the corresponding state representation
         state_dict[entry_time][entry_index] = entry_representation
     if not as_tuple:
-        return state_dict
+        return state_dict, note_times
     else: # Tuples can be hashed
         states_as_tuples = {time: tuple(state) for time, state in state_dict.items()}
         return states_as_tuples
@@ -109,7 +109,7 @@ def produce_transition_probability_matrix_from_distinct_state_spaces(states=None
     for file in json_files:
         print("Analysing file " + file)
         transition_table = np.zeros((len(states), len(states)), dtype='uint8')
-        state_dict = compute_explicit_states_from_json(file,as_tuple=False)
+        state_dict, __ = compute_explicit_states_from_json(file,as_tuple=False)
         these_states = state_dict.values()  # Get all state representations
         states_as_tuples = [tuple(i) for i in these_states]  # Convert to tuples (Needed to enable hashing)
         state_times = [i for i in state_dict.keys()]  # Get state_times

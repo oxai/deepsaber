@@ -102,7 +102,8 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
         # WE SHOULD ALSO USE THE PERCUSSIVE FREQUENCIES IN OUR DATA, Otherwise the ML is losing valuable information
         print(level_states)
         print(chroma_features)
-        return level_states, chroma_features
+    #TODO: Store every level's data in a list (ideally by difficulty)
+    return level_states, chroma_features
 
 
 def chroma_feature_extraction(y, state_times, bpm, beat_discretization = 1/16):

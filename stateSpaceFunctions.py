@@ -42,7 +42,8 @@ def compute_discretized_state_sequence_from_json(json_file, top_k=2000,beat_disc
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k)
     # Compute length of sequence array. Clearly as discretization drops, length increases
     times = list(state_sequence.keys())
-    array_length = math.ceil(np.max(times)/beat_discretization)
+    array_length = math.ceil(np.max(times)/beat_discretization)  # DESIGN CHOICE: MAX TIME IS LAST STATE:
+    # CAN MAKE THIS END OF SONG, BUT THIS WOULD INTRODUCE REDUNDANT 0 STATES
     output_sequence = np.full(array_length, EMPTY_STATE_INDEX)
     alternative_dict = {int(time/beat_discretization):state for time, state in state_sequence.items()}
     output_sequence[list(alternative_dict.keys())] = list(alternative_dict.values()) # Use advanced indexing to fill where needed
@@ -63,18 +64,18 @@ def extract_all_representations_from_dataset(dataset_dir,top_k=2000,beat_discret
     for song_dir in song_directories:
         extract_representations_from_song_directory(song_dir,top_k=top_k,beat_discretization=beat_discretization)
         break
-        # Add some code here to save the representations eventually
+        #TODO: Add some code here to save the representations eventually
 
 
 def extract_representations_from_song_directory(directory,top_k=2000,beat_discretization=1/16):
     OGG_files = IOFunctions.get_all_ogg_files_from_data_directory(directory)
-    if len(OGG_files) == 0: #No OGG file ... skip
+    if len(OGG_files) == 0:  # No OGG file ... skip
         print("No OGG file for song "+directory)
         return
-    OGG_file = OGG_files[0] # There should only be one OGG file in every directory anyway, so we get that
+    OGG_file = OGG_files[0]  # There should only be one OGG file in every directory anyway, so we get that
     JSON_files = IOFunctions.get_all_json_level_files_from_data_directory(directory)
-    if len(JSON_files) == 0: # No Non-Autosave JSON files
-        JSON_files = IOFunctions.get_all_json_level_files_from_data_directory(directory,include_autosaves=True)
+    if len(JSON_files) == 0:  # No Non-Autosave JSON files
+        JSON_files = IOFunctions.get_all_json_level_files_from_data_directory(directory, include_autosaves=True)
         # So now it's worth checking out the autosaves
         if len(JSON_files) == 0: # If there's STILL no JSON file, declare failure (some levels only have autosave)
             print("No level data for song "+directory)
@@ -84,37 +85,35 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
             # (they're usually the same level saved multiple times so no point)
 
     # We now have all the JSON and OGGs for a level (if they exist). Process them
+    # Feature Extraction Begins
+    y, fs = librosa.load(OGG_file, sr=None)  # Load the OGG in LibROSA as usual
+    y_harmonic, y_percussive = librosa.effects.hpss(y)  # Separate into two frequency channels
     for JSON_file in JSON_files: # Corresponding to different difficulty levels I hope
         bs_level = IOFunctions.parse_json(JSON_file)
         try:
             bpm = bs_level["_beatsPerMinute"] # Try to get BPM from metadata to avoid having to compute it from scratch
         except:
-            bpm = None
-        ogg_chromas = chroma_feature_extraction(OGG_file, bpm, beat_discretization=beat_discretization)
+            bpm, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=fs, onset_envelope=None,  # Otherwise estimate
+                                hop_length=512, start_bpm=120.0, tightness=100., trim=True, units='frames')
+        # Compute State Representation
         level_states = compute_discretized_state_sequence_from_json(top_k=top_k,beat_discretization=beat_discretization)
-        #TODO: Trim the chromas to match the level information (same length). Save the level representations.
-        # Then we're ML-ready :)
+        feature_extraction_times = [(i*beat_discretization)*(60/bpm) for i in range(len(level_states))]
+        chroma_features = chroma_feature_extraction(y, feature_extraction_times, bpm, beat_discretization)
+        # WE SHOULD ALSO USE THE PERCUSSIVE FREQUENCIES IN OUR DATA, Otherwise the ML is losing valuable information
+        print(level_states)
+        print(chroma_features)
+        return level_states, chroma_features
 
 
-def chroma_feature_extraction(ogg_file, bpm, beat_discretization = 1/16):
-    y, fs = librosa.load(ogg_file, sr=None)  # Load the OGG in LibROSA as usual
-    y_harmonic, y_percussive = librosa.effects.hpss(y)  # Separate into two frequency channels
-    if bpm is None: # Unlikely, but possible that corresponding level has no JSON metadata, in which case extract
-        bpm, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=fs, onset_envelope=None, hop_length=512,
-                                                   start_bpm=120.0, tightness=100., trim=True, bpm=None, units='frames')
-
+def chroma_feature_extraction(y, state_times, bpm, beat_discretization = 1/16):
     hop = int((44100 * 60 * beat_discretization) / bpm)
-
-    chromagram = librosa.feature.chroma_cqt(y=y_harmonic, sr=fs, C=None, hop_length=hop, fmin=None,
+    chromagram = librosa.feature.chroma_cqt(y=y, sr=fs, C=None, hop_length=hop, fmin=None,
                                             norm=np.inf, threshold=0.0, tuning=None, n_chroma=12,
                                             n_octaves=7, window=None, bins_per_octave=None, cqt_mode='full')
 
     # Aggregate chroma features between beat events
     # We'll use the median value of each feature between beat frames
-    beat_chroma = librosa.util.sync(chromagram, beat_frames, aggregate=np.median, pad=True, axis=-1)
-    # Mackenzie: Beat_frames doesn't always exist, can we find a way to avoid this sync?
-    # Chop last column. Chroma features are computed between beat events
-    # Each column beat_chroma[:, k] will be the average of input columns between beat_frames[k] and beat_frames[k+1].
+    beat_chroma = librosa.util.sync(chromagram, state_times, aggregate=np.median, pad=True, axis=-1)
     beat_chroma = beat_chroma[:, :-1]
 
     return beat_chroma

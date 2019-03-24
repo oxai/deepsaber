@@ -11,7 +11,7 @@ To generate this folder, run identifyStateSpace.py
 '''
 NUM_DISTINCT_STATES = 4672 # This is the number of distinct states in our dataset
 EMPTY_STATE_INDEX = 0 # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
-
+SAMPLING_RATE = 16000
 
 def compute_state_sequence_representation_from_json(json_file, top_k=2000):
     '''
@@ -86,13 +86,13 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
 
     # We now have all the JSON and OGGs for a level (if they exist). Process them
     # Feature Extraction Begins
-    y, fs = librosa.load(OGG_file, sr=None)  # Load the OGG in LibROSA as usual
-    y_harmonic, y_percussive = librosa.effects.hpss(y)  # Separate into two frequency channels
+    y, fs = librosa.load(OGG_file)  # Load the OGG in LibROSA as usual
     for JSON_file in JSON_files: # Corresponding to different difficulty levels I hope
         bs_level = IOFunctions.parse_json(JSON_file)
         try:
             bpm = bs_level["_beatsPerMinute"] # Try to get BPM from metadata to avoid having to compute it from scratch
         except:
+            y_harmonic, y_percussive = librosa.effects.hpss(y)  # Separate into two frequency channels
             bpm, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=fs, onset_envelope=None,  # Otherwise estimate
                                 hop_length=512, start_bpm=120.0, tightness=100., trim=True, units='frames')
         # Compute State Representation

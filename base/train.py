@@ -5,12 +5,17 @@ import time
 from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
 from models import create_model
+import random
 
 sys.argv.append("--data_dir=../DataE")
 # sys.argv.append("--dataset_name=mfcc")
-sys.argv.append("--dataset_name=reduced_states")
+sys.argv.append("--dataset_name=mfcc_look_ahead")
+# sys.argv.append("--dataset_name=reduced_states")
+sys.argv.append("--model=adv_wavenet")
+sys.argv.append("--frequency_gen_updates=2")
 sys.argv.append("--batch_size=1")
-sys.argv.append("--num_windows=10")
+sys.argv.append("--output_length=95") # needs to be at least the receptive field (in time points) + 1 if using the GAN (adv_wavenet model)!
+sys.argv.append("--num_windows=5")
 sys.argv.append("--gpu_ids=0")
 #sys.argv.append("--nepoch=1")
 #sys.argv.append("--nepoch_decay=1")
@@ -28,7 +33,9 @@ if __name__ == '__main__':
         receptive_field = model.net.receptive_field
     else:
         receptive_field = model.net.module.receptive_field
-    print("Receptive field is "+str(receptive_field/opt.sampling_rate)+" seconds")
+
+    print("Receptive field is "+str(receptive_field)+" time points")
+    print("Receptive field is "+str(receptive_field/opt.beat_subdivision)+" beats")
     train_dataset = create_dataset(opt, receptive_field=receptive_field)
     train_dataset.setup()
     train_dataloader = create_dataloader(train_dataset)
@@ -52,7 +59,13 @@ if __name__ == '__main__':
             total_steps += opt.batch_size
             epoch_iter += opt.batch_size
             model.set_input(data)
-            model.optimize_parameters()
+            if opt.model == "adv_wavenet" and random.randint(1,opt.frequency_gen_updates) == opt.frequency_gen_updates:
+                #I'm doing this probabilistically because I'm not sure if train_dataloader reshuffles the data between epochs
+                print("Optimizing generator")
+                model.optimize_parameters(optimize_generator=True)
+            else:
+                print("Optimizing discriminator")
+                model.optimize_parameters()
             if total_steps % opt.display_freq == 0 or total_steps % opt.print_freq == 0:
                 model.evaluate_parameters()
 

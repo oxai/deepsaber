@@ -20,7 +20,7 @@ class BaseOptions:
         parser.add_argument('--num_windows', default=16, type=int)
         parser.add_argument('--beat_subdivision', default=16, type=int)
         parser.add_argument('--augment', type=int, default=0)
-        parser.add_argument('--model', type=str, default="wavenet", help="The network model used for segmentation")
+        parser.add_argument('--model', type=str, default="wavenet", help="The network model used for beatsaberification")
         parser.add_argument('--init_type', type=str, default="normal")
         parser.add_argument('--init_gain', default=0.02, type=float)
         parser.add_argument('--eval', action='store_true', help='use eval mode during validation / test time.')

@@ -11,20 +11,22 @@
             compute_feats: False                         
            continue_train: False                         
                  data_dir: ../DataE                      	[default: /Users/andreachatrian/Documents/Repositories/oxai/beatsaber/DataE]
-             dataset_name: reduced_states                	[default: song]
+             dataset_name: mfcc                          	[default: song]
         dilation_channels: 32                            
              display_freq: 100                           
             do_validation: False                         
+                dropout_p: 0.5                           
              end_channels: 256                           
               epoch_count: 1                             
                      eval: False                         
           experiment_name: experiment_name               
            fork_processes: False                         
+    frequency_gen_updates: 2                             	[default: 5]
                   gpu_ids: 0                             	[default: -1]
                hop_length: 256                           
                 init_gain: 0.02                          
                 init_type: normal                        
-           input_channels: 2021                          
+           input_channels: 260                           
                  is_train: True                          	[default: None]
               kernel_size: 2                             
                    layers: 5                             	[default: 10]
@@ -38,15 +40,15 @@
                        lr: 0.0002                        
            lr_decay_iters: 50                            
                 lr_policy: lambda                        
-                    model: wavenet                       
+                    model: adv_wavenet                   	[default: wavenet]
                    nepoch: 100                           
              nepoch_decay: 100                           
                   no_html: False                         
-              num_classes: 2001                          
+              num_classes: 20                            
               num_filters: 15                            
-              num_windows: 10                            	[default: 16]
-          output_channels: 1                             
-            output_length: 1                             
+              num_windows: 5                             	[default: 16]
+          output_channels: 12                            
+            output_length: 95                            	[default: 1]
             padded_length: 3000000                       
                     phase: train                         
                print_freq: 1                             	[default: 100]

@@ -52,7 +52,6 @@ def compute_discretized_state_sequence_from_json(json_file, top_k=2000,beat_disc
     the latest appearance sets the value e.g. x[2,2] = 1,3 sets x[2] to 3, this means that , in the very unlikely event 
     that two states are mapped to the same beat discretization, the later state survives.
     '''
-    print(list(output_sequence))
     return output_sequence
 
 
@@ -61,10 +60,12 @@ def extract_all_representations_from_dataset(dataset_dir,top_k=2000,beat_discret
     song_directories = [os.path.join(dataset_dir,song_dir) for song_dir in os.listdir(dataset_dir)
                         if os.path.isdir(os.path.join(dataset_dir,song_dir))]
     # Step 2: Pass each directory through the representation computation (and write code for saving obviously)
+    directory_dict = {}
     for song_dir in song_directories:
-        extract_representations_from_song_directory(song_dir,top_k=top_k,beat_discretization=beat_discretization)
+        directory_dict[song_dir] = extract_representations_from_song_directory(song_dir,
+                                        top_k=top_k,beat_discretization=beat_discretization)
         break
-        #TODO: Add some code here to save the representations eventually
+    return directory_dict    #TODO: Add some code here to save the representations eventually
 
 
 def extract_representations_from_song_directory(directory,top_k=2000,beat_discretization=1/16):
@@ -86,37 +87,37 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
 
     # We now have all the JSON and OGGs for a level (if they exist). Process them
     # Feature Extraction Begins
-    y, fs = librosa.load(OGG_file)  # Load the OGG in LibROSA as usual
+    y, sr = librosa.load(OGG_file)  # Load the OGG in LibROSA as usual
+    level_state_feature_maps = {}
     for JSON_file in JSON_files: # Corresponding to different difficulty levels I hope
         bs_level = IOFunctions.parse_json(JSON_file)
         try:
             bpm = bs_level["_beatsPerMinute"] # Try to get BPM from metadata to avoid having to compute it from scratch
         except:
             y_harmonic, y_percussive = librosa.effects.hpss(y)  # Separate into two frequency channels
-            bpm, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=fs, onset_envelope=None,  # Otherwise estimate
+            bpm, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=sr, onset_envelope=None,  # Otherwise estimate
                                 hop_length=512, start_bpm=120.0, tightness=100., trim=True, units='frames')
         # Compute State Representation
-        level_states = compute_discretized_state_sequence_from_json(top_k=top_k,beat_discretization=beat_discretization)
+        level_states = compute_discretized_state_sequence_from_json(json_file=JSON_file,
+                                                                    top_k=top_k,beat_discretization=beat_discretization)
         feature_extraction_times = [(i*beat_discretization)*(60/bpm) for i in range(len(level_states))]
-        chroma_features = chroma_feature_extraction(y, feature_extraction_times, bpm, beat_discretization)
+        feature_extraction_frames = librosa.core.time_to_frames(feature_extraction_times,sr=sr)
+        chroma_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
+        level_state_feature_maps[os.path.basename(JSON_file)] = (level_states, chroma_features)
+
         # WE SHOULD ALSO USE THE PERCUSSIVE FREQUENCIES IN OUR DATA, Otherwise the ML is losing valuable information
-        print(level_states)
-        print(chroma_features)
-    #TODO: Store every level's data in a list (ideally by difficulty)
-    return level_states, chroma_features
+    return level_state_feature_maps
 
 
-def chroma_feature_extraction(y, state_times, bpm, beat_discretization = 1/16):
-    hop = int((44100 * 60 * beat_discretization) / bpm)
-    chromagram = librosa.feature.chroma_cqt(y=y, sr=fs, C=None, hop_length=hop, fmin=None,
+def chroma_feature_extraction(y,sr, state_times, bpm, beat_discretization = 1/16):
+    #hop = #int((44100 * 60 * beat_discretization) / bpm) Hop length must be a multiple of 2^6
+    chromagram = librosa.feature.chroma_cqt(y=y, sr=sr, C=None, fmin=None,
                                             norm=np.inf, threshold=0.0, tuning=None, n_chroma=12,
                                             n_octaves=7, window=None, bins_per_octave=None, cqt_mode='full')
-
     # Aggregate chroma features between beat events
     # We'll use the median value of each feature between beat frames
     beat_chroma = librosa.util.sync(chromagram, state_times, aggregate=np.median, pad=True, axis=-1)
     beat_chroma = beat_chroma[:, :-1]
-
     return beat_chroma
 
 

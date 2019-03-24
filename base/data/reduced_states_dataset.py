@@ -65,7 +65,7 @@ class MfccDataset(BaseDataset):
 
             beat_duration = int(60*sr/bpm) #beat duration in samples
 
-            mel_hop = beat_duration//self.opt.beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+            mel_hop = beat_duration//self.opt.beat_subdivision  # one vec of mfcc features per 16th of a beat (hop is in num of samples)
             mel_window = 4*mel_hop
 
             # get mfcc feature

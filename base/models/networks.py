@@ -43,6 +43,7 @@ class WaveNetModel(nn.Module):
                  output_channels=1,
                  num_classes=2,
                  kernel_size=2,
+                 dropout_p=0,
                  dtype=torch.FloatTensor,
                  bias=False):
 
@@ -58,6 +59,7 @@ class WaveNetModel(nn.Module):
         self.dtype = dtype
         self.output_channels = output_channels
         self.num_classes = num_classes
+        self.dropout_p = dropout_p
 
         # build model
         receptive_field = 1
@@ -70,6 +72,7 @@ class WaveNetModel(nn.Module):
         self.gate_convs = nn.ModuleList()
         self.residual_convs = nn.ModuleList()
         self.skip_convs = nn.ModuleList()
+        # self.dropouts = nn.ModuleList()
 
         # 1x1 convolution to create channels
         self.start_conv = nn.Conv1d(in_channels=self.input_channels,
@@ -117,7 +120,9 @@ class WaveNetModel(nn.Module):
                 additional_scope *= 2
                 init_dilation = new_dilation
                 new_dilation *= 2
+                # self.dropouts.append(nn.Dropout(self.dropout_p))
 
+        self.dropout = nn.Dropout(self.dropout_p)    
         self.end_conv_1 = nn.Conv1d(in_channels=skip_channels,
                                   out_channels=end_channels,
                                   kernel_size=1,
@@ -175,6 +180,8 @@ class WaveNetModel(nn.Module):
 
             x = self.residual_convs[i](x)
             x = x + residual[:, :, (self.kernel_size - 1):]
+        
+        x = self.dropout(x)
 
         x = F.relu(skip)
         x = F.relu(self.end_conv_1(x))
@@ -207,8 +214,8 @@ class WaveNetModel(nn.Module):
         [n, channels, classes, l] = x.size()
         l = self.output_length
         x = x[:, :, :, -l:]
-        x = x.transpose(1, 3).contiguous()
-        x = x.view(n * l * channels, classes)
+        # x = x.transpose(1, 3).contiguous()
+        # x = x.view(n * l * channels, classes)
         return x
 
     def generate(self,
@@ -249,7 +256,7 @@ class WaveNetModel(nn.Module):
             input = torch.cat((mfcc_features,input.float()),1).cuda() #eeh need to have it work without cuda too
 
             x = self.wavenet(input,dilation_func=self.wavenet_dilate)[0:1, :, :, -1:]
-            x = x.transpose(1, 3).contiguous() # need to undertand why transposing here makes a difference.. This line is necessary..
+            x = x.transpose(1, 3).contiguous() # need to undertand why transposing here makes a difference.. This line is necessary.. what I mean is that I think it broke when using permute, but perhaps I was being stupid :P 
             x = x.view(self.output_channels ,self.num_classes)
 
             if temperature > 0:

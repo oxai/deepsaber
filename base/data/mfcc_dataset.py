@@ -99,7 +99,7 @@ class MfccDataset(BaseDataset):
         # eps = self.eps
         for note in notes:
             sample_index = floor((note['_time']*60/bpm)*sr/(mel_hop+1))
-            if sample_index > y.shape[1]:
+            if sample_index >= y.shape[1]:
                 print("note beyond the end of time")
                 continue
             if note["_type"] == 3:
@@ -112,7 +112,7 @@ class MfccDataset(BaseDataset):
             blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], 0] = 0.0 #remove the one hot at the zero class
             blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], note_representation] = 1.0
 
-        indices = np.random.choice(range(y.shape[1]-receptive_field),size=self.opt.num_windows,replace=False)
+        indices = np.random.choice(range(y.shape[1]-input_length),size=self.opt.num_windows,replace=True)
 
         input_windows = [y[:,i:i+input_length] for i in indices]
         input_windows = torch.tensor(input_windows)

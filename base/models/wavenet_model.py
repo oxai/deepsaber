@@ -57,13 +57,21 @@ class WaveNetModel(BaseModel):
         target_ = data['target']
         input_shape = input_.shape
         target_shape = target_.shape
+        # 0 batch dimension, 1 window dimension, 2 input channel dimension, 3 time dimension
         self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3])).to(self.device)
+        #we collapse all the dimensions of target_ because that is the same way the output of the network is being processed for the cross entropy calculation (see self.forward)
+        # here, 0 is the batch dimension, 1 is the window index, 2 is the time dimension, 3 is the output channel dimension
         self.target = target_.reshape((target_shape[0]*target_shape[1]*target_shape[2]*target_shape[3])).to(self.device)
 
     def forward(self):
         self.output = self.net.forward(self.input)
-        self.loss_ce = F.cross_entropy(self.output, self.target)
-        self.metric_accuracy = (torch.argmax(self.output,1) == self.target).sum().float()/len(self.target)
+        x = self.output
+        [n, channels, classes, l] = x.size()
+        x = x.transpose(1, 3).contiguous()
+        x = x.view(n * l * channels, classes)
+
+        self.loss_ce = F.cross_entropy(x, self.target)
+        self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
 
     def backward(self):
         self.optimizers[0].zero_grad()

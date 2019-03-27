@@ -33,7 +33,7 @@ def download_top_k_played_songs(k):
     downloadsRegEx = re.compile("<li>Downloads:\s(.*?)<\/li>")
     finishedRegEx = re.compile("<li>Finished:\s(.*?)<\/li>")
     thumbsUpRegEx = re.compile("<i class=\"fas fa-thumbs-up\"><\/i>\s(.*?) \/")
-    thumbsDownRegEx = re.compile("<i class=\"fas fa-thumbs-down\"><\/i>\s(.*?)"+r"\\"+"n\s*?<\/li>")
+    thumbsDownRegEx = re.compile("<i class=\"fas fa-thumbs-down\"><\/i>\s(.*?)\s*?<\/li>")
     ratingRegEx = re.compile("<li>Rating:\s(.*?)%<\/li>")
     fileNameRegEx = re.compile("has-text-right\">Version:\s([0-9]+-[0-9]+)<\/td>")
     illegalNameChars = re.compile("[\/\\:\*\?\"<>|]")
@@ -43,7 +43,7 @@ def download_top_k_played_songs(k):
         # Get the HTML page. The page has 20 files on it
         HTMLreq = Request('http://beatsaver.com/browse/played/'+str(page*20), headers={'User-Agent': 'Mozilla/5.0'})
         response = urlopen(HTMLreq)
-        HTML = str(response.read())
+        HTML = str(response.read().decode())
         titleMatches = re.findall(titleRegEx, HTML)  # Extract song titles
         fileNameMatches = re.findall(fileNameRegEx, HTML)  # Extract file names (both very hacky)
         authorMatches = re.findall(authorRegEx, HTML)  # Extract author names
@@ -83,14 +83,14 @@ def download_top_k_played_songs(k):
                 if not os.path.exists(meta_data_txt_output):
                     f = open(meta_data_txt_output, 'a').close() # incase doesn't exist
                 f = open(meta_data_txt_output, 'w')
-                f.write('id: ' + fileNameMatches[index] + ';\n')
-                f.write('title: ' + titleMatches[index] + ';\n')
-                f.write('author: ' + authorMatches[index] + ';\n')
-                f.write('downloads: ' + downloadsMatches[index] + ';\n')
-                f.write('finished: ' + finishedMatches[index] + ';\n')
-                f.write('thumbsUp: ' + thumbsUpMatches[index] + ';\n')
-                f.write('thumbsDown: ' + thumbsDownMatches[index] + ';\n')
-                f.write('rating: ' + ratingMatches[index] + ';\n')
+                f.write('id: ' + fileNameMatches[index] + '\n')
+                f.write('title: ' + titleMatches[index] + '\n')
+                f.write('author: ' + authorMatches[index] + '\n')
+                f.write('downloads: ' + downloadsMatches[index] + '\n')
+                f.write('finished: ' + finishedMatches[index] + '\n')
+                f.write('thumbsUp: ' + thumbsUpMatches[index] + '\n')
+                f.write('thumbsDown: ' + thumbsDownMatches[index] + '\n')
+                f.write('rating: ' + ratingMatches[index] + '\n')
                 f.close()
                 if os.path.getsize(meta_data_txt_output) == 0:
                     print('Created meta_data ' + os.path.join(song_name, meta_data_txt_output))
@@ -259,6 +259,6 @@ def update_meta_data_for_downloaded_songs():
                 print('Updated meta_data for ' + downloaded_songs_full[i])
 
 if __name__ == "__main__":
-    #fileNamesA, titlesA = download_top_k_played_songs(10)
-    update_meta_data_for_downloaded_songs()
+    fileNamesA, titlesA = download_top_k_played_songs(10)
+    #update_meta_data_for_downloaded_songs()
 

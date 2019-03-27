@@ -1,8 +1,9 @@
 
-import pickle
+import numpy as np
 import librosa
 from pathlib import Path
 import json
+import os.path
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -34,34 +35,37 @@ time_shifts = 16
 
 for i in tasks:
     path = candidate_audio_files[i]
+    song_file_path = path.__str__()
+    mfcc_file = song_file_path+"_"+str(n_mfcc)+"_"+str(beat_subdivision)+"_mfcc.npy"
     try:
         level = list(path.parent.glob(f'./{difficulty}.json'))[0]
     except IndexError:
             continue
+    if not os.path.isfile(mfcc_file):
+        #mfcc = pickle.load(open(mfcc_file,"rb"))
+        #print("found mfcc file already")
 
-    song_file_path = path.__str__()
+        print("creating mfcc file",i)
+        level = json.load(open(level, 'r'))
 
-    print("creating mfcc file",i)
-    level = json.load(open(level, 'r'))
+        bpm = level['_beatsPerMinute']
+        notes = level['_notes']
 
-    bpm = level['_beatsPerMinute']
-    notes = level['_notes']
+        sr = sampling_rate
+        beat_duration = int(60*sr/bpm) #beat duration in samples
 
-    sr = sampling_rate
-    beat_duration = int(60*sr/bpm) #beat duration in samples
+        mel_hop = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+        mel_window = 4*mel_hop
+        y, sr = librosa.load(song_file_path, sr=sampling_rate)
 
-    mel_hop = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-    mel_window = 4*mel_hop
-    y, sr = librosa.load(song_file_path, sr=sampling_rate)
+        # get mfcc feature
+        mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
 
-    # get mfcc feature
-    mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
 
-    mfcc_file = song_file_path+"_"+str(n_mfcc)+"_"+str(beat_subdivision)+"_mfcc.p"
+        if mfcc.shape[1]-(input_length+time_shifts-1) < 1:
+            print("Smol song, probably trolling; blacklisting...")
+            with open("DataE/blacklist","a") as f:
+                f.write(song_file_path+"\n")
 
-    if mfcc.shape[1]-(input_length+time_shifts-1) < 1:
-        print("Smol song, probably trolling; blacklisting...")
-        with open("DataE/blacklist","a") as f:
-            f.write(song_file_path+"\n")
-
-    pickle.dump(mfcc,open(mfcc_file,"wb"))
+        #pickle.dump(mfcc,open(mfcc_file,"wb"))
+        np.save(mfcc_file,mfcc)

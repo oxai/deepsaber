@@ -42,24 +42,23 @@ if opt.gpu_ids == -1:
 else:
     receptive_field = model.net.module.receptive_field
 
-# model.load_networks('iter_34000')
-# model.load_networks('iter_71000')
-# model.load_networks('iter_22000')
-# model.load_networks('iter_55000')
-# model.load_networks('iter_18000')
-model.load_networks('latest')
+checkpoint = "iter_419000"
+checkpoint = "latest"
+model.load_networks(checkpoint)
 
 import librosa
 
+song_number = "21"
+
 # y, sr = librosa.load("../../test_song2.wav", sr=16000)
-y, sr = librosa.load("../../test_song21.wav", sr=16000)
+y, sr = librosa.load("../../test_song"+song_number+".wav", sr=16000)
 # y, sr = librosa.load("../../song2.ogg", sr=11025)
 
 # bpm = 106 # 22
-# bpm = 80 # 21
+bpm = 80 # 21
 # bpm = 105 # 20
 # bpm = 120 # 19
-bpm = 128 # 18
+# bpm = 128 # 18
 # bpm = 76
 # bpm=85 # 14
 # bpm=91 #16
@@ -141,7 +140,7 @@ import json
 # with open("new_test_song14_reduced_states_temp1_0_55000.json", "w") as f:
 # with open("new_test_song21_reduced_states_temp1_0_47000.json", "w") as f:
 # with open("test_song18_new_mfcc_71000_temp1.json", "w") as f:
-with open("test_song21_gan_latest1_temp1.json", "w") as f:
+with open("test_song"+song_number+"_"+opt.model+"_"+opt.datset_name+"_"+opt.experiment_name+"_"+checkpoint+".json", "w") as f:
 # with open("test_song18_new_mfcc_34000_Normal_temp1.json", "w") as f:
     f.write(json.dumps(song_json))
 

@@ -24,10 +24,10 @@ class MfccLookAheadDataset(BaseDataset):
         self.mfcc_features = {}
         n_mfcc = (self.opt.input_channels-self.opt.output_channels*self.opt.num_classes)//self.opt.time_shifts
         with open("../DataE/blacklist","r") as f:
-                blacklist = f.readlines()
-        
+                blacklist = f.read().splitlines()
         for i, path in enumerate(candidate_audio_files):
             if path.__str__() in blacklist:
+                print(path.__str__())
                 continue # this file was blacklisted
             try:
                 level = list(path.parent.glob(f'./{self.opt.level_diff}.json'))[0]
@@ -36,12 +36,12 @@ class MfccLookAheadDataset(BaseDataset):
             except IndexError:
                 continue
             
-            mfcc_file = path.__str__()+"_"+n_mfcc+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
+            mfcc_file = path.__str__()+"_"+str(n_mfcc)+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
             try:
                 # mfcc = pickle.load(open(mfcc_file,"rb"))
                 mfcc = np.load(mfcc_file)
                 self.mfcc_features[path.__str__()] = mfcc
-                print("reading mfcc file")
+                #print("reading mfcc file")
             except FileNotFoundError:
                 print("creating mfcc file",i)
                 level = json.load(open(level, 'r'))
@@ -104,8 +104,8 @@ class MfccLookAheadDataset(BaseDataset):
 
     def __getitem__(self, item):
         song_file_path = self.audio_files[item].__str__()
-        mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
-        print(song_file_path)
+        mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
+        #print(song_file_path)
         level = json.load(open(self.level_jsons[item], 'r'))
 
         bpm = level['_beatsPerMinute']
@@ -152,15 +152,6 @@ class MfccLookAheadDataset(BaseDataset):
             with open("../DataE/blacklist","a") as f:
                 f.write(song_file_path+"\n")
 
-        indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
-
-        input_windowss = []
-        for ii in range(self.opt.time_shifts):
-            input_windows = [y[:,i+ii:i+ii+input_length] for i in indices]
-            input_windows = torch.tensor(input_windows)
-            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
-            input_windowss.append(input_windows.float())
-        
         blocks = np.zeros((y.shape[1],self.opt.output_channels)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
         blocks_manyhot = np.zeros((y.shape[1],self.opt.output_channels,self.opt.num_classes)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
         blocks_manyhot[:,:,0] = 1.0 #default is the "nothing" class
@@ -168,7 +159,7 @@ class MfccLookAheadDataset(BaseDataset):
         for note in notes:
             sample_index = floor((note['_time']*60/bpm)*sr/(mel_hop+1))
             if sample_index >= y.shape[1]:
-                print("note beyond the end of time")
+                #print("note beyond the end of time")
                 continue
             if note["_type"] == 3:
                 note_representation = 19
@@ -181,7 +172,18 @@ class MfccLookAheadDataset(BaseDataset):
             blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], note_representation] = 1.0
 
         # print(y)
-        # print(y.shape)
+        #print(y.shape)
+        #print(y.shape[1]-(input_length+self.opt.time_shifts-1))
+        #print(range(y.shape[1]-(input_length+self.opt.time_shifts-1)))
+        #indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
+        indices = np.random.randint(y.shape[1]-(input_length+self.opt.time_shifts-1),size=self.opt.num_windows)
+
+        input_windowss = []
+        for ii in range(self.opt.time_shifts):
+            input_windows = [y[:,i+ii:i+ii+input_length] for i in indices]
+            input_windows = torch.tensor(input_windows)
+            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
+            input_windowss.append(input_windows.float())
 
         # print(len(input_windowss),input_windowss[0].shape)
 

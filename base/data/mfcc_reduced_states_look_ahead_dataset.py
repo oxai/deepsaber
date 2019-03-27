@@ -9,7 +9,7 @@ from math import floor, ceil
 import pickle
 unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 
-class MfccReducedStateLookAheadDataset(BaseDataset):
+class MfccReducedStatesLookAheadDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
         super().__init__()
@@ -37,13 +37,14 @@ class MfccReducedStateLookAheadDataset(BaseDataset):
             except IndexError:
                 continue
             
-            mfcc_file = path.__str__()+"_"+n_mfcc+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
+            mfcc_file = path.__str__()+"_"+str(n_mfcc)+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
             try:
                 # mfcc = pickle.load(open(mfcc_file,"rb"))
                 mfcc = np.load(mfcc_file)
                 self.mfcc_features[path.__str__()] = mfcc
-                print("reading mfcc file")
+                #print("reading mfcc file")
             except FileNotFoundError:
+                continue
                 print("creating mfcc file",i)
                 level = json.load(open(level, 'r'))
 
@@ -95,9 +96,9 @@ class MfccReducedStateLookAheadDataset(BaseDataset):
         parser.add_argument('--time_shifts', type=int, default=16)
         # parser.add_argument('--num_mfcc_features', type=int, default=20)
         # parser.set_defaults(input_channels=(self.opt.num_mfcc_features+(9*3+1)*(4*3)), output_nc=2, direction='AtoB')
-        parser.set_defaults(input_channels=(20*16+12*20))
-        parser.set_defaults(num_classes=20)
-        parser.set_defaults(output_channels=12)
+        parser.set_defaults(input_channels=(20*16+2001))
+        parser.set_defaults(num_classes=2001)
+        parser.set_defaults(output_channels=1)
         return parser
 
     def name(self):
@@ -105,9 +106,10 @@ class MfccReducedStateLookAheadDataset(BaseDataset):
 
     def __getitem__(self, item):
         song_file_path = self.audio_files[item].__str__()
-        mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
-        print(song_file_path)
+        mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
+        #print(song_file_path)
         level = json.load(open(self.level_jsons[item], 'r'))
+
 
         bpm = level['_beatsPerMinute']
         notes = level['_notes']

@@ -106,6 +106,7 @@ class AdvWaveNetModel(BaseModel):
         p_gen = self.discriminator.forward(torch.cat((self.input[:,:-self.opt.output_channels*self.opt.num_classes,-(l-1):],generated_level),1)).squeeze()
         p_gen = torch.sigmoid(p_gen)
         self.loss_gen = torch.log(1-p_gen).mean() # high when discriminator thinks it likely false
+        self.loss_gen += 0.1 * self.loss_ce
 
         # p_real = self.discriminator.forward(self.input[:,-self.opt.output_channels*self.opt.num_classes:,:l]).squeeze()
         p_real = self.discriminator.forward(self.input[:,:,:l]).squeeze()

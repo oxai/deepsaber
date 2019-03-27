@@ -6,6 +6,7 @@ import librosa
 from base.data.base_dataset import BaseDataset
 import json
 from math import floor, ceil
+import pickle
 
 class MfccLookAheadDataset(BaseDataset):
 
@@ -20,22 +21,65 @@ class MfccLookAheadDataset(BaseDataset):
         candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
         self.audio_files = []
-        # audio_no_level = []  # store audios for which there is no json level
+        self.mfcc_features = {}
+        n_mfcc = (self.opt.input_channels-self.opt.output_channels*self.opt.num_classes)//self.opt.time_shifts
+        with open("../DataE/blacklist","r") as f:
+                blacklist = f.readlines()
+        
         for i, path in enumerate(candidate_audio_files):
+            if path.__str__() in blacklist:
+                continue # this file was blacklisted
             try:
                 level = list(path.parent.glob(f'./{self.opt.level_diff}.json'))[0]
                 self.level_jsons.append(level)
                 self.audio_files.append(path)
             except IndexError:
-                # audio_no_level.append(i)
-                pass
-        # for i in reversed(audio_no_level):  # not to throw off preceding indices
-        #     self.audio_files.pop(i)
+                continue
+            
+            mfcc_file = path.__str__()+"_"+n_mfcc+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
+            try:
+                mfcc = pickle.load(open(mfcc_file,"rb"))
+                self.mfcc_features[path.__str__()] = mfcc
+                print("reading mfcc file")
+            except FileNotFoundError:
+                print("creating mfcc file",i)
+                level = json.load(open(level, 'r'))
+
+                bpm = level['_beatsPerMinute']
+                notes = level['_notes']
+
+                sr = self.opt.sampling_rate
+                beat_duration = int(60*sr/bpm) #beat duration in samples
+
+                mel_hop = beat_duration//self.opt.beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+                mel_window = 4*mel_hop
+                y, sr = librosa.load(path.__str__(), sr=self.opt.sampling_rate)
+
+                # get mfcc feature
+                mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
+
+                # print(len(y),mel_hop,len(y)/mel_hop,mfcc.shape[1])
+
+                receptive_field = self.receptive_field
+                output_length = self.opt.output_length
+                input_length = receptive_field + output_length -1
+
+                if mfcc.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
+                    print("Smol song, probably trolling; blacklisting...")
+                    with open("../DataE/blacklist","a") as f:
+                        f.write(song_file_path+"\n")
+                    self.level_jsons.pop()
+                    self.audio_files.pop()
+                    continue
+
+                self.mfcc_features[path.__str__()] = mfcc
+                pickle.dump(mfcc,open(mfcc_file,"wb"))
+                # pass
+
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"
         assert len(self.audio_files) == len(self.level_jsons)
         self.eps = 0.1
-        self.mfcc_features = {}
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -57,6 +101,9 @@ class MfccLookAheadDataset(BaseDataset):
         return "SongDataset"
 
     def __getitem__(self, item):
+        song_file_path = self.audio_files[item].__str__()
+        mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
+        print(song_file_path)
         level = json.load(open(self.level_jsons[item], 'r'))
 
         bpm = level['_beatsPerMinute']
@@ -68,18 +115,19 @@ class MfccLookAheadDataset(BaseDataset):
         mel_hop = beat_duration//self.opt.beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
         mel_window = 4*mel_hop
 
-        if item not in self.mfcc_features: #cache
+        if song_file_path not in self.mfcc_features: #well if everything worked correctly it should always be in there; but if not we can always redo this; will probably remove in the future :P
 
             y, sr = librosa.load(self.audio_files[item], sr=self.opt.sampling_rate)
 
             # get mfcc feature
-            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=(self.opt.input_channels-self.opt.output_channels*self.opt.num_classes))
+            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=((self.opt.input_channels-self.opt.output_channels*self.opt.num_classes)//self.opt.time_shifts))
 
             # print(len(y),mel_hop,len(y)/mel_hop,mfcc.shape[1])
 
-            self.mfcc_features[item] = mfcc
+            self.mfcc_features[song_file_path] = mfcc
+            pickle.dump(mfcc,open(mfcc_file,"wb"))
         else:
-            mfcc = self.mfcc_features[item]
+            mfcc = self.mfcc_features[song_file_path]
 
         # y = librosa.util.fix_length(y, size=self.opt.padded_length)
         level = json.load(open(self.level_jsons[item], 'r'))
@@ -90,9 +138,16 @@ class MfccLookAheadDataset(BaseDataset):
 
         y = mfcc
 
+        # print(y.shape)
+
         receptive_field = self.receptive_field
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
+
+        if y.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
+            print("Smol song, probably trolling; blacklisting...")
+            with open("../DataE/blacklist","a") as f:
+                f.write(song_file_path+"\n")
 
         blocks = np.zeros((y.shape[1],12)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
         blocks_manyhot = np.zeros((y.shape[1],self.opt.output_channels,self.opt.num_classes)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
@@ -113,7 +168,9 @@ class MfccLookAheadDataset(BaseDataset):
             blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], 0] = 0.0 #remove the one hot at the zero class
             blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], note_representation] = 1.0
 
-        indices = np.random.choice(range(y.shape[1]-input_length),size=self.opt.num_windows,replace=True)
+        # print(y)
+        # print(y.shape)
+        indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
 
         input_windowss = []
         for ii in range(self.opt.time_shifts):
@@ -121,6 +178,8 @@ class MfccLookAheadDataset(BaseDataset):
             input_windows = torch.tensor(input_windows)
             input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
             input_windowss.append(input_windows.float())
+
+        # print(len(input_windowss),input_windowss[0].shape)
 
         block_windows = [blocks[i+receptive_field:i+input_length+1,:] for i in indices]
         block_windows = torch.tensor(block_windows,dtype=torch.long)

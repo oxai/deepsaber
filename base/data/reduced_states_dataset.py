@@ -96,6 +96,12 @@ class ReducedStatesDataset(BaseDataset):
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
 
+        indices = np.random.choice(range(y.shape[1]-receptive_field),size=self.opt.num_windows,replace=False)
+
+        input_windows = [y[:,i:i+input_length] for i in indices]
+        input_windows = torch.tensor(input_windows)
+        input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
+
         blocks = np.zeros((y.shape[1],12)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
         blocks_reduced = np.zeros((y.shape[1],2001))
         blocks_reduced_classes = np.zeros((y.shape[1],1))
@@ -122,12 +128,6 @@ class ReducedStatesDataset(BaseDataset):
             except:
                 blocks_reduced[i,0] = 1.0
                 blocks_reduced_classes[i,0] = 0
-
-        indices = np.random.choice(range(y.shape[1]-receptive_field),size=self.opt.num_windows,replace=False)
-
-        input_windows = [y[:,i:i+input_length] for i in indices]
-        input_windows = torch.tensor(input_windows)
-        input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
 
         block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
         block_reduced_classes_windows = torch.tensor(block_reduced_classes_windows,dtype=torch.long)

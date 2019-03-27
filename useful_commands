@@ -1,0 +1,9 @@
+#download data
+wget -O DataE.zip https://www.dropbox.com/sh/t6ypzr39cjsn900/AAD-KXww47mK-6gjub5e5VSNa?dl=1; unzip DataE.zip -d DataE
+
+#create mfcc feature pickles, parallelized code
+mpiexec -n $(nproc) python3 process_songs.py
+
+#convert ogg to wav
+#needs sox installed
+find DataE/ -type f -name '*.ogg' | awk '{printf "sox -t ogg '\''%s'\'' -b 16 -t wav '\''%s'\''\n", $0, $0".wav" }' | bash

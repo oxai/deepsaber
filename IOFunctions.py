@@ -174,7 +174,7 @@ which are optimised. (Technically these two fcts can be made one with an extra p
 
 
 def get_all_ogg_files_from_data_directory(data_directory):
-    file_regex = re.compile("^.*\\.json$")
+    file_regex = re.compile("^.*\\.ogg$")
     ogg_files = []
     for root, subdirectories, files in os.walk(data_directory):
         for name in files:

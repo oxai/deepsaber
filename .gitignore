@@ -8,3 +8,4 @@ Driver.py
 base/options/__pycache__/*
 base/data/__pycache__/*
 base/__pycache__/*
+venv

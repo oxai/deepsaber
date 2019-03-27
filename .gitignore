@@ -5,4 +5,6 @@ DataE/
 Readings/
 wavenet/speech-to-text-wavenet/features_list.p
 Driver.py
-.idea
+base/options/__pycache__/*
+base/data/__pycache__/*
+base/__pycache__/*

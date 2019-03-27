@@ -11,7 +11,7 @@
             compute_feats: False                         
            continue_train: False                         
                  data_dir: ../DataE                      	[default: /Users/andreachatrian/Documents/Repositories/oxai/beatsaber/DataE]
-             dataset_name: mfcc                          	[default: song]
+             dataset_name: mfcc_look_ahead               	[default: song]
         dilation_channels: 32                            
              display_freq: 100                           
             do_validation: False                         
@@ -26,7 +26,7 @@
                hop_length: 256                           
                 init_gain: 0.02                          
                 init_type: normal                        
-           input_channels: 260                           
+           input_channels: 560                           
                  is_train: True                          	[default: None]
               kernel_size: 2                             
                    layers: 5                             	[default: 10]
@@ -46,7 +46,7 @@
                   no_html: False                         
               num_classes: 20                            
               num_filters: 15                            
-              num_windows: 5                             	[default: 16]
+              num_windows: 1                             	[default: 16]
           output_channels: 12                            
             output_length: 95                            	[default: 1]
             padded_length: 3000000                       
@@ -59,6 +59,7 @@
          save_latest_freq: 5000                          
             skip_channels: 256                           
                      task: base                          
+              time_shifts: 16                            
          update_html_freq: 100                           
            val_batch_size: 1                             
            val_epoch_freq: 10                            

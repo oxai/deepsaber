@@ -149,7 +149,7 @@ class MfccLookAheadDataset(BaseDataset):
             with open("../DataE/blacklist","a") as f:
                 f.write(song_file_path+"\n")
 
-        blocks = np.zeros((y.shape[1],12)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+        blocks = np.zeros((y.shape[1],self.opt.output_channels)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
         blocks_manyhot = np.zeros((y.shape[1],self.opt.output_channels,self.opt.num_classes)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
         blocks_manyhot[:,:,0] = 1.0 #default is the "nothing" class
         # eps = self.eps

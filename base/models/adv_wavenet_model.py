@@ -56,9 +56,17 @@ class AdvWaveNetModel(BaseModel):
         {'params': [param for name, param in self.discriminator.named_parameters() if name[-4:] != 'bias'],
         'lr': opt.learning_rate, 'weight_decay': opt.weight_decay}  # filter parameters have weight decay
         ])]
+        self.optimizers = self.gen_optimizers + self.disc_optimizers
         self.loss_ce = None
         self.loss_gen = None
         self.loss_disc = None
+
+#    def update_learning_rate(self):
+#        for scheduler in self.schedulers:
+#            scheduler.step()
+#        lr = self.gen_optimizers[0].param_groups[0]['lr']
+#        print('learning rate = %.7f' % lr)
+
 
     def name(self):
         return "AdvWaveNet"
@@ -79,6 +87,7 @@ class AdvWaveNetModel(BaseModel):
         parser.add_argument('--bias', action='store_false')
         parser.add_argument('--frequency_gen_updates', type=int, default=5)
         parser.add_argument('--dropout_p', type=float, default=0.5)
+        parser.add_argument('--loss_ce_weight', type=float, default=1.0)
         return parser
 
     def set_input(self, data):
@@ -106,12 +115,14 @@ class AdvWaveNetModel(BaseModel):
         p_gen = self.discriminator.forward(torch.cat((self.input[:,:-self.opt.output_channels*self.opt.num_classes,-(l-1):],generated_level),1)).squeeze()
         p_gen = torch.sigmoid(p_gen)
         self.loss_gen = torch.log(1-p_gen).mean() # high when discriminator thinks it likely false
-        self.loss_gen += 0.1 * self.loss_ce
+        #lr = self.optimizers[0].param_groups[0]['lr']
+        self.loss_gen += self.opt.loss_ce_weight * self.loss_ce
 
         # p_real = self.discriminator.forward(self.input[:,-self.opt.output_channels*self.opt.num_classes:,:l]).squeeze()
         p_real = self.discriminator.forward(self.input[:,:,:l]).squeeze()
         p_real = torch.sigmoid(p_real)
         self.loss_disc = -self.loss_gen - torch.log(p_real).mean()
+        self.loss_disc  += self.opt.loss_ce_weight * self.loss_ce
 
 
     def gen_backward(self):

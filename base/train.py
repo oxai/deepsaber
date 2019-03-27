@@ -16,15 +16,20 @@ sys.argv.append("--frequency_gen_updates=2")
 sys.argv.append("--batch_size=1")
 sys.argv.append("--output_length=95") # needs to be at least the receptive field (in time points) + 1 if using the GAN (adv_wavenet model)!
                                       # this is because the song part of the input will have length 94+94 for an output of length 95; then we can take the second part of the song input with the first 94 outputs as input to discriminator
-sys.argv.append("--num_windows=1")
+sys.argv.append("--num_windows=5")
 sys.argv.append("--gpu_ids=0")
-#sys.argv.append("--nepoch=1")
-#sys.argv.append("--nepoch_decay=1")
+sys.argv.append("--nepoch=500")
+sys.argv.append("--nepoch_decay=500")
 sys.argv.append("--layers=5")
 sys.argv.append("--blocks=3")
-sys.argv.append("--print_freq=1")
-# sys.argv.append("--workers=0")
-#sys.argv.append("--output_length=1")
+sys.argv.append("--print_freq=10")
+#sys.argv.append("--print_freq=1")
+sys.argv.append("--experiment_name=gan_exp")
+sys.argv.append("--save_by_iter")
+sys.argv.append("--save_latest_freq=1000")
+#sys.argv.append("--workers=0")
+sys.argv.append("--dropout_p=0.3")
+sys.argv.append("--load")
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
@@ -60,32 +65,32 @@ if __name__ == '__main__':
             total_steps += opt.batch_size
             epoch_iter += opt.batch_size
             model.set_input(data)
-            # if opt.model == "adv_wavenet" and random.randint(1,opt.frequency_gen_updates) == opt.frequency_gen_updates:
-            #     #I'm doing this probabilistically because I'm not sure if train_dataloader reshuffles the data between epochs
-            #     print("Optimizing generator")
-            #     model.optimize_parameters(optimize_generator=True)
-            # else:
-            #     print("Optimizing discriminator")
-            #     model.optimize_parameters()
-            # if total_steps % opt.display_freq == 0 or total_steps % opt.print_freq == 0:
-            #     model.evaluate_parameters()
+            if opt.model == "adv_wavenet" and random.randint(1,opt.frequency_gen_updates) == opt.frequency_gen_updates:
+                #I'm doing this probabilistically because I'm not sure if train_dataloader reshuffles the data between epochs
+                #print("Optimizing generator")
+                model.optimize_parameters(optimize_generator=True)
+            else:
+                #print("Optimizing discriminator")
+                model.optimize_parameters()
+            if total_steps % opt.display_freq == 0 or total_steps % opt.print_freq == 0:
+                model.evaluate_parameters()
 
-            # if total_steps % opt.display_freq == 0:
-            #     save_result = total_steps % opt.update_html_freq == 0
+            if total_steps % opt.display_freq == 0:
+                save_result = total_steps % opt.update_html_freq == 0
 
-            # if total_steps % opt.print_freq == 0:
-            #     losses = model.get_current_losses()
-            #     print(losses)
-            #     metrics = model.get_current_metrics()
-            #     print(metrics)
-            #     t = (time.time() - iter_start_time) / opt.batch_size
+            if total_steps % opt.print_freq == 0:
+                losses = model.get_current_losses()
+                print(losses)
+                metrics = model.get_current_metrics()
+                print(metrics)
+                t = (time.time() - iter_start_time) / opt.batch_size
 
-            # if total_steps % opt.save_latest_freq == 0:
-            #     print('saving the latest model (epoch %d, total_steps %d)' % (epoch, total_steps))
-            #     save_suffix = 'iter_%d' % total_steps if opt.save_by_iter else 'latest'
-            #     model.save_networks(save_suffix)
+            if total_steps % opt.save_latest_freq == 0:
+                print('saving the latest model (epoch %d, total_steps %d)' % (epoch, total_steps))
+                save_suffix = 'iter_%d' % total_steps if opt.save_by_iter else 'latest'
+                model.save_networks(save_suffix)
 
-            iter_data_time = time.time()
+                iter_data_time = time.time()
 
         if epoch % opt.save_epoch_freq == 0:
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_steps))

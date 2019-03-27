@@ -9,15 +9,19 @@ from models import create_model
 sys.argv.append("--data_dir=../DataE/")
 # sys.argv.append("--level_diff=Normal")
 sys.argv.append("--batch_size=1")
-sys.argv.append("--num_windows=10")
+sys.argv.append("--num_windows=5")
 sys.argv.append("--gpu_ids=0")
 #sys.argv.append("--nepoch=1")
 #sys.argv.append("--nepoch_decay=1")
+sys.argv.append("--output_length=95") # needs to be at least the receptive field (in time points) + 1 if using the GAN (adv_wavenet model)!
 sys.argv.append("--layers=5")
 sys.argv.append("--blocks=3")
-sys.argv.append("--dataset_name=mfcc")
+sys.argv.append("--model=adv_wavenet")
+sys.argv.append("--dataset_name=mfcc_look_ahead")
+# sys.argv.append("--dataset_name=mfcc")
 # sys.argv.append("--dataset_name=reduced_states")
-sys.argv.append("--experiment_name=mfcc_exp")
+# sys.argv.append("--experiment_name=mfcc_exp")
+sys.argv.append("--experiment_name=gan_exp")
 # sys.argv.append("--experiment_name=reduced_states_normal_exp")
 # sys.argv.append("--experiment_name=reduced_states_exp")
 #sys.argv.append("--print_freq=1")
@@ -26,8 +30,8 @@ sys.argv.append("--experiment_name=mfcc_exp")
 
 
 #these are useful for debugging/playing with Hydrogen@Atom, which Guille use
-sys.argv.pop(1)
-sys.argv.pop(1)
+# sys.argv.pop(1)
+# sys.argv.pop(1)
 
 opt = TrainOptions().parse()
 model = create_model(opt)
@@ -39,16 +43,16 @@ else:
     receptive_field = model.net.module.receptive_field
 
 # model.load_networks('iter_34000')
-model.load_networks('iter_71000')
+# model.load_networks('iter_71000')
 # model.load_networks('iter_22000')
 # model.load_networks('iter_55000')
 # model.load_networks('iter_18000')
-# model.load_networks('latest')
+model.load_networks('latest')
 
 import librosa
 
 # y, sr = librosa.load("../../test_song2.wav", sr=16000)
-y, sr = librosa.load("../../test_song18.wav", sr=16000)
+y, sr = librosa.load("../../test_song21.wav", sr=16000)
 # y, sr = librosa.load("../../song2.ogg", sr=11025)
 
 # bpm = 106 # 22
@@ -81,7 +85,7 @@ song = torch.tensor(mfcc).unsqueeze(0)
 song.size(-1)
 
 # output = model.net.module.generate(300,song, temperature=0.01)
-output = model.net.module.generate(song.size(-1)-receptive_field,song,temperature=1.0)
+output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
 
 # receptive_field = model.net.module.receptive_field
 
@@ -136,7 +140,8 @@ import json
 
 # with open("new_test_song14_reduced_states_temp1_0_55000.json", "w") as f:
 # with open("new_test_song21_reduced_states_temp1_0_47000.json", "w") as f:
-with open("test_song18_new_mfcc_71000_temp1.json", "w") as f:
+# with open("test_song18_new_mfcc_71000_temp1.json", "w") as f:
+with open("test_song21_gan_latest1_temp1.json", "w") as f:
 # with open("test_song18_new_mfcc_34000_Normal_temp1.json", "w") as f:
     f.write(json.dumps(song_json))
 

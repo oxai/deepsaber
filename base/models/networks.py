@@ -221,6 +221,7 @@ class WaveNetModel(nn.Module):
     def generate(self,
                  num_samples,
                  conditioning_seq, #the song in our case
+                 time_shifts, # number of look ahead times
                  first_samples=None,
                  temperature=1.):
         self.eval()
@@ -235,6 +236,7 @@ class WaveNetModel(nn.Module):
             generated = generated.unsqueeze(0)
             print("pad zero")
 
+        #size of this is (1,n_mfcc,timesteps)
         conditioning_seq = constant_pad_1d(conditioning_seq.permute(2,1,0),conditioning_seq.size(2)+self.receptive_field,pad_start=True).permute(2,1,0)
 
         for i in range(num_samples):
@@ -250,10 +252,13 @@ class WaveNetModel(nn.Module):
             # for j in range(self.output_channels):
             #     input[:,self.num_classes*j,:]=0
 
-            mfcc_features = conditioning_seq[:,:,i:i+self.receptive_field].float()
-            if torch.abs(mfcc_features).max() > 0: mfcc_features = (mfcc_features - mfcc_features.mean())/torch.abs(mfcc_features).max()
+            mfcc_featuress = []
+            for ii in range(time_shifts):
+                mfcc_features = conditioning_seq[:,:,i+ii:i+ii+self.receptive_field].float()
+                if torch.abs(mfcc_features).max() > 0: mfcc_features = (mfcc_features - mfcc_features.mean())/torch.abs(mfcc_features).max()
+                mfcc_featuress.append(mfcc_features.float())
 
-            input = torch.cat((mfcc_features,input.float()),1).cuda() #eeh need to have it work without cuda too
+            input = torch.cat(mfcc_featuress+[input.float()],1).cuda() #eeh need to have it work without cuda too
 
             x = self.wavenet(input,dilation_func=self.wavenet_dilate)[0:1, :, :, -1:]
             x = x.transpose(1, 3).contiguous() # need to undertand why transposing here makes a difference.. This line is necessary.. what I mean is that I think it broke when using permute, but perhaps I was being stupid :P 

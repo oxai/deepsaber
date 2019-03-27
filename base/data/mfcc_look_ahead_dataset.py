@@ -38,7 +38,8 @@ class MfccLookAheadDataset(BaseDataset):
             
             mfcc_file = path.__str__()+"_"+n_mfcc+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
             try:
-                mfcc = pickle.load(open(mfcc_file,"rb"))
+                # mfcc = pickle.load(open(mfcc_file,"rb"))
+                mfcc = np.load(mfcc_file)
                 self.mfcc_features[path.__str__()] = mfcc
                 print("reading mfcc file")
             except FileNotFoundError:
@@ -73,7 +74,8 @@ class MfccLookAheadDataset(BaseDataset):
                     continue
 
                 self.mfcc_features[path.__str__()] = mfcc
-                pickle.dump(mfcc,open(mfcc_file,"wb"))
+                # pickle.dump(mfcc,open(mfcc_file,"wb"))
+                np.save(mfcc_file,mfcc)
                 # pass
 
         assert self.audio_files, "List of audio files cannot be empty"
@@ -125,7 +127,8 @@ class MfccLookAheadDataset(BaseDataset):
             # print(len(y),mel_hop,len(y)/mel_hop,mfcc.shape[1])
 
             self.mfcc_features[song_file_path] = mfcc
-            pickle.dump(mfcc,open(mfcc_file,"wb"))
+            # pickle.dump(mfcc,open(mfcc_file,"wb"))
+            np.save(mfcc_file,mfcc)
         else:
             mfcc = self.mfcc_features[song_file_path]
 

@@ -38,7 +38,8 @@ for i in tasks:
     song_file_path = path.__str__()
     mfcc_file = song_file_path+"_"+str(n_mfcc)+"_"+str(beat_subdivision)+"_mfcc.npy"
     try:
-        level = list(path.parent.glob(f'./{difficulty}.json'))[0]
+        #level = list(path.parent.glob(f'./{difficulty}.json'))[0]
+        level = list(path.parent.glob(difficulty+'.json'))[0]
     except IndexError:
             continue
     if not os.path.isfile(mfcc_file):

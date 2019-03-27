@@ -10,3 +10,4 @@ base/data/__pycache__/*
 base/__pycache__/*
 venv
 **/*.pth
+**/opt.txt

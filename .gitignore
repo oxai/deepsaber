@@ -11,3 +11,4 @@ base/__pycache__/*
 venv
 **/*.pth
 **/opt.txt
+AugData/*

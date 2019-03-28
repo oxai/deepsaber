@@ -1,6 +1,6 @@
 import librosa, os, IOFunctions
 import soundfile as sf, numpy as np
-DATA_DIRECTORY = "Data/"
+DATA_DIRECTORY = "DataE/"
 
 
 def pitch_shift(ogg_file, nb_half_tones, out_dir):
@@ -45,7 +45,7 @@ def data_augment(augmentation_function, max_nb_half_tones = 3, nb_noise_addition
                 os.makedirs(new_directory_path)
                 print(new_directory_path)
                 # Now copy all non-OGG files
-                command_string = "rsync -av --exclude='*.ogg' \""+directory+"\"/* \""+new_directory_path+"\""
+                command_string = "rsync -av --exclude='*.npy' --exclude='*.ogg' \""+directory+"\"/* \""+new_directory_path+"\""
                 os.system(command_string)
                 # Now fetch all OGG files
                 ogg_files = IOFunctions.get_all_ogg_files_from_data_directory(directory)
@@ -64,7 +64,7 @@ def data_augment(augmentation_function, max_nb_half_tones = 3, nb_noise_addition
 
 
 if __name__ == "__main__":
-    data_augment(NOISE_ADD, noise_level= 0.005) # For noise insertion
+    data_augment(NOISE_ADD, noise_level= 0.005,nb_noise_additions=2) # For noise insertion
     data_augment(SHIFT, max_nb_half_tones= 3) # For pitch shifting
 
 

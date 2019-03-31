@@ -7,7 +7,8 @@ from data import create_dataset, create_dataloader
 from models import create_model
 import random
 
-sys.argv.append("--data_dir=../DataE")
+#sys.argv.append("--data_dir=../DataE")
+sys.argv.append("--data_dir=../AugData")
 # sys.argv.append("--dataset_name=mfcc")
 # sys.argv.append("--dataset_name=mfcc_look_ahead")
 sys.argv.append("--dataset_name=mfcc_reduced_states_look_ahead")

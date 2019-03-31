@@ -13,8 +13,19 @@
 #    find AugData/Datadown${i}/ -name *.ogg > AugData/filesdown${i}
 #done
 
-for i in 30 60 90; do cat AugData/filesup${i} | parallel "rm {}-down${i}.ogg"; done
-for i in 30 60 90; do cat AugData/filesdown${i} | parallel "rm {}-up${i}.ogg"; done
+#for i in 30 60 90; do cat AugData/filesup${i} | parallel "rm {}-down${i}.ogg"; done
+#for i in 30 60 90; do cat AugData/filesdown${i} | parallel "rm {}-up${i}.ogg"; done
 
-for i in 30 60 90; do cat AugData/filesup${i} | parallel "echo shifting up by $(($i*10)) {}; sox {} {}-up${i}.ogg pitch +$(($i*10))"; done
-for i in 30 60 90; do cat AugData/filesdown${i} | parallel "echo shifting down by $(($i*10)) {};sox {} {}-down${i}.ogg pitch -$(($i*10))"; done
+#for i in 30 60 90; do cat AugData/filesup${i} | parallel "echo shifting up by $(($i*10)) {}; sox {} {}-up${i}.ogg pitch +$(($i*10))"; done
+#for i in 30 60 90; do cat AugData/filesdown${i} | parallel "echo shifting down by $(($i*10)) {};sox {} {}-down${i}.ogg pitch -$(($i*10))"; done
+
+#for i in 30 60 90; do cat AugData/filesup${i} | parallel "rm {}"; done
+#for i in 30 60 90; do cat AugData/filesdown${i} | parallel "rm {}"; done
+
+#for i in 30 60 90; do find AugData/DataE -name *.ogg  | parallel "sox {} {}-up${i}.ogg pitch +$(($i*10))"; done
+#for i in 30 60 90; do find AugData/DataE -name *.ogg  | parallel "sox {} {}-down${i}.ogg pitch -$(($i*10))"; done
+
+#find AugData/DataE -name *.ogg > AugData/files
+
+for i in 30 60 90; do cat AugData/files  | parallel "echo shifting up by $(($i*10)) {}; sox {} {}-up${i}.ogg pitch +$(($i*10))"; done
+for i in 30 60 90; do cat AugData/files  | parallel "echo shifting down by $(($i*10)) {}; sox {} {}-down${i}.ogg pitch -$(($i*10))"; done

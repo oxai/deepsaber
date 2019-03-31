@@ -24,7 +24,8 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         self.audio_files = []
         self.mfcc_features = {}
         n_mfcc = (self.opt.input_channels-self.opt.output_channels*self.opt.num_classes)//self.opt.time_shifts
-        with open("../DataE/blacklist","r") as f:
+
+        with open(data_path.__str__()+"/blacklist","r") as f:
                 blacklist = f.readlines()
         
         for i, path in enumerate(candidate_audio_files):
@@ -44,7 +45,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
                 self.mfcc_features[path.__str__()] = mfcc
                 #print("reading mfcc file")
             except FileNotFoundError:
-                continue
+                #continue
                 print("creating mfcc file",i)
                 level = json.load(open(level, 'r'))
 
@@ -69,7 +70,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
 
                 if mfcc.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
                     print("Smol song, probably trolling; blacklisting...")
-                    with open("../DataE/blacklist","a") as f:
+                    with open(data_path.__str__()+"/blacklist","a") as f:
                         f.write(song_file_path+"\n")
                     self.level_jsons.pop()
                     self.audio_files.pop()

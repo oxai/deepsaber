@@ -26,10 +26,13 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         n_mfcc = (self.opt.input_channels-self.opt.output_channels*self.opt.num_classes)//self.opt.time_shifts
 
         with open(data_path.__str__()+"/blacklist","r") as f:
-                blacklist = f.readlines()
+                blacklist = [x for x in f.read().splitlines() if x is not '']
         
+        print(blacklist)
         for i, path in enumerate(candidate_audio_files):
-            if path.__str__() in blacklist:
+            #print(path)
+            if np.any([(thing in path.__str__()) for thing in blacklist]):
+                print(path.__str__())
                 continue # this file was blacklisted
             try:
                 level = list(path.parent.glob(f'./{self.opt.level_diff}.json'))[0]
@@ -60,6 +63,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
                 y, sr = librosa.load(path.__str__(), sr=self.opt.sampling_rate)
 
                 # get mfcc feature
+                print(y,y.shape,sr,mel_hop,mel_window,n_mfcc)
                 mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
 
                 # print(len(y),mel_hop,len(y)/mel_hop,mfcc.shape[1])
@@ -71,7 +75,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
                 if mfcc.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
                     print("Smol song, probably trolling; blacklisting...")
                     with open(data_path.__str__()+"/blacklist","a") as f:
-                        f.write(song_file_path+"\n")
+                        f.write(path.__str__()+"\n")
                     self.level_jsons.pop()
                     self.audio_files.pop()
                     continue
@@ -153,7 +157,8 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
 
         if y.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
             print("Smol song, probably trolling; blacklisting...")
-            with open("../DataE/blacklist","a") as f:
+            print(song_file_path)
+            with open(self.opt.data_dir+"/blacklist","a") as f:
                 f.write(song_file_path+"\n")
 
         indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
@@ -170,7 +175,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         blocks_reduced_classes = np.zeros((y.shape[1],1))
         for note in notes:
             sample_index = floor((note['_time']*60/bpm)*self.opt.sampling_rate/(mel_hop+1))
-            if sample_index > y.shape[1]:
+            if sample_index >= y.shape[1]:
                 print("note beyond the end of time")
                 continue
             if note["_type"] == 3:

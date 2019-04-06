@@ -6,6 +6,7 @@ DataE/
 AugData/*
 Readings/
 Driver.py
+base/generated
 **/__pycache__/*
 venv
 **/*.pth

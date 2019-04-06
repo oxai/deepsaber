@@ -25,6 +25,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         self.mfcc_features = {}
         n_mfcc = (self.opt.input_channels-self.opt.output_channels*self.opt.num_classes)//self.opt.time_shifts
 
+        # this is a list of songs that are too to be fed as input to the wavenet, and would cause it to break
         with open(data_path.__str__()+"/blacklist","r") as f:
                 blacklist = [x for x in f.read().splitlines() if x is not '']
         

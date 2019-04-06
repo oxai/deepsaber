@@ -7,7 +7,8 @@ from data import create_dataset, create_dataloader
 from models import create_model
 import random
 
-sys.argv.append("--data_dir=../DataE")
+#sys.argv.append("--data_dir=../DataE")
+sys.argv.append("--data_dir=../AugData")
 # sys.argv.append("--dataset_name=mfcc")
 # sys.argv.append("--dataset_name=mfcc_look_ahead")
 sys.argv.append("--dataset_name=mfcc_reduced_states_look_ahead")
@@ -28,7 +29,7 @@ sys.argv.append("--print_freq=10")
 sys.argv.append("--experiment_name=reduced_states_gan_exp")
 sys.argv.append("--save_by_iter")
 sys.argv.append("--save_latest_freq=1000")
-#sys.argv.append("--workers=0")
+sys.argv.append("--workers=0")
 sys.argv.append("--dropout_p=0.3")
 #sys.argv.append("--load")
 

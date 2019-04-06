@@ -6,7 +6,7 @@ from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
 from models import create_model
 
-sys.argv.append("--data_dir=../DataE/")
+sys.argv.append("--data_dir=../AugData/")
 # sys.argv.append("--level_diff=Normal")
 sys.argv.append("--batch_size=1")
 sys.argv.append("--num_windows=5")
@@ -16,12 +16,15 @@ sys.argv.append("--gpu_ids=0")
 sys.argv.append("--output_length=95") # needs to be at least the receptive field (in time points) + 1 if using the GAN (adv_wavenet model)!
 sys.argv.append("--layers=5")
 sys.argv.append("--blocks=3")
-sys.argv.append("--model=adv_wavenet")
-sys.argv.append("--dataset_name=mfcc_look_ahead")
+# sys.argv.append("--model=adv_wavenet")
+sys.argv.append("--model=wavenet")
+sys.argv.append("--dataset_name=mfcc_reduced_states_look_ahead")
 # sys.argv.append("--dataset_name=mfcc")
 # sys.argv.append("--dataset_name=reduced_states")
 # sys.argv.append("--experiment_name=mfcc_exp")
-sys.argv.append("--experiment_name=gan_exp")
+#sys.argv.append("--experiment_name=gan_exp")
+sys.argv.append("--experiment_name=reduced_states_lookahead_likelihood")
+# sys.argv.append("--experiment_name=reduced_states_gan_exp")
 # sys.argv.append("--experiment_name=reduced_states_normal_exp")
 # sys.argv.append("--experiment_name=reduced_states_exp")
 #sys.argv.append("--print_freq=1")
@@ -30,8 +33,8 @@ sys.argv.append("--experiment_name=gan_exp")
 
 
 #these are useful for debugging/playing with Hydrogen@Atom, which Guille use
-# sys.argv.pop(1)
-# sys.argv.pop(1)
+sys.argv.pop(1)
+sys.argv.pop(1)
 
 opt = TrainOptions().parse()
 model = create_model(opt)
@@ -43,26 +46,28 @@ else:
     receptive_field = model.net.module.receptive_field
 
 checkpoint = "iter_419000"
-checkpoint = "latest"
+checkpoint = "iter_218000"
+# checkpoint = "latest"
 model.load_networks(checkpoint)
 
 import librosa
 
-song_number = "16"
+song_number = "21"
 
 # y, sr = librosa.load("../../test_song2.wav", sr=16000)
 y, sr = librosa.load("../../test_song"+song_number+".wav", sr=16000)
 # y, sr = librosa.load("../../song2.ogg", sr=11025)
 
+# bpm = 66 # 25
 # bpm = 84 # 24
 # bpm = 106 # 22
-# bpm = 80 # 21
+bpm = 80 # 21
 # bpm = 105 # 20
 # bpm = 120 # 19
 # bpm = 128 # 18
 # bpm = 76
 # bpm=85 # 14
-bpm=91 #16
+# bpm=91 #16
 # bpm=67
 # bpm=144
 # bpm=100 #11
@@ -105,7 +110,7 @@ unique_states = pickle.load(open("../stateSpace/sorted_states2.pkl","rb"))
 # list(enumerate(list(enumerate(output[0,:,:].permute(1,0)))[100][1]))
 
 states_list = output[0,:,:].permute(1,0)
-# states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
+states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
 
 # states_list[0][0].int().item()
 

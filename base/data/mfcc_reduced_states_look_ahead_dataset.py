@@ -17,7 +17,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         self.receptive_field = receptive_field
         data_path = Path(opt.data_dir)
         if not data_path.is_dir():
-            raise ValueError(f'Invalid directory: {opt.data_dir}')
+            raise ValueError('Invalid directory:'+opt.data_dir)
         # self.audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
@@ -36,7 +36,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
                 print(path.__str__())
                 continue # this file was blacklisted
             try:
-                level = list(path.parent.glob(f'./{self.opt.level_diff}.json'))[0]
+                level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                 self.level_jsons.append(level)
                 self.audio_files.append(path)
             except IndexError:
@@ -46,12 +46,23 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
             try:
                 # mfcc = pickle.load(open(mfcc_file,"rb"))
                 mfcc = np.load(mfcc_file)
-                self.mfcc_features[path.__str__()] = mfcc
                 #print("reading mfcc file")
+                receptive_field = self.receptive_field
+                output_length = self.opt.output_length
+                input_length = receptive_field + output_length -1
+
+                if mfcc.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
+                    print("Smol song, probably trolling; blacklisting...")
+                    with open(data_path.__str__()+"/blacklist","a") as f:
+                        f.write(path.__str__()+"\n")
+                    self.level_jsons.pop()
+                    self.audio_files.pop()
+                    continue
+                self.mfcc_features[path.__str__()] = mfcc
             except FileNotFoundError:
                 #continue
                 print("creating mfcc file",i)
-                level = json.load(open(level, 'r'))
+                level = json.load(open(level.__str__(), 'r'))
 
                 bpm = level['_beatsPerMinute']
                 notes = level['_notes']
@@ -114,7 +125,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         song_file_path = self.audio_files[item].__str__()
         mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
         #print(song_file_path)
-        level = json.load(open(self.level_jsons[item], 'r'))
+        level = json.load(open(self.level_jsons[item].__str__(), 'r'))
 
 
         bpm = level['_beatsPerMinute']
@@ -142,7 +153,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
             mfcc = self.mfcc_features[song_file_path]
 
         # y = librosa.util.fix_length(y, size=self.opt.padded_length)
-        level = json.load(open(self.level_jsons[item], 'r'))
+        level = json.load(open(self.level_jsons[item].__str__(), 'r'))
 
         bpm = level['_beatsPerMinute']
         features_rate = bpm*self.opt.beat_subdivision

@@ -1,8 +1,8 @@
 import sys
-sys.path.append("/users/guillefix/beatsaber/base")
-sys.path.append("/users/guillefix/beatsaber")
-#sys.path.append("/home/guillefix/code/beatsaber/base")
-#sys.path.append("/home/guillefix/code/beatsaber")
+#sys.path.append("/users/guillefix/beatsaber/base")
+#sys.path.append("/users/guillefix/beatsaber")
+sys.path.append("/home/guillefix/code/beatsaber/base")
+sys.path.append("/home/guillefix/code/beatsaber")
 import time
 from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader

@@ -33,6 +33,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
             except IndexError:
                 continue
             
+            n_mfcc=(opt.input_channels - opt.output_channels*opt.num_classes)//opt.time_shifts             
             mfcc_file = path.__str__()+"_"+str(n_mfcc)+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
             try:
                 # mfcc = pickle.load(open(mfcc_file,"rb"))
@@ -110,6 +111,9 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
         # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
+        receptive_field = self.receptive_field
+        output_length = self.opt.output_length
+        input_length = receptive_field + output_length -1
         indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
 
         ## CONSTRUCT TENSOR OF INPUT SOUND FEATURES (MFCC) ##

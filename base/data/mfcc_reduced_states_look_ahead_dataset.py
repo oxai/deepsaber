@@ -26,9 +26,6 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
-            if np.any([(thing in path.__str__()) for thing in blacklist]):
-                print(path.__str__())
-                continue # this file was blacklisted
             try:
                 level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                 self.level_jsons.append(level)

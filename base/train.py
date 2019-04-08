@@ -31,7 +31,9 @@ sys.argv.append("--save_by_iter")
 sys.argv.append("--save_latest_freq=1000")
 sys.argv.append("--workers=0")
 sys.argv.append("--dropout_p=0.3")
-#sys.argv.append("--load")
+sys.argv.append("--loss_ce_weight=0.0")
+sys.argv.append("--load")
+sys.argv.append("--load_iter=332000")
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()

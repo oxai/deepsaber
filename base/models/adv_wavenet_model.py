@@ -118,12 +118,16 @@ class AdvWaveNetModel(BaseModel):
         #lr = self.optimizers[0].param_groups[0]['lr']
         self.loss_gen += self.opt.loss_ce_weight * self.loss_ce
 
+    def forward_disc(self):
+        #self.forward()
         # p_real = self.discriminator.forward(self.input[:,-self.opt.output_channels*self.opt.num_classes:,:l]).squeeze()
-        p_real = self.discriminator.forward(self.input[:,:,:l]).squeeze()
+        output_features = self.opt.output_channels*self.opt.num_classes
+        softmax_beta = np.random.randint(10)
+        smoothed_real = torch.cat(self.input[:,:-output_features,:l],F.softmax(softmax_beta*self.input[:,-output_features:,:l],dim=1),1)
+        p_real = self.discriminator.forward(smoothed_real).squeeze()
         p_real = torch.sigmoid(p_real)
         self.loss_disc = -self.loss_gen - torch.log(p_real).mean()
-        self.loss_disc  += self.opt.loss_ce_weight * self.loss_ce
-
+        #self.loss_disc  += self.opt.loss_ce_weight * self.loss_ce
 
     def gen_backward(self):
         self.gen_optimizers[0].zero_grad()
@@ -141,6 +145,7 @@ class AdvWaveNetModel(BaseModel):
         if optimize_generator:
             self.gen_backward()
         else:
+            self.forward_disc()
             self.disc_backward()
         for scheduler in self.schedulers:
             # step for schedulers that update after each iteration

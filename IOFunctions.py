@@ -5,6 +5,7 @@ import time
 import getpass
 import pickle
 from glob import glob
+import html
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')

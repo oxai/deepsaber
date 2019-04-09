@@ -22,61 +22,36 @@ class MfccLookAheadDataset(BaseDataset):
         self.level_jsons = []
         self.audio_files = []
         self.mfcc_features = {}
-        n_mfcc = (self.opt.input_channels-self.opt.output_channels*self.opt.num_classes)//self.opt.time_shifts
-        with open("../DataE/blacklist","r") as f:
-                blacklist = f.readlines()
-        
         for i, path in enumerate(candidate_audio_files):
-            if path.__str__() in blacklist:
-                continue # this file was blacklisted
+            #print(path)
             try:
-                level = list(path.parent.glob(f'./{self.opt.level_diff}.json'))[0]
+                level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                 self.level_jsons.append(level)
                 self.audio_files.append(path)
             except IndexError:
                 continue
             
-            mfcc_file = path.__str__()+"_"+n_mfcc+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
+            n_mfcc=(opt.input_channels - opt.output_channels*opt.num_classes)//opt.time_shifts             
+            mfcc_file = path.__str__()+"_"+str(n_mfcc)+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
             try:
                 # mfcc = pickle.load(open(mfcc_file,"rb"))
                 mfcc = np.load(mfcc_file)
-                self.mfcc_features[path.__str__()] = mfcc
-                print("reading mfcc file")
-            except FileNotFoundError:
-                print("creating mfcc file",i)
-                level = json.load(open(level, 'r'))
-
-                bpm = level['_beatsPerMinute']
-                notes = level['_notes']
-
-                sr = self.opt.sampling_rate
-                beat_duration = int(60*sr/bpm) #beat duration in samples
-
-                mel_hop = beat_duration//self.opt.beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-                mel_window = 4*mel_hop
-                y, sr = librosa.load(path.__str__(), sr=self.opt.sampling_rate)
-
-                # get mfcc feature
-                mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
-
-                # print(len(y),mel_hop,len(y)/mel_hop,mfcc.shape[1])
-
+                #print("reading mfcc file")
+                
+                # we need to find out what the input length of the model is, to remove songs which are too short to get input windows from them for this model
                 receptive_field = self.receptive_field
                 output_length = self.opt.output_length
                 input_length = receptive_field + output_length -1
 
                 if mfcc.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
-                    print("Smol song, probably trolling; blacklisting...")
-                    with open("../DataE/blacklist","a") as f:
-                        f.write(song_file_path+"\n")
+                    print("Smol song; ignoring..")
                     self.level_jsons.pop()
                     self.audio_files.pop()
                     continue
 
                 self.mfcc_features[path.__str__()] = mfcc
-                # pickle.dump(mfcc,open(mfcc_file,"wb"))
-                np.save(mfcc_file,mfcc)
-                # pass
+            except FileNotFoundError:
+                raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"
@@ -91,12 +66,18 @@ class MfccLookAheadDataset(BaseDataset):
         parser.add_argument('--compute_feats', action='store_true', help="Whether to extract musical features from the song")
         parser.add_argument('--padded_length', type=int, default=3000000)
         parser.add_argument('--chunk_length', type=int, default=9000)
+        # the input features at each time step consiste of the mfcc features at the time steps from now to time_shifts in the future 
         parser.add_argument('--time_shifts', type=int, default=16)
-        # parser.add_argument('--num_mfcc_features', type=int, default=20)
-        # parser.set_defaults(input_channels=(self.opt.num_mfcc_features+(9*3+1)*(4*3)), output_nc=2, direction='AtoB')
+        # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
+        # plus 12*20 
+        # corresponding to 12 points in the grid, and one of 20 classes at each point
+        # for each point in the grid we have a one-hot vector of size 20
+        # and we just concatenate these 12 one-hot vectors
+        # to get a size 12*20 "many-hot" vector
         parser.set_defaults(input_channels=(20*16+12*20))
-        parser.set_defaults(num_classes=20)
+        # there are 12 outputs, one per grid point, with 20 possible classes each.
         parser.set_defaults(output_channels=12)
+        parser.set_defaults(num_classes=20)
         return parser
 
     def name(self):
@@ -104,63 +85,67 @@ class MfccLookAheadDataset(BaseDataset):
 
     def __getitem__(self, item):
         song_file_path = self.audio_files[item].__str__()
-        mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.p"
-        print(song_file_path)
-        level = json.load(open(self.level_jsons[item], 'r'))
+        mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
 
-        bpm = level['_beatsPerMinute']
-        notes = level['_notes']
-
-        sr = self.opt.sampling_rate
-        beat_duration = int(60*sr/bpm) #beat duration in samples
-
-        mel_hop = beat_duration//self.opt.beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-        mel_window = 4*mel_hop
-
-        if song_file_path not in self.mfcc_features: #well if everything worked correctly it should always be in there; but if not we can always redo this; will probably remove in the future :P
-
-            y, sr = librosa.load(self.audio_files[item], sr=self.opt.sampling_rate)
-
-            # get mfcc feature
-            mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=((self.opt.input_channels-self.opt.output_channels*self.opt.num_classes)//self.opt.time_shifts))
-
-            # print(len(y),mel_hop,len(y)/mel_hop,mfcc.shape[1])
-
-            self.mfcc_features[song_file_path] = mfcc
-            # pickle.dump(mfcc,open(mfcc_file,"wb"))
-            np.save(mfcc_file,mfcc)
-        else:
+        # get mfcc features
+        try:
             mfcc = self.mfcc_features[song_file_path]
+        except:
+            raise Exception("mfcc features not found for song "+song_file_path)
 
-        # y = librosa.util.fix_length(y, size=self.opt.padded_length)
-        level = json.load(open(self.level_jsons[item], 'r'))
+        level = json.load(open(self.level_jsons[item].__str__(), 'r'))
 
         bpm = level['_beatsPerMinute']
         features_rate = bpm*self.opt.beat_subdivision
         notes = level['_notes']
 
+        sr = self.opt.sampling_rate
+        beat_duration = int(60*sr/bpm) #beat duration in samples
+        # duration of one time step in samples:
+        mel_hop = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive mfcc frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
+        num_samples_per_feature = mel_hop + 1 
+
+        # for short
         y = mfcc
 
-        # print(y.shape)
-
+        ## WINDOWS ##
+        # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
+        # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
         receptive_field = self.receptive_field
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
+        indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
 
-        if y.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
-            print("Smol song, probably trolling; blacklisting...")
-            with open("../DataE/blacklist","a") as f:
-                f.write(song_file_path+"\n")
+        ## CONSTRUCT TENSOR OF INPUT SOUND FEATURES (MFCC) ##
+        # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
+        input_windowss = []
+        for ii in range(self.opt.time_shifts):
+            input_windows = [y[:,i+ii:i+ii+input_length] for i in indices]
+            input_windows = torch.tensor(input_windows)
+            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
+            input_windowss.append(input_windows.float())
 
-        blocks = np.zeros((y.shape[1],self.opt.output_channels)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
-        blocks_manyhot = np.zeros((y.shape[1],self.opt.output_channels,self.opt.num_classes)) #one class per location in the block grid. This still assumes that the classes are independent if we are modeling them as the outputs of a feedforward net
+        ## BLOCKS TENSORS ##
+        # variable `blocks` of shape (time steps, number of locations in the block grid), storing the class of block (as a number from 0 to 19) at each point in the grid, at each point in time
+        blocks = np.zeros((y.shape[1],self.opt.output_channels)) 
+        #many-hot vector
+        # for each point in the grid we will have a one-hot vector of size 20 (num_classes)
+        # and we will just stack these 12 (output_channels) one-hot vectors
+        # to get a "many-hot" tensor of shape (time_steps,output_channels,num_classes)
+        blocks_manyhot = np.zeros((y.shape[1],self.opt.output_channels,self.opt.num_classes)) 
+        #we initialize the one-hot vectors in the tensor
         blocks_manyhot[:,:,0] = 1.0 #default is the "nothing" class
-        # eps = self.eps
+
+        ## CONSTRUCT BLOCKS TENSOR ##
         for note in notes:
-            sample_index = floor((note['_time']*60/bpm)*sr/(mel_hop+1))
+            #sample_index = floor((time of note in seconds)*sampling_rate/(num_samples_per_feature))
+            sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+            # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
             if sample_index >= y.shape[1]:
                 print("note beyond the end of time")
                 continue
+
+            #constructing the representation of the block (as a number from 0 to 19)
             if note["_type"] == 3:
                 note_representation = 19
             elif note["_type"] == 0 or note["_type"] == 1:
@@ -171,29 +156,21 @@ class MfccLookAheadDataset(BaseDataset):
             blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], 0] = 0.0 #remove the one hot at the zero class
             blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], note_representation] = 1.0
 
-        # print(y)
-        # print(y.shape)
-        indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
 
-        input_windowss = []
-        for ii in range(self.opt.time_shifts):
-            input_windows = [y[:,i+ii:i+ii+input_length] for i in indices]
-            input_windows = torch.tensor(input_windows)
-            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
-            input_windowss.append(input_windows.float())
-
-        # print(len(input_windowss),input_windowss[0].shape)
-
+        # get the block features corresponding to the windows
         block_windows = [blocks[i+receptive_field:i+input_length+1,:] for i in indices]
         block_windows = torch.tensor(block_windows,dtype=torch.long)
 
         blocks_manyhot_windows = [blocks_manyhot[i:i+input_length,:,:] for i in indices]
         blocks_manyhot_windows = torch.tensor(blocks_manyhot_windows)
+        # this is because the input features have dimensions (num_windows,time_steps,num_features)
         blocks_manyhot_windows = blocks_manyhot_windows.permute(0,2,3,1)
-        # input_windows = input_windows.permute(0,2,1)
         shape = blocks_manyhot_windows.shape
+        # now we reshape so that the stack of one-hot vectors becomes a single "many-hot" vector
+        # formed by concatenating the one hot vectors
         blocks_manyhot_windows = blocks_manyhot_windows.view(shape[0],shape[1]*shape[2],shape[3]).float()
 
+        # concatenate the song and block input features before returning
         return {'input': torch.cat(input_windowss + [blocks_manyhot_windows],1), 'target': block_windows}
 
     def __len__(self):

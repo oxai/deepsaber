@@ -11,7 +11,8 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 print(rank)
 
-data_path = Path("DataE/")
+data_path = Path("AugData")
+#data_path = Path("DataE/")
 
 candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
 
@@ -35,11 +36,14 @@ time_shifts = 16
 
 for i in tasks:
     path = candidate_audio_files[i]
+    #print(path)
     song_file_path = path.__str__()
     mfcc_file = song_file_path+"_"+str(n_mfcc)+"_"+str(beat_subdivision)+"_mfcc.npy"
     try:
-        level = list(path.parent.glob(f'./{difficulty}.json'))[0]
-    except IndexError:
+        #level = list(path.parent.glob(f'./{difficulty}.json'))[0]
+        level = list(path.parent.glob('./'+difficulty+'.json'))[0]
+        level = level.__str__()
+    except (TypeError, IndexError):
             continue
     if not os.path.isfile(mfcc_file):
         #mfcc = pickle.load(open(mfcc_file,"rb"))
@@ -49,7 +53,7 @@ for i in tasks:
         level = json.load(open(level, 'r'))
 
         bpm = level['_beatsPerMinute']
-        notes = level['_notes']
+        #notes = level['_notes']
 
         sr = sampling_rate
         beat_duration = int(60*sr/bpm) #beat duration in samples
@@ -64,7 +68,7 @@ for i in tasks:
 
         if mfcc.shape[1]-(input_length+time_shifts-1) < 1:
             print("Smol song, probably trolling; blacklisting...")
-            with open("DataE/blacklist","a") as f:
+            with open(data_path.__str__()+"blacklist","a") as f:
                 f.write(song_file_path+"\n")
 
         #pickle.dump(mfcc,open(mfcc_file,"wb"))

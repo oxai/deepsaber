@@ -7,6 +7,7 @@ import pkgutil
 from base import models
 from base import data
 from base.utils import utils
+import json
 
 
 class BaseOptions:
@@ -86,9 +87,12 @@ class BaseOptions:
         expr_dir = os.path.join(opt.checkpoints_dir, opt.experiment_name)
         utils.mkdirs(expr_dir)
         file_name = os.path.join(expr_dir, 'opt.txt')
+        file_name_json = os.path.join(expr_dir, 'opt.json')
         with open(file_name, 'wt') as opt_file:
             opt_file.write(message)
             opt_file.write('\n')
+        with open(file_name_json, 'wt') as opt_file:
+            opt_file.write(json.dumps(vars(opt)))
 
     def parse(self):
 

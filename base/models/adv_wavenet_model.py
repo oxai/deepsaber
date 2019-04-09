@@ -3,6 +3,7 @@ from .networks import WaveNetModel as WaveNet
 import torch.nn.functional as F
 import torch
 from . import networks
+import random
 
 class AdvWaveNetModel(BaseModel):
 
@@ -12,6 +13,8 @@ class AdvWaveNetModel(BaseModel):
         self.metric_names = ['accuracy']
         self.module_names = ['']  # changed from 'model_names'
         self.schedulers = []
+        
+        # generator net
         self.net = WaveNet(layers=opt.layers,
                            blocks=opt.blocks,
                            dilation_channels=opt.dilation_channels,
@@ -25,6 +28,7 @@ class AdvWaveNetModel(BaseModel):
                            kernel_size=opt.kernel_size,
                            bias=opt.bias)
 
+        # discriminator net
         self.discriminator = WaveNet(layers=opt.layers,
                                     blocks=opt.blocks,
                                     dilation_channels=opt.dilation_channels,
@@ -39,11 +43,13 @@ class AdvWaveNetModel(BaseModel):
                                     kernel_size=opt.kernel_size,
                                     bias=opt.bias)
 
+        # this is normally done in base class, but it doesn't do it for the discriminator net so we do it here
         if self.gpu_ids:
             self.discriminator = networks.init_net(self.discriminator, self.opt.init_type, self.opt.init_gain,
                                 self.opt.gpu_ids)  # takes care of pushing net to cuda
             assert torch.cuda.is_available()
 
+        # optimizers for the parameters of the generator and the discriminator
         self.gen_optimizers = [torch.optim.Adam([
             {'params': [param for name, param in self.net.named_parameters() if name[-4:] == 'bias'],
              'lr': 2 * opt.learning_rate},  # bias parameters change quicker - no weight decay is applied
@@ -56,9 +62,18 @@ class AdvWaveNetModel(BaseModel):
         {'params': [param for name, param in self.discriminator.named_parameters() if name[-4:] != 'bias'],
         'lr': opt.learning_rate, 'weight_decay': opt.weight_decay}  # filter parameters have weight decay
         ])]
+
+        self.optimizers = self.gen_optimizers + self.disc_optimizers
         self.loss_ce = None
         self.loss_gen = None
         self.loss_disc = None
+
+#    def update_learning_rate(self):
+#        for scheduler in self.schedulers:
+#            scheduler.step()
+#        lr = self.gen_optimizers[0].param_groups[0]['lr']
+#        print('learning rate = %.7f' % lr)
+
 
     def name(self):
         return "AdvWaveNet"
@@ -79,6 +94,7 @@ class AdvWaveNetModel(BaseModel):
         parser.add_argument('--bias', action='store_false')
         parser.add_argument('--frequency_gen_updates', type=int, default=5)
         parser.add_argument('--dropout_p', type=float, default=0.5)
+        parser.add_argument('--loss_ce_weight', type=float, default=1.0)
         return parser
 
     def set_input(self, data):
@@ -94,25 +110,49 @@ class AdvWaveNetModel(BaseModel):
         self.target = target_.reshape((target_shape[0]*target_shape[1]*target_shape[2]*target_shape[3])).to(self.device)
 
     def forward(self):
+        #generator forward pass
         self.output = self.net.forward(self.input)
         x = self.output
         [n, channels, classes, l] = x.size() # l is number of time steps of output (which is opt.output_length)
+        # reshape to get a sequence of logit vectors
+        # note that if using reduced_state channels=1, while if using non-reduced_state, channel=12
         x = x.transpose(1, 3).contiguous()
         x = x.view(n * l * channels, classes)
 
+        # cross entropy loss between prediction logits and target classes
         self.loss_ce = F.cross_entropy(x, self.target)
+
+        # prediction accuracy
         self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
+
+        # convert logits to softmax
+        # we omit the last output so that it corresponds to the same time points as the last l-1 song features 
+        # and we reshape it to the right shape to feed as input to discriminator
         generated_level = F.softmax(self.output[:,:,:,:-1],2).contiguous().view(n,channels*classes,l-1).cuda()
-        p_gen = self.discriminator.forward(torch.cat((self.input[:,:-self.opt.output_channels*self.opt.num_classes,-(l-1):],generated_level),1)).squeeze()
-        p_gen = torch.sigmoid(p_gen)
+        # we concatenate the song features and the generated level before feeding to discriminator
+        logits_gen = self.discriminator.forward(torch.cat((self.input[:,:-self.opt.output_channels*self.opt.num_classes,-(l-1):],generated_level),1)).squeeze()
+        p_gen = torch.sigmoid(logits_gen)
+        # GAN generator loss
         self.loss_gen = torch.log(1-p_gen).mean() # high when discriminator thinks it likely false
-        self.loss_gen += 0.1 * self.loss_ce
+        #lr = self.optimizers[0].param_groups[0]['lr']
+        # add the cross entropy loss with given weighting
+        self.loss_gen += self.opt.loss_ce_weight * self.loss_ce
 
+    def forward_real(self):
+        # discriminator forward pass for real song/block pairs 
+        #self.forward()
         # p_real = self.discriminator.forward(self.input[:,-self.opt.output_channels*self.opt.num_classes:,:l]).squeeze()
-        p_real = self.discriminator.forward(self.input[:,:,:l]).squeeze()
-        p_real = torch.sigmoid(p_real)
+        l = self.opt.output_length
+        # smoothing the one-hot vectors into softmaxes (helps the generator, by making the real ones not so easy to identify for being one-hot)
+        output_features = self.opt.output_channels*self.opt.num_classes
+        softmax_beta = random.randint(1,10)
+        # feeding the first l time points so that it's not exactly the same as the time points generated by the generator; this avoids too much correlation (ideally the real sequences and the generated ones should be independent,.. #TODO: make them independent; for instance by dividing the batch in two, one half used for the generator, and the other for the discriminator..)
+        smoothed_real = torch.cat((self.input[:,:-output_features,:l],F.softmax(softmax_beta*self.input[:,-output_features:,:l],dim=1)),1)
+        logits_real = self.discriminator.forward(smoothed_real).squeeze()
+        p_real = torch.sigmoid(logits_real)
+        # GAN discriminator loss
         self.loss_disc = -self.loss_gen - torch.log(p_real).mean()
-
+        #self.loss_disc  += self.opt.loss_ce_weight * self.loss_ce
 
     def gen_backward(self):
         self.gen_optimizers[0].zero_grad()
@@ -130,6 +170,7 @@ class AdvWaveNetModel(BaseModel):
         if optimize_generator:
             self.gen_backward()
         else:
+            self.forward_real()
             self.disc_backward()
         for scheduler in self.schedulers:
             # step for schedulers that update after each iteration

@@ -108,10 +108,13 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         # for short
         y = mfcc
         
+        receptive_field = self.receptive_field
+        # we pad the song features with zeros to imitate generation
+        y = torch.cat((torch.zeros(y.shape(1),receptive_field),y),2)
+        
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
         # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
-        receptive_field = self.receptive_field
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
         indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
@@ -137,7 +140,9 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         ## CONSTRUCT BLOCKS TENSOR ##
         for note in notes:
             #sample_index = floor((time of note in seconds)*sampling_rate/(num_samples_per_feature))
-            sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+            #sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+            # we add receptive_field because we padded the y with 0s, to imitate generation
+            sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
             # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
             if sample_index >= y.shape[1]:
                 print("note beyond the end of time")

@@ -23,7 +23,7 @@ sys.argv.append("--output_length=95") # needs to be at least the receptive field
                                       # this is because the song part of the input will have length 94+94 for an output of length 95; then we can take the second part of the song input with the first 94 outputs as input to discriminator
 #sys.argv.append("--output_length=1") # needs to be at least the receptive field (in time points) + 1 if using the GAN (adv_wavenet model)!
 #                                      # this is because the song part of the input will have length 94+94 for an output of length 95; then we can take the second part of the song input with the first 94 outputs as input to discriminator
-sys.argv.append("--num_windows=5")
+sys.argv.append("--num_windows=10")
 sys.argv.append("--gpu_ids=0")
 sys.argv.append("--nepoch=500")
 sys.argv.append("--nepoch_decay=500")
@@ -46,7 +46,7 @@ sys.argv.append("--workers=0")
 sys.argv.append("--dropout_p=0.3")
 sys.argv.append("--loss_ce_weight=0.0")
 sys.argv.append("--load")
-sys.argv.append("--load_iter=332000")
+sys.argv.append("--load_iter=2000")
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()

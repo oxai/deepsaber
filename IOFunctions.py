@@ -199,3 +199,93 @@ def get_all_json_level_files_from_data_directory(data_directory, include_autosav
                 json_files.append(json_path)
     return json_files
 
+
+def get_list_of_downloaded_songs():
+    downloaded_songs_full = [dI for dI in os.listdir(EXTRACT_DIR) if os.path.isdir(os.path.join(EXTRACT_DIR, dI))]
+    i = 0
+    downloaded_songs = []
+    while i < len(downloaded_songs_full):
+        try:
+            downloaded_songs.append(downloaded_songs_full[i].split(')', 1))
+        except:
+            print('Fail @ ' + str(i) + ': ' + downloaded_songs_full[i])
+            pass
+        i += 1
+    return downloaded_songs_full, downloaded_songs
+
+def read_meta_data_file(filename):
+    num_lines = sum(1 for line in open(filename))
+    f = open(filename, 'r')
+    meta_data = dict()
+    meta_data['id'] = f.readline().split(': ')[1].split('\n')[0]
+    meta_data['title'] = f.readline().split(': ')[1].split('\n')[0]
+    meta_data['author'] = f.readline().split(': ')[1].split('\n')[0]
+    meta_data['downloads'] = f.readline().split(': ')[1].split('\n')[0]
+    meta_data['finished'] = f.readline().split(': ')[1].split('\n')[0]
+    meta_data['thumbsUp'] = f.readline().split(': ')[1].split('\n')[0]
+    meta_data['thumbsDown'] = f.readline().split(': ')[1].split('\n')[0]
+    meta_data['rating'] = f.readline().split(': ')[1].split('\n')[0]
+    if num_lines > 8:
+        meta_data['scoresaberDifficulty'] = f.readline().split(': ')[1].split('\n')[0]
+        if num_lines > 9:
+            meta_data['scoresaberDifficultyLabel'] = f.readline().split(': ')[1].split('\n')[0]
+            if num_lines > 10:
+                meta_data['scoresaberId'] = f.readline().split(': ')[1].split('\n')[0]
+                if num_lines > 11:
+                    meta_data['funFactor'] = f.readline().split(': ')[1].split('\n')[0]
+                    if num_lines > 12:
+                        meta_data['rhythm'] = f.readline().split(': ')[1].split('\n')[0]
+                        if num_lines > 13:
+                            meta_data['flow'] = f.readline().split(': ')[1].split('\n')[0]
+                            if num_lines > 14:
+                                meta_data['patternQuality'] = f.readline().split(': ')[1].split('\n')[0]
+                                if num_lines > 15:
+                                    meta_data['readability'] = f.readline().split(': ')[1].split('\n')[0]
+                                    if num_lines > 16:
+                                        meta_data['levelQuality'] = f.readline().split(': ')[1].split('\n')[0]
+    return meta_data
+
+def write_meta_data_file(filename, meta_data):
+    #if not os.path.exists(filename):
+    #    f = open(filename, 'a').close()  # incase doesn't exist //
+
+    # Write meta data text file
+    f = open(filename, 'w')
+    f.write('id: ' + html.unescape(meta_data['id']) + '\n')
+    f.write('title: ' + html.unescape(meta_data['title']) + '\n')
+    f.write('author: ' + html.unescape(meta_data['author']) + '\n')
+    f.write('downloads: ' + html.unescape(meta_data['downloads']) + '\n')
+    f.write('finished: ' + html.unescape(meta_data['finished']) + '\n')
+    f.write('thumbsUp: ' + html.unescape(meta_data['thumbsUp']) + '\n')
+    f.write('thumbsDown: ' + html.unescape(meta_data['thumbsDown']) + '\n')
+    f.write('rating: ' + html.unescape(meta_data['rating']) + '\n')
+    if 'scoresaberDifficulty' in meta_data.keys():
+        del_list = []
+        for i in range(len(meta_data['scoresaberDifficulty'])):
+            if meta_data['scoresaberDifficulty'][i] is None:
+                del_list.append(i)
+        for i in range(len(del_list)-1, -1, -1):
+            del meta_data['scoresaberId'][del_list[i]]
+            del meta_data['scoresaberDifficulty'][del_list[i]]
+            del meta_data['scoresaberDifficultyLabel'][del_list[i]]
+        f.write('scoresaberDifficulty: ' + str(meta_data['scoresaberDifficulty']).replace('[', '').replace(']', '') + '\n')
+    if 'scoresaberDifficultyLabel' in meta_data.keys():
+        f.write('scoresaberDifficultyLabel: ' + str(meta_data['scoresaberDifficultyLabel']).replace('[', '').replace(']', '') + '\n')
+    if 'scoresaberId' in meta_data.keys():
+        f.write('scoresaberId: ' + str(meta_data['scoresaberId']).replace('[', '').replace(']', '') + '\n')
+    if 'funFactor' in meta_data.keys():
+        f.write('funFactor: ' + html.unescape(meta_data['funFactor']) + '\n')
+    if 'rhythm' in meta_data.keys():
+        f.write('rhythm: ' + html.unescape(meta_data['rhythm']) + '\n')
+    if 'flow' in meta_data.keys():
+        f.write('flow: ' + html.unescape(meta_data['flow']) + '\n')
+    if 'patternQuality' in meta_data.keys():
+        f.write('patternQuality: ' + html.unescape(meta_data['patternQuality']) + '\n')
+    if 'readability' in meta_data.keys():
+        f.write('readability: ' + html.unescape(meta_data['readability']) + '\n')
+    if 'levelQuality' in meta_data.keys():
+        f.write('levelQuality: ' + html.unescape(meta_data['levelQuality']) + '\n')
+    f.close()
+    return meta_data
+
+

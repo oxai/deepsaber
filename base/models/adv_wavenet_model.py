@@ -151,10 +151,24 @@ class AdvWaveNetModel(BaseModel):
         self.loss_gen += self.opt.loss_ce_weight * self.loss_ce
         
         # TODO: should maybe also try generating some conditioned on emtpy inputs, as at the beginning of generation during testing..
-        # would need to replicate the module.generate code but outputing logits.. (and sampling only to feed outputs as inputs)
-        #if False:
-        #    song = self.input[:,:-self.opt.output_channels*self.opt.num_classes,:]
-        #    generated_level = model.net.module.generate(song.size(-1)-self.opt.receptive_field,song,time_shifts=self.opt.time_shifts,temperature=1.0)
+        # Here is an idea of how to do it, do it on the dataset classes themselves, by appending zeros to the levels and song things
+        #self.output = self.net.forward(torch.cat((torch.zeros(n,self.input.shape(1),receptive_field),self.input),2))
+
+        #if training_disc:
+        #    # convert logits to softmax
+        #    # we omit the last output so that it corresponds to the same time points as the last l-1 song features 
+        #    # and we reshape it to the right shape to feed as input to discriminator
+        #    generated_level = F.softmax(self.output[:n//2,:,:,:receptive_field],2).contiguous().view(n,channels*classes,receptive_field).cuda()
+        #    
+        #    # we concatenate the song features and the generated level before feeding to discriminator
+        #    logits_gen = self.discriminator.forward(torch.cat((self.input[:n//2,:-self.opt.output_channels*self.opt.num_classes,:receptive_field],generated_level),1)).squeeze()
+        #else:
+        #    
+        #    # convert logits to softmax
+        #    generated_level = F.softmax(self.output[:,:,:,:receptive_field],2).contiguous().view(n,channels*classes,l-1).cuda()
+
+        #    # we concatenate the song features and the generated level before feeding to discriminator
+        #    logits_gen = self.discriminator.forward(torch.cat((self.input[:,:-self.opt.output_channels*self.opt.num_classes,:receptive_field],generated_level),1)).squeeze()
 
     def forward_real(self):
         # discriminator forward pass for real song/block pairs 

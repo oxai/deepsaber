@@ -5,6 +5,8 @@ import pickle
 import os
 import html
 
+from IOFunctions import write_meta_data_file, read_meta_data_file
+
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
 EXTRACT_DIR = os.path.join(THIS_DIR, 'DataE')
@@ -13,7 +15,7 @@ if not os.path.isdir(DATA_DIR):
 if not os.path.isdir(EXTRACT_DIR):
     os.mkdir(EXTRACT_DIR)
 
-def download_top_k_played_songs(k):
+def download_top_k_played_songs(k, update_existing=False):
     downloaded_songs_full = [dI for dI in os.listdir(EXTRACT_DIR) if os.path.isdir(os.path.join(EXTRACT_DIR, dI))]
     i = 0
     total_downloaded = 0
@@ -55,9 +57,11 @@ def download_top_k_played_songs(k):
         ratingMatches = re.findall(ratingRegEx, HTML)  # Extract rating
         for index, match in enumerate(fileNameMatches):
             # Download the corresponding ZIP file
-            if nbDownloaded <= k:
+            if nbDownloaded < k:
                 fileName = re.sub(illegalNameChars, "", html.unescape(titleMatches[index]))
+
                 if fileName not in downloaded_songs:
+                    new_song = True
                     song_name = str(total_downloaded+1)+")"+fileName
                     dataReq = Request('http://beatsaver.com/download/'+match, headers={'User-Agent': 'Mozilla/5.0'})
                     data = urlopen(dataReq).read()
@@ -74,27 +78,28 @@ def download_top_k_played_songs(k):
                     total_downloaded += 1
                     nbDownloaded += 1
                 else:
+                    new_song = False
                     song_name = downloaded_songs_full[downloaded_songs.index(fileName)]
                     print('Confirmed Song ' + song_name)
 
-                # Write meta data text file
-                meta_data_txt_output = os.path.join(os.path.join(EXTRACT_DIR, song_name),
-                                                    'meta_data.txt')
-
-                if not os.path.exists(meta_data_txt_output):
-                    f = open(meta_data_txt_output, 'a').close() # incase doesn't exist
-                    print('Created meta_data ' + os.path.join(song_name, meta_data_txt_output))
-                f = open(meta_data_txt_output, 'w')
-                f.write('id: ' + html.unescape(fileNameMatches[index]) + '\n')
-                f.write('title: ' + html.unescape(titleMatches[index]) + '\n')
-                f.write('author: ' + html.unescape(authorMatches[index]) + '\n')
-                f.write('downloads: ' + html.unescape(downloadsMatches[index]) + '\n')
-                f.write('finished: ' + html.unescape(finishedMatches[index]) + '\n')
-                f.write('thumbsUp: ' + html.unescape(thumbsUpMatches[index]) + '\n')
-                f.write('thumbsDown: ' + html.unescape(thumbsDownMatches[index]) + '\n')
-                f.write('rating: ' + html.unescape(ratingMatches[index]) + '\n')
-                f.close()
-                print('Updated meta_data for ' + song_name)
+                if new_song is True or update_existing is True:
+                    # Write meta data text file
+                    meta_data_txt_output = os.path.join(os.path.join(EXTRACT_DIR, song_name),
+                                                        'meta_data.txt')
+                    meta_data = dict()
+                    meta_data['id'] = html.unescape(fileNameMatches[index])
+                    meta_data['title'] = html.unescape(titleMatches[index])
+                    meta_data['author'] = html.unescape(authorMatches[index])
+                    meta_data['downloads'] = html.unescape(downloadsMatches[index])
+                    meta_data['finished'] = html.unescape(finishedMatches[index])
+                    meta_data['thumbsUp'] = html.unescape(thumbsUpMatches[index])
+                    meta_data['thumbsDown'] = html.unescape(thumbsDownMatches[index])
+                    meta_data['rating'] = html.unescape(ratingMatches[index])
+                    meta_data['scoresaberId'] = get_scoresaber_id_of_song(meta_data['title'], meta_data['author'])
+                    meta_data['scoresaberDifficulty'], meta_data['scoresaberDifficultyLabel'] = get_scoresaber_difficulty_from_scoresaber_id(meta_data['scoresaberId'])
+                    meta_data.update(get_beastsaber_meta_from_id(meta_data['id']))
+                    write_meta_data_file(meta_data_txt_output, meta_data)
+                    print('Updated meta_data for ' + song_name)
         page += 1
     return fileNameMatches, titleMatches
 
@@ -128,27 +133,16 @@ def update_meta_data_for_downloaded_songs():
                                             'meta_data.txt')
 
         if os.path.exists(meta_data_txt_output) and os.path.getsize(meta_data_txt_output) > 0:
-            num_lines = sum(1 for line in open(meta_data_txt_output))
-            f = open(meta_data_txt_output, 'r')
-            id = f.readline().split(': ')[1].split(';')[0]
-            title = f.readline().split(': ')[1].split(';')[0]
-            author = f.readline().split(': ')[1].split(';')[0]
-            downloads = f.readline().split(': ')[1].split(';')[0]
-            finished = f.readline().split(': ')[1].split(';')[0]
-            thumbsUp = f.readline().split(': ')[1].split(';')[0]
-            thumbsDown = f.readline().split(': ')[1].split(';')[0]
-            try:
-                rating = f.readline().split(': ')[1].split(';')[0]
-            except:
-                print('fail')
+            meta_data = read_meta_data_file(meta_data_txt_output)
         else:
-            id = None
-            author = None
+            meta_data = dict()
+            meta_data['id'] = None
+            meta_data['author'] = None
             search_key = None
 
         match_found = False
-        if id is not None:
-            req_address = 'http://beatsaver.com/browse/detail/'+id
+        if meta_data['id'] is not None:
+            req_address = 'http://beatsaver.com/browse/detail/'+meta_data['id']
             HTMLreq = Request(req_address, headers={'User-Agent': 'Mozilla/5.0'})
             response = urlopen(HTMLreq)
             HTML = str(response.read())
@@ -156,54 +150,6 @@ def update_meta_data_for_downloaded_songs():
             thumbsDownRegEx = re.compile("<span>Down\s(.*?)<\/span>")
             match_found = True
             match_id = 0
-            # searching = True
-            # title_searched = False
-            # author_searched = False
-            # page = 0
-            # word_id = 0
-            # if search_key is None:
-            #     search_key = downloaded_songs[i]
-            # # Find correct beatsaver file
-            # while searching:
-            #     req_address = 'http://beatsaver.com/search/all/' + str(page * 40) + '?key=' + search_key
-            #     HTMLreq = Request(req_address, headers={'User-Agent': 'Mozilla/5.0'})
-            #     response = urlopen(HTMLreq)
-            #     HTML = str(response.read())
-            #     fileNameMatches = re.findall(fileNameRegEx, HTML)  # Extract file names (both very hacky)
-            #     if id not in fileNameMatches:
-            #         next_page = re.search("Next Page")
-            #         if next_page:
-            #             page += 1  # go to next page
-            #         else:
-            #             if len(title) >= 3 and title_searched is False:
-            #                 print('File not found via ' + search_key[i])
-            #                 page = 0
-            #                 search_key = title
-            #                 title_searched = True
-            #             if len(author) >= 3 and author_searched is False:  # backup; song name not always found
-            #                 print('File not found via ' + search_key[i])
-            #                 page = 0
-            #                 search_key = author
-            #                 author_searched = True
-            #             elif word_id < len(downloaded_songs[i].split(' '))-1:  # desperate last measure, searching individual words
-            #                 print('File not found via ' + search_key)
-            #                 page = 0
-            #                 search_key = downloaded_songs[i].split(' ')[word_id]
-            #                 while len(search_key) < 3:
-            #                     word_id += 1
-            #                     if word_id >= len(downloaded_songs[i].split(' '))-1:
-            #                         searching = False
-            #                         break
-            #                     search_key = downloaded_songs[i].split(' ')[word_id]
-            #                 word_id += 1
-            #             else:
-            #                 print('File not found via ' + search_key)
-            #                 print('Search methods exhausted, giving up.')
-            #                 searching = False
-            #     else:
-            #         searching = False
-            #         match_found = True
-            #         match_id = fileNameMatches.index(id)
         else:
             print('No existing meta_file.')
             print('Current approach to overcome this is unstable.')
@@ -234,28 +180,98 @@ def update_meta_data_for_downloaded_songs():
             thumbsDownMatches = re.findall(thumbsDownRegEx, HTML)  # Extract thumb downs
             ratingMatches = re.findall(ratingRegEx, HTML)  # Extract rating
 
-            # Write meta data text file
-            if not os.path.exists(meta_data_txt_output):
-                f = open(meta_data_txt_output, 'a').close()  # incase doesn't exist
+            meta_data['id'] = html.unescape(fileNameMatches[match_id])
+            meta_data['title'] = html.unescape(titleMatches[match_id])
+            meta_data['author'] = html.unescape(authorMatches[match_id])
+            meta_data['downloads'] = html.unescape(downloadsMatches[match_id])
+            meta_data['finished'] = html.unescape(finishedMatches[match_id])
+            meta_data['thumbsUp'] = html.unescape(thumbsUpMatches[match_id])
+            meta_data['thumbsDown'] = html.unescape(thumbsDownMatches[match_id])
+            meta_data['rating'] = html.unescape(ratingMatches[match_id])
+            meta_data['scoresaberId'] = get_scoresaber_id_of_song(meta_data['title'], meta_data['author'])
+            meta_data['scoresaberDifficulty'], meta_data['scoresaberDifficultyLabel'] = get_scoresaber_difficulty_from_scoresaber_id(meta_data['scoresaberId'])
+            meta_data.extend(get_beastsaber_meta_from_id(meta_data['id']))
+            write_meta_data_file(meta_data_txt_output, meta_data)
+            print('Saved meta_data for ' + downloaded_songs_full[i])
 
-            metasize = os.path.getsize(meta_data_txt_output)
 
-            f = open(meta_data_txt_output, 'w')
-            f.write('id: ' + html.unescape(fileNameMatches[match_id]) + ';\n')
-            f.write('title: ' + html.unescape(titleMatches[match_id]) + ';\n')
-            f.write('author: ' + html.unescape(authorMatches[match_id]) + ';\n')
-            f.write('downloads: ' + html.unescape(downloadsMatches[match_id]) + ';\n')
-            f.write('finished: ' + html.unescape(finishedMatches[match_id]) + ';\n')
-            f.write('thumbsUp: ' + html.unescape(thumbsUpMatches[match_id]) + ';\n')
-            f.write('thumbsDown: ' + html.unescape(thumbsDownMatches[match_id]) + ';\n')
-            f.write('rating: ' + html.unescape(ratingMatches[match_id]) + ';\n')
-            f.close()
-            if metasize == 0:
-                print('Created meta_data ' + os.path.join(downloaded_songs_full[i]))
+def get_scoresaber_id_of_song(song_identifier, author_identifier):
+    # Get the HTML page. The page has 20 files on it
+    HTMLreq = Request('https://scoresaber.com/?search=' + author_identifier, headers={'User-Agent': 'Mozilla/5.0'})
+    response = urlopen(HTMLreq)
+    HTML = str(response.read().decode())
+    titleRegEx = re.compile("<td class=\"song\">\\r\\n\s*?<img src=\"[\/a-zA-Z0-9]*.png\" \/>\\r\\n\s*<a href=\"\/leaderboard\/[0-9]*\">\\r\\n\s*(.*?(?=\\r))")
+    leaderboardURLRegEx = re.compile("<a href=\"(\/leaderboard\/[0-9]*)\">")
+    illegalNameChars = re.compile("[\/\\:\*\?\"<>|]")
+    titleMatches = re.findall(titleRegEx, HTML)  # Extract song title
+    leaderboardMatches = re.findall(leaderboardURLRegEx, HTML)  # Extract song title
+    leaderboard_id = []
+    for index, match in enumerate(titleMatches):
+        # Download the corresponding ZIP file
+        fileName = re.sub(illegalNameChars, "", html.unescape(titleMatches[index]))
+        if fileName == song_identifier:
+            leaderboard_id.append(int(leaderboardMatches[index].split('/')[-1]))
+    if len(leaderboard_id) > 0:
+        print('By jove we\'ve found them!')
+    print(str(len(leaderboard_id)) + ' scoresaber entries were found matching song: ' + song_identifier +
+          ', author: ' + author_identifier + ';')
+    return leaderboard_id
+
+
+def get_scoresaber_difficulty_from_scoresaber_id(scoresaber_id):
+    try:
+        num_songs = len(scoresaber_id)
+    except TypeError:
+        scoresaber_id = [scoresaber_id]
+        num_songs = len(scoresaber_id)
+    difficulty = []
+    difficultyLabel = []
+    print('Searching '+str(num_songs)+' scoresaber entries for difficulty rating.')
+    for id in scoresaber_id:
+        HTMLreq = Request('https://scoresaber.com/leaderboard/'+str(id), headers={'User-Agent': 'Mozilla/5.0'})
+        response = urlopen(HTMLreq)
+        HTML = str(response.read().decode())
+        difficultyRegEx = re.compile("Star Difficulty: <b>([0-9]*\.[0-9]*)")
+        difficultyLabelRegEx = re.compile("<h4 class=\"title is-5\" style=\"margin-top:50px\">[a-zA-Z0-9 \W]*\(<span style=\"color:\#?[a-zA-Z0-9]*;\">([a-zA-Z]*)<\/span>\)")
+        difficultyMatches = re.findall(difficultyRegEx, HTML)  # Extract song title
+        difficultyLabelMatches = re.findall(difficultyLabelRegEx, HTML)  # Extract song title
+        if len(difficultyMatches) == 1:
+            difficulty.append(float(difficultyMatches[0]))
+            if len(difficultyLabelMatches) == 1:
+                difficultyLabel.append(difficultyLabelMatches[0])
+                print('Leaderboard entry ' + str(id) + ' has a difficulty of ' + str(
+                    difficultyMatches[0]) + ' and a label of ' + str(difficultyLabelMatches[0]))
             else:
-                print('Updated meta_data for ' + downloaded_songs_full[i])
+                difficultyLabel.append(None)
+                print('Leaderboard entry ' + str(id) + ' has a difficulty of ' + str(
+                    difficultyMatches[0]))
+        else:
+            difficulty.append(None)
+            difficultyLabel.append(None)
+            # print('Scoresaber difficulty not found for leaderboard entry ' + str(id))
+    return difficulty, difficultyLabel
+
+def get_beastsaber_meta_from_id(song_id):
+    beastsaber_meta = dict()
+    beastsaber_id = str(song_id).split('-')[0]
+    HTMLreq = Request('https://bsaber.com/songs/'+str(beastsaber_id)+'/', headers={'User-Agent': 'Mozilla/5.0'})
+    response = urlopen(HTMLreq)
+    HTML = str(response.read().decode())
+    criterionScoreRegEx = re.compile("<span class=\"rwp-criterion-score\" style=\"line-height: 18px; font-size: 18px;\">([0-9]*.[0-9]*)<\/span>")
+    criterionLabelRegEx = re.compile("<span class=\"rwp-criterion-label\" style=\"line-height: 14px;\">([a-zA-Z ]*)<\/span>")
+    criterionScoreMatches = re.findall(criterionScoreRegEx, HTML)  # Extract song title
+    criterionLabelMatches = re.findall(criterionLabelRegEx, HTML)  # Extract song title
+    if len(criterionScoreMatches) == 6 and len(criterionLabelMatches) == 6:
+        print('Beastsaber stats extracted successfully: ')
+        criterionLabelMatches = [x[0].lower() + x[1:] for x in criterionLabelMatches]
+        for i in range(6):
+            criterionLabelMatches = [x[0].lower() + x[1:].replace(" ", "") for x in criterionLabelMatches]
+            beastsaber_meta.update({criterionLabelMatches[i]: criterionScoreMatches[i]})
+        for key, value in beastsaber_meta.items():
+            print(str(key)+': '+str(value))
+    return beastsaber_meta
 
 if __name__ == "__main__":
-    #fileNamesA, titlesA = download_top_k_played_songs(10)
-    update_meta_data_for_downloaded_songs()
+    fileNamesA, titlesA = download_top_k_played_songs(1, update_existing=False)
+    #update_meta_data_for_downloaded_songs()
 

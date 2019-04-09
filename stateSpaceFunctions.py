@@ -105,6 +105,10 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
         chroma_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
         level_state_feature_maps[os.path.basename(JSON_file)] = (level_states, chroma_features)
 
+        # To obtain the chroma features for each pitch you access it like: chroma_features[0][0]
+        # the first index number refers to the 12 pitches, so is indexes 0 to 11
+        # the second index number refers to the chroma values, so is indexed from 0 to numOfStates - 1
+
         # WE SHOULD ALSO USE THE PERCUSSIVE FREQUENCIES IN OUR DATA, Otherwise the ML is losing valuable information
     return level_state_feature_maps
 
@@ -117,7 +121,6 @@ def chroma_feature_extraction(y,sr, state_times, bpm, beat_discretization = 1/16
     # Aggregate chroma features between beat events
     # We'll use the median value of each feature between beat frames
     beat_chroma = librosa.util.sync(chromagram, state_times, aggregate=np.median, pad=True, axis=-1)
-    beat_chroma = beat_chroma[:, :-1]
     return beat_chroma
 
 

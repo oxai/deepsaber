@@ -3,6 +3,7 @@ import re
 import zipfile
 import pickle
 import os
+import html
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
@@ -55,7 +56,7 @@ def download_top_k_played_songs(k):
         for index, match in enumerate(fileNameMatches):
             # Download the corresponding ZIP file
             if nbDownloaded <= k:
-                fileName = re.sub(illegalNameChars, "", titleMatches[index])
+                fileName = re.sub(illegalNameChars, "", html.unescape(titleMatches[index]))
                 if fileName not in downloaded_songs:
                     song_name = str(total_downloaded+1)+")"+fileName
                     dataReq = Request('http://beatsaver.com/download/'+match, headers={'User-Agent': 'Mozilla/5.0'})
@@ -82,20 +83,18 @@ def download_top_k_played_songs(k):
 
                 if not os.path.exists(meta_data_txt_output):
                     f = open(meta_data_txt_output, 'a').close() # incase doesn't exist
-                f = open(meta_data_txt_output, 'w')
-                f.write('id: ' + fileNameMatches[index] + '\n')
-                f.write('title: ' + titleMatches[index] + '\n')
-                f.write('author: ' + authorMatches[index] + '\n')
-                f.write('downloads: ' + downloadsMatches[index] + '\n')
-                f.write('finished: ' + finishedMatches[index] + '\n')
-                f.write('thumbsUp: ' + thumbsUpMatches[index] + '\n')
-                f.write('thumbsDown: ' + thumbsDownMatches[index] + '\n')
-                f.write('rating: ' + ratingMatches[index] + '\n')
-                f.close()
-                if os.path.getsize(meta_data_txt_output) == 0:
                     print('Created meta_data ' + os.path.join(song_name, meta_data_txt_output))
-                else:
-                    print('Updated meta_data for ' + song_name)
+                f = open(meta_data_txt_output, 'w')
+                f.write('id: ' + html.unescape(fileNameMatches[index]) + '\n')
+                f.write('title: ' + html.unescape(titleMatches[index]) + '\n')
+                f.write('author: ' + html.unescape(authorMatches[index]) + '\n')
+                f.write('downloads: ' + html.unescape(downloadsMatches[index]) + '\n')
+                f.write('finished: ' + html.unescape(finishedMatches[index]) + '\n')
+                f.write('thumbsUp: ' + html.unescape(thumbsUpMatches[index]) + '\n')
+                f.write('thumbsDown: ' + html.unescape(thumbsDownMatches[index]) + '\n')
+                f.write('rating: ' + html.unescape(ratingMatches[index]) + '\n')
+                f.close()
+                print('Updated meta_data for ' + song_name)
         page += 1
     return fileNameMatches, titleMatches
 
@@ -131,10 +130,8 @@ def update_meta_data_for_downloaded_songs():
         if os.path.exists(meta_data_txt_output) and os.path.getsize(meta_data_txt_output) > 0:
             num_lines = sum(1 for line in open(meta_data_txt_output))
             f = open(meta_data_txt_output, 'r')
-            if num_lines > 6:
-                id = f.readline().split(': ')[1].split(';')[0]
-                if num_lines > 7:
-                    title = f.readline().split(': ')[1].split(';')[0]
+            id = f.readline().split(': ')[1].split(';')[0]
+            title = f.readline().split(': ')[1].split(';')[0]
             author = f.readline().split(': ')[1].split(';')[0]
             downloads = f.readline().split(': ')[1].split(';')[0]
             finished = f.readline().split(': ')[1].split(';')[0]
@@ -244,14 +241,14 @@ def update_meta_data_for_downloaded_songs():
             metasize = os.path.getsize(meta_data_txt_output)
 
             f = open(meta_data_txt_output, 'w')
-            f.write('id: ' + fileNameMatches[match_id] + ';\n')
-            f.write('title: ' + titleMatches[match_id] + ';\n')
-            f.write('author: ' + authorMatches[match_id] + ';\n')
-            f.write('downloads: ' + downloadsMatches[match_id] + ';\n')
-            f.write('finished: ' + finishedMatches[match_id] + ';\n')
-            f.write('thumbsUp: ' + thumbsUpMatches[match_id] + ';\n')
-            f.write('thumbsDown: ' + thumbsDownMatches[match_id] + ';\n')
-            f.write('rating: ' + ratingMatches[match_id] + ';\n')
+            f.write('id: ' + html.unescape(fileNameMatches[match_id]) + ';\n')
+            f.write('title: ' + html.unescape(titleMatches[match_id]) + ';\n')
+            f.write('author: ' + html.unescape(authorMatches[match_id]) + ';\n')
+            f.write('downloads: ' + html.unescape(downloadsMatches[match_id]) + ';\n')
+            f.write('finished: ' + html.unescape(finishedMatches[match_id]) + ';\n')
+            f.write('thumbsUp: ' + html.unescape(thumbsUpMatches[match_id]) + ';\n')
+            f.write('thumbsDown: ' + html.unescape(thumbsDownMatches[match_id]) + ';\n')
+            f.write('rating: ' + html.unescape(ratingMatches[match_id]) + ';\n')
             f.close()
             if metasize == 0:
                 print('Created meta_data ' + os.path.join(downloaded_songs_full[i]))
@@ -259,6 +256,6 @@ def update_meta_data_for_downloaded_songs():
                 print('Updated meta_data for ' + downloaded_songs_full[i])
 
 if __name__ == "__main__":
-    fileNamesA, titlesA = download_top_k_played_songs(10)
-    #update_meta_data_for_downloaded_songs()
+    #fileNamesA, titlesA = download_top_k_played_songs(10)
+    update_meta_data_for_downloaded_songs()
 

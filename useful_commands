@@ -7,3 +7,12 @@ mpiexec -n $(nproc) python3 process_songs.py
 #convert ogg to wav
 #needs sox installed
 find DataE/ -type f -name '*.ogg' | awk '{printf "sox -t ogg '\''%s'\'' -b 16 -t wav '\''%s'\''\n", $0, $0".wav" }' | bash
+
+#get trained model from somewhere
+
+port=10432
+url=0.tcp.ngrok.io
+path=~/code/
+iter=$1
+exp=reduced_states_gan_exp
+scp -P $port ${url}:${path}beatsaber/base/${exp}/iter_${iter}_net_.pth base/${exp}/

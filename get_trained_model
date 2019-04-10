@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# these are the settings for the computers I'm using at the moment
+
+if [ $1 = bria ] #briareos
+then
+    port=10432
+    url=0.tcp.ngrok.io
+    path=/home/guillefix/code/
+elif [ $1 = lbria ] #local briareos
+then
+    port=22
+    url=192.168.1.103
+    path=~/code/
+elif [ $1 = hydra ] #hydra
+then
+    port=22
+    url=$hydra
+    path=/users/guillefix/
+fi
+exp=$2
+iter=$3
+mkdir base/${exp}
+scp -P $port ${url}:${path}beatsaber/base/${exp}opt.json base/${exp}
+scp -P $port ${url}:${path}beatsaber/base/${exp}iter_${iter}_net_.pth base/${exp}

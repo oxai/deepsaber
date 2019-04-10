@@ -53,23 +53,34 @@ for i in tasks:
         level = json.load(open(level, 'r'))
 
         bpm = level['_beatsPerMinute']
-        #notes = level['_notes']
-
         sr = sampling_rate
         beat_duration = int(60*sr/bpm) #beat duration in samples
 
         mel_hop = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+        num_samples_per_feature = mel_hop + 1 
         mel_window = 4*mel_hop
-        y, sr = librosa.load(song_file_path, sr=sampling_rate)
 
-        # get mfcc feature
-        mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
+        notes = level['_notes']
+
+        # uncomment to look for notes beyond the end of time
+        for note in notes:
+            sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+            # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
+            if sample_index >= y.shape[1]:
+                print("note beyond the end of time")
+                continue
+
+        # uncomment to create mfcc features
+        #y, sr = librosa.load(song_file_path, sr=sampling_rate)
+
+        ## get mfcc feature
+        #mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
 
 
-        if mfcc.shape[1]-(input_length+time_shifts-1) < 1:
-            print("Smol song, probably trolling; blacklisting...")
-            with open(data_path.__str__()+"blacklist","a") as f:
-                f.write(song_file_path+"\n")
+        #if mfcc.shape[1]-(input_length+time_shifts-1) < 1:
+        #    print("Smol song, probably trolling; blacklisting...")
+        #    with open(data_path.__str__()+"blacklist","a") as f:
+        #        f.write(song_file_path+"\n")
 
-        #pickle.dump(mfcc,open(mfcc_file,"wb"))
-        np.save(mfcc_file,mfcc)
+        ##pickle.dump(mfcc,open(mfcc_file,"wb"))
+        #np.save(mfcc_file,mfcc)

@@ -109,8 +109,8 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         y = mfcc
         
         receptive_field = self.receptive_field
-        # we pad the song features with zeros to imitate generation
-        y = torch.cat((torch.zeros(y.shape(1),receptive_field),y),2)
+        # we pad the song features with zeros to imitate during training what happens during generation
+        y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
         
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs

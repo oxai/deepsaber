@@ -178,7 +178,7 @@ class AdvWaveNetModel(BaseModel):
         l = self.opt.output_length
         # smoothing the one-hot vectors into softmaxes (helps the generator, by making the real ones not so easy to identify for being one-hot)
         output_features = self.opt.output_channels*self.opt.num_classes
-        softmax_beta = random.randint(1,10)
+        softmax_beta = random.randint(2,10)
         smoothed_real = torch.cat((self.input[n//2:,:-output_features,:l],F.softmax(softmax_beta*self.input[n//2:,-output_features:,:l],dim=1)),1)
         # we are feeding the first half of the batch to the discriminator and the second half to the generator, so that the generated and real inputs are uncorrelated
         # NOTE: this requires n_batches*n_windows > 1

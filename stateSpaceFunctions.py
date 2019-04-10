@@ -63,12 +63,12 @@ def extract_all_representations_from_dataset(dataset_dir,top_k=2000,beat_discret
     directory_dict = {}
     for song_dir in song_directories:
         directory_dict[song_dir] = extract_representations_from_song_directory(song_dir,
-                                        top_k=top_k,beat_discretization=beat_discretization)
+                                        top_k=top_k,beat_discretization=beat_discretization, audio_feature_select=True)
         break
     return directory_dict    #TODO: Add some code here to save the representations eventually
 
 
-def extract_representations_from_song_directory(directory,top_k=2000,beat_discretization=1/16):
+def extract_representations_from_song_directory(directory,top_k=2000,beat_discretization=1/16, audio_feature_select=True):
     OGG_files = IOFunctions.get_all_ogg_files_from_data_directory(directory)
     if len(OGG_files) == 0:  # No OGG file ... skip
         print("No OGG file for song "+directory)
@@ -102,8 +102,12 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
                                                                     top_k=top_k,beat_discretization=beat_discretization)
         feature_extraction_times = [(i*beat_discretization)*(60/bpm) for i in range(len(level_states))]
         feature_extraction_frames = librosa.core.time_to_frames(feature_extraction_times,sr=sr)
-        chroma_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
-        level_state_feature_maps[os.path.basename(JSON_file)] = (level_states, chroma_features)
+        if(audio_feature_select): # for chroma
+            audio_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
+        else: # for mfccs
+            audio_features = mfcc_feature_extraction(y, sr)
+        # chroma_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
+        level_state_feature_maps[os.path.basename(JSON_file)] = (level_states, audio_features)
 
         # To obtain the chroma features for each pitch you access it like: chroma_features[0][0]
         # the first index number refers to the 12 pitches, so is indexes 0 to 11
@@ -122,6 +126,10 @@ def chroma_feature_extraction(y,sr, state_times, bpm, beat_discretization = 1/16
     # We'll use the median value of each feature between beat frames
     beat_chroma = librosa.util.sync(chromagram, state_times, aggregate=np.median, pad=True, axis=-1)
     return beat_chroma
+
+def mfcc_feature_extraction(y,sr):
+    mfcc = librosa.feature.mfcc(y=y, sr=sr) # we can add other specified parameters
+    return mfcc
 
 
 

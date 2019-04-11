@@ -13,7 +13,12 @@ import os
 
 #opt = TrainOptions().parse()
 # open(opt.experiment_name+"/opt.json","w").write(json.dumps(vars(opt)))
-experiment_name = "reduced_states_gan_exp_smoothedinput/"
+
+#%%
+#experiment_name = "reduced_states_gan_exp_smoothedinput/"
+experiment_name = "reduced_states_lookahead_likelihood/"
+# experiment_name = "reduced_states_gan_exp_smoothedinput/"
+
 opt = json.loads(open(experiment_name+"opt.json","r").read())
 opt["gpu_ids"] = [0]
 class Struct:
@@ -30,7 +35,8 @@ else:
 
 #%%
 
-checkpoint = "2000"
+checkpoint = "5000"
+checkpoint = "166000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -38,7 +44,8 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "11"
+song_number = "36"
+print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
 y, sr = librosa.load(song_path, sr=16000)
@@ -54,7 +61,22 @@ bpms = {
 "21": 80,
 "22": 106,
 "24": 106,
-"25": 66
+"25": 66,
+"26": 68,
+"27": 84,
+"28": 114,
+"29": 48,
+"30": 108,
+"31": 80,
+"32": 52,
+"33": 60,
+"34": 80,
+"35": 128,
+"36": 130,
+"37": 129,
+"38": 100,
+"39": 130,
+"40": 150,
 }
 
 bpm = bpms[song_number]
@@ -68,7 +90,8 @@ song = torch.tensor(mfcc).unsqueeze(0)
 song.size(-1)
 
 #generate level
-output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
+#output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
+output = model.net.module.generate(song.size(-1)-opt.time_shifts,song,time_shifts=opt.time_shifts,temperature=1.0)
 states_list = output[0,:,:].permute(1,0)
 
 #if using reduced_state representation convert from reduced_state_index to state tuple
@@ -95,16 +118,15 @@ song_json = {u'_beatsPerBar': 16,
 
 info_json = {"songName":song_name,"songSubName":song_name,"authorName":"DeepSaber","beatsPerMinute":bpm,"previewStartTime":12,"previewDuration":10,"coverImagePath":"cover.jpg","environmentName":"NiceEnvironment","difficultyLevels":[{"difficulty":"Expert","difficultyRank":4,"audioPath":"song.ogg","jsonPath":"Expert.json"}]}
 
-with open("test_song"+song_number+"_"+opt.model+"_"+opt.dataset_name+"_"+opt.experiment_name+"_"+checkpoint+".json", "w") as f:
+generated_folder = "generated/"
+signature_string = song_number+"_"+opt.model+"_"+opt.dataset_name+"_"+opt.experiment_name+"_"+checkpoint
+with open(generated_folder+"test_song"+signature_string+".json", "w") as f:
     f.write(json.dumps(song_json))
 
-generated_folder = "generated/"
 logo_path = "logo.jpg"
-level_folder = generated_folder+song_name+"/"+song_name
-if not os.path.exists(generated_folder+song_name):
-    os.makedirs(generated_folder+song_name)
-if not os.path.exists(generated_folder+song_name+"/"+song_name):
-    os.makedirs(level_folder )
+level_folder = generated_folder+song_name
+if not os.path.exists(level_folder):
+    os.makedirs(level_folder)
 
 with open(level_folder +"/Expert.json", "w") as f:
     f.write(json.dumps(song_json))
@@ -114,10 +136,47 @@ with open(level_folder +"/info.json", "w") as f:
 
 from shutil import copyfile
 
-copyfile(song_path, level_folder+"/song.ogg")
 copyfile(logo_path, level_folder+"/cover.jpg")
+# copyfile(song_path, level_folder+"/song.ogg")
 
+#import soundfile as sf
+# y, sr = librosa.load(song_path, sr=48000)
+# sf.write(level_folder+"/song.ogg", y, sr, format='ogg', subtype='vorbis')
 
+import subprocess
+def run_bash_command(bashCommand):
+    print(bashCommand)
+    process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    return output
+
+bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
+run_bash_command(bashCommand)
+
+bashCommand = "zip -r "+generated_folder+song_name+".zip "+level_folder
+run_bash_command(bashCommand)
+
+bashCommand = "./dropbox_uploader.sh upload "+generated_folder+song_name+"_"+signature_string+".zip /deepsaber_generated/"
+run_bash_command(bashCommand)
+
+bashCommand = "./dropbox_uploader.sh share /deepsaber_generated/"+song_name+"_"+signature_string+".zip"
+link = run_bash_command(bashCommand)
+demo_link = "https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/"+link[15:-2].decode("utf-8") +'1'
+print(demo_link)
+# zip -r test_song11 test_song11.wav
+# https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
+# https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/inewlbkzg5jopyy/test_song21.wav.zip?dl=1
+# https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/7qti2l9z9d5z30a/test_song16.wav.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/868fxby48185m39/test_song26.wav.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/p3m7hjhyy2bdp31/test_song28.wav.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/5q41minz7fflf9r/test_song29.wav.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/ecowbvlithlyyu4/test_song34.wav.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/3lpelefj9m61dqd/test_song35.wav.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/7w4yw2samilch23/test_song36.wav.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/l6zhk40tni6i42x/test_song36.wav2.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/119zefz9252we8h/test_song35.wav2.zip?dl=1
+#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/119zefz9252we8h/test_song35.wav2.zip?dl=1
+# sox -t wav -b 16 ~/code/test_song11.wav -t ogg song.ogg
 
 #useful to inspect song..
 # y.shape

@@ -7,8 +7,11 @@ from base.data.base_dataset import BaseDataset
 import json
 from math import floor, ceil
 import pickle
+unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
+feature_name = "chroma"
+feature_size = 24
 
-class MfccLookAheadDataset(BaseDataset):
+class MfccReducedStatesLookAheadDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
         super().__init__()
@@ -16,12 +19,13 @@ class MfccLookAheadDataset(BaseDataset):
         self.receptive_field = receptive_field
         data_path = Path(opt.data_dir)
         if not data_path.is_dir():
-            raise ValueError('Invalid directory: '+opt.data_dir)
+            raise ValueError('Invalid directory:'+opt.data_dir)
         # self.audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
         self.audio_files = []
-        self.mfcc_features = {}
+        self.features = {}
+
         for i, path in enumerate(candidate_audio_files):
             #print(path)
             try:
@@ -30,26 +34,23 @@ class MfccLookAheadDataset(BaseDataset):
                 self.audio_files.append(path)
             except IndexError:
                 continue
-            
-            n_mfcc=(opt.input_channels - opt.output_channels*opt.num_classes)//opt.time_shifts             
-            mfcc_file = path.__str__()+"_"+str(n_mfcc)+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
+
+            features_file = path.__str__()+"_"+feature_name+"_"+str(feature_size)+".npy"
             try:
-                # mfcc = pickle.load(open(mfcc_file,"rb"))
-                mfcc = np.load(mfcc_file)
-                #print("reading mfcc file")
-                
+                features = np.load(features_file)
+
                 # we need to find out what the input length of the model is, to remove songs which are too short to get input windows from them for this model
                 receptive_field = self.receptive_field
                 output_length = self.opt.output_length
                 input_length = receptive_field + output_length -1
 
-                if mfcc.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
+                if features.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
                     print("Smol song; ignoring..")
                     self.level_jsons.pop()
                     self.audio_files.pop()
                     continue
 
-                self.mfcc_features[path.__str__()] = mfcc
+                self.features[path.__str__()] = features
             except FileNotFoundError:
                 raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
@@ -66,32 +67,30 @@ class MfccLookAheadDataset(BaseDataset):
         parser.add_argument('--compute_feats', action='store_true', help="Whether to extract musical features from the song")
         parser.add_argument('--padded_length', type=int, default=3000000)
         parser.add_argument('--chunk_length', type=int, default=9000)
-        # the input features at each time step consiste of the mfcc features at the time steps from now to time_shifts in the future 
+        # the input features at each time step consiste of the features at the time steps from now to time_shifts in the future
         parser.add_argument('--time_shifts', type=int, default=16)
         # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
-        # plus 12*20 
-        # corresponding to 12 points in the grid, and one of 20 classes at each point
-        # for each point in the grid we have a one-hot vector of size 20
-        # and we just concatenate these 12 one-hot vectors
-        # to get a size 12*20 "many-hot" vector
-        parser.set_defaults(input_channels=(20*16+12*20))
-        # there are 12 outputs, one per grid point, with 20 possible classes each.
-        parser.set_defaults(output_channels=12)
-        parser.set_defaults(num_classes=20)
+        # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
+        parser.set_defaults(input_channels=(feature_size*16+2001))
+        # the number of output classes is one per state in the set of reduced states
+        parser.set_defaults(num_classes=2001)
+        # channels is just one, just prediting one output, one of the 2001 classes
+        parser.set_defaults(output_channels=1)
         return parser
 
     def name(self):
         return "SongDataset"
 
     def __getitem__(self, item):
+        #NOTE: there is a lot of code repeat between this and the non-reduced version, perhaps we could fix that
         song_file_path = self.audio_files[item].__str__()
-        mfcc_file = song_file_path+"_"+str(self.opt.beat_subdivision)+"_mfcc.npy"
+        features = song_file_path+"_"+feature_name+"_"+str(feature_size)+".npy"
 
-        # get mfcc features
+        # get features
         try:
-            mfcc = self.mfcc_features[song_file_path]
+            features = self.features[song_file_path]
         except:
-            raise Exception("mfcc features not found for song "+song_file_path)
+            raise Exception("features not found for song "+song_file_path)
 
         level = json.load(open(self.level_jsons[item].__str__(), 'r'))
 
@@ -99,16 +98,20 @@ class MfccLookAheadDataset(BaseDataset):
         features_rate = bpm*self.opt.beat_subdivision
         notes = level['_notes']
 
+        #useful quantities, to sync notes to song features
         sr = self.opt.sampling_rate
         beat_duration = int(60*sr/bpm) #beat duration in samples
         # duration of one time step in samples:
-        mel_hop = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive mfcc frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
-        num_samples_per_feature = mel_hop + 1 
+        hop = int(beat_duration * 1/beat_subdivision)
+        hop -= hop % 32
+        num_samples_per_feature = hop
+        #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
 
         # for short
-        y = mfcc
-        # we pad the song features with zeros to imitate during training what happens during generation
+        y = features
+
         receptive_field = self.receptive_field
+        # we pad the song features with zeros to imitate during training what happens during generation
         y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
 
         ## WINDOWS ##
@@ -129,19 +132,20 @@ class MfccLookAheadDataset(BaseDataset):
 
         ## BLOCKS TENSORS ##
         # variable `blocks` of shape (time steps, number of locations in the block grid), storing the class of block (as a number from 0 to 19) at each point in the grid, at each point in time
-        blocks = np.zeros((y.shape[1],self.opt.output_channels)) 
-        #many-hot vector
-        # for each point in the grid we will have a one-hot vector of size 20 (num_classes)
-        # and we will just stack these 12 (output_channels) one-hot vectors
-        # to get a "many-hot" tensor of shape (time_steps,output_channels,num_classes)
-        blocks_manyhot = np.zeros((y.shape[1],self.opt.output_channels,self.opt.num_classes)) 
-        #we initialize the one-hot vectors in the tensor
-        blocks_manyhot[:,:,0] = 1.0 #default is the "nothing" class
+        # this variable is here only used to construct the blocks_reduced later; in the non-reduced representation dataset, it would be used directly.
+        blocks = np.zeros((y.shape[1],12))
+        # reduced state version of the above. The reduced-state "class" at each time is represented as a one-hot vector of size `self.opt.num_classes`
+        blocks_reduced = np.zeros((y.shape[1],self.opt.num_classes))
+        # same as above but with class number, rather than one-hot, used as target
+        blocks_reduced_classes = np.zeros((y.shape[1],1))
 
         ## CONSTRUCT BLOCKS TENSOR ##
         for note in notes:
             #sample_index = floor((time of note in seconds)*sampling_rate/(num_samples_per_feature))
-            sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+            #sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+            # we add receptive_field because we padded the y with 0s, to imitate generation
+            sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+            # does librosa add some padding too?
             # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
             if sample_index >= y.shape[1]:
                 print("note beyond the end of time")
@@ -154,26 +158,30 @@ class MfccLookAheadDataset(BaseDataset):
                 note_representation = 1 + note["_type"]*9+note["_cutDirection"]
             else:
                 raise ValueError("I thought there was no notes with _type different from 0,1,3. Ahem, what are those??")
-            blocks[sample_index,note["_lineLayer"]*4+note["_lineIndex"]] = note_representation
-            blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], 0] = 0.0 #remove the one hot at the zero class
-            blocks_manyhot[sample_index,note["_lineLayer"]*4+note["_lineIndex"], note_representation] = 1.0
 
+            blocks[sample_index,note["_lineLayer"]*4+note["_lineIndex"]] = note_representation
+
+        # convert blocks tensor to reduced_blocks using the dictionary `unique states` (reduced representation) provided by Ralph (loaded at beginning of file)
+        for i,block in enumerate(blocks):
+            try:
+                state_index = unique_states.index(tuple(block))
+                blocks_reduced[i,1+state_index] = 1.0
+                blocks_reduced_classes[i,0] = 1+state_index
+            except: # if not in top 2000 states, then we consider it the empty state (no blocks; class = 0)
+                blocks_reduced[i,0] = 1.0
+                blocks_reduced_classes[i,0] = 0
 
         # get the block features corresponding to the windows
-        block_windows = [blocks[i+receptive_field:i+input_length+1,:] for i in indices]
-        block_windows = torch.tensor(block_windows,dtype=torch.long)
+        block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
+        block_reduced_classes_windows = torch.tensor(block_reduced_classes_windows,dtype=torch.long)
 
-        blocks_manyhot_windows = [blocks_manyhot[i:i+input_length,:,:] for i in indices]
-        blocks_manyhot_windows = torch.tensor(blocks_manyhot_windows)
+        blocks_reduced_windows = [blocks_reduced[i:i+input_length,:] for i in indices]
+        blocks_reduced_windows = torch.tensor(blocks_reduced_windows)
         # this is because the input features have dimensions (num_windows,time_steps,num_features)
-        blocks_manyhot_windows = blocks_manyhot_windows.permute(0,2,3,1)
-        shape = blocks_manyhot_windows.shape
-        # now we reshape so that the stack of one-hot vectors becomes a single "many-hot" vector
-        # formed by concatenating the one hot vectors
-        blocks_manyhot_windows = blocks_manyhot_windows.view(shape[0],shape[1]*shape[2],shape[3]).float()
+        blocks_reduced_windows = blocks_reduced_windows.permute(0,2,1)
 
         # concatenate the song and block input features before returning
-        return {'input': torch.cat(input_windowss + [blocks_manyhot_windows],1), 'target': block_windows}
+        return {'input': torch.cat(input_windowss + [blocks_reduced_windows.float()],1), 'target': block_reduced_classes_windows}
 
     def __len__(self):
         return len(self.audio_files)

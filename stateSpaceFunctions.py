@@ -42,7 +42,8 @@ def compute_discretized_state_sequence_from_json(json_file, top_k=2000,beat_disc
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k)
     # Compute length of sequence array. Clearly as discretization drops, length increases
     times = list(state_sequence.keys())
-    array_length = math.ceil(np.max(times)/beat_discretization)  # DESIGN CHOICE: MAX TIME IS LAST STATE:
+    array_length = math.ceil(np.max(times)/beat_discretization) + 1 # DESIGN CHOICE: MAX TIME IS LAST STATE:
+
     # CAN MAKE THIS END OF SONG, BUT THIS WOULD INTRODUCE REDUNDANT 0 STATES
     output_sequence = np.full(array_length, EMPTY_STATE_INDEX)
     alternative_dict = {int(time/beat_discretization):state for time, state in state_sequence.items()}
@@ -68,7 +69,7 @@ def extract_all_representations_from_dataset(dataset_dir,top_k=2000,beat_discret
     return directory_dict    #TODO: Add some code here to save the representations eventually
 
 
-def extract_representations_from_song_directory(directory,top_k=2000,beat_discretization=1/16, audio_feature_select=True):
+def extract_representations_from_song_directory(directory,top_k=2000,beat_discretization=1/16, audio_feature_select="Hybrid"):
     OGG_files = IOFunctions.get_all_ogg_files_from_data_directory(directory)
     if len(OGG_files) == 0:  # No OGG file ... skip
         print("No OGG file for song "+directory)
@@ -100,13 +101,21 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
         # Compute State Representation
         level_states = compute_discretized_state_sequence_from_json(json_file=JSON_file,
                                                                     top_k=top_k,beat_discretization=beat_discretization)
+        # NOTE: Some levels have states beyond the end of audio, so these must be trimmed, hence the following change
+        length = int(librosa.get_duration(y) * (bpm / 60) / beat_discretization) + 1
+        if length <= len(level_states):
+            level_states = level_states[:length] # Trim to match the length of the song
         feature_extraction_times = [(i*beat_discretization)*(60/bpm) for i in range(len(level_states))]
         feature_extraction_frames = librosa.core.time_to_frames(feature_extraction_times,sr=sr)
-        if(audio_feature_select): # for chroma
-            audio_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
-        else: # for mfccs
-            audio_features = mfcc_feature_extraction(y, sr)
+        if audio_feature_select == "Chroma": # for chroma
+            audio_features = chroma_feature_extraction(y, sr, feature_extraction_frames)
+        elif audio_feature_select == "MFCC": # for mfccs
+            audio_features = mfcc_feature_extraction(y, sr, feature_extraction_frames)
+        elif audio_feature_select == "Hybrid":
+            audio_features = feature_extraction_hybrid(y, sr, feature_extraction_frames)
         # chroma_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
+        print(len(level_states))
+        print(audio_features.shape)
         level_state_feature_maps[os.path.basename(JSON_file)] = (level_states, audio_features)
 
         # To obtain the chroma features for each pitch you access it like: chroma_features[0][0]
@@ -117,7 +126,32 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
     return level_state_feature_maps
 
 
-def chroma_feature_extraction(y,sr, state_times, bpm, beat_discretization = 1/16):
+def feature_extraction_hybrid_raw(y,sr,bpm,beat_discretisation=1/16,mel_dim=12,window_mult=1):
+    beat_duration = int(60 * sr / bpm)  # beat duration in samples
+    hop = int(beat_duration * beat_discretisation) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
+    hop -= hop % 32
+    window = window_mult * hop
+    y_harm, y_perc = librosa.effects.hpss(y)
+    mels = librosa.feature.melspectrogram(y=y_perc, sr=sr,n_fft=window,hop_length=hop,n_mels=mel_dim, fmax=65.4)  # C2 is 65.4 Hz
+    cqts = librosa.feature.chroma_cqt(y=y_harm, sr=sr,hop_length= hop,
+                                      norm=np.inf, threshold=0, n_chroma=12,
+                                      n_octaves=6, fmin=65.4, cqt_mode='full')
+    joint = np.concatenate((mels, cqts), axis=0)
+    return joint
+
+
+def feature_extraction_hybrid(y, sr, state_times, mel_dim=12):
+    y_harm, y_perc = librosa.effects.hpss(y)
+    mels = librosa.feature.melspectrogram(y=y_perc, sr=sr, n_mels=mel_dim, fmax=65.4)  # C2 is 65.4 Hz
+    cqts = librosa.feature.chroma_cqt(y=y_harm, sr=sr, C=None,
+                                      norm=np.inf, threshold=0, tuning=None, n_chroma=12,
+                                      n_octaves=6, fmin=65.4, window=None, cqt_mode='full')
+    beat_chroma = librosa.util.sync(cqts, state_times, aggregate=np.median, pad=True, axis=-1)
+    beat_mel = librosa.util.sync(mels, state_times, aggregate=np.median,pad=True,axis=-1)
+    return beat_chroma
+
+
+def chroma_feature_extraction(y,sr, state_times):
     #hop = #int((44100 * 60 * beat_discretization) / bpm) Hop length must be a multiple of 2^6
     chromagram = librosa.feature.chroma_cqt(y=y, sr=sr, C=None, fmin=None,
                                             norm=np.inf, threshold=0.0, tuning=None, n_chroma=12,
@@ -127,9 +161,11 @@ def chroma_feature_extraction(y,sr, state_times, bpm, beat_discretization = 1/16
     beat_chroma = librosa.util.sync(chromagram, state_times, aggregate=np.median, pad=True, axis=-1)
     return beat_chroma
 
-def mfcc_feature_extraction(y,sr):
+
+def mfcc_feature_extraction(y,sr,state_times):
     mfcc = librosa.feature.mfcc(y=y, sr=sr) # we can add other specified parameters
-    return mfcc
+    beat_mfcc = librosa.util.sync(mfcc, state_times, aggregate=np.median, pad=True, axis=-1)
+    return beat_mfcc
 
 
 

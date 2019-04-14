@@ -17,7 +17,7 @@ sys.argv.append("--dataset_name=mfcc_reduced_states_look_ahead")
 # sys.argv.append("--dataset_name=reduced_states")
 sys.argv.append("--model=adv_wavenet")
 #sys.argv.append("--model=wavenet")
-sys.argv.append("--frequency_gen_updates=4")
+sys.argv.append("--frequency_gen_updates=2")
 sys.argv.append("--batch_size=1")
 sys.argv.append("--output_length=95") # needs to be at least the receptive field (in time points) + 1 if using the GAN (adv_wavenet model)!
                                       # this is because the song part of the input will have length 94+94 for an output of length 95; then we can take the second part of the song input with the first 94 outputs as input to discriminator
@@ -46,8 +46,8 @@ sys.argv.append("--save_latest_freq=1000")
 sys.argv.append("--workers=0")
 sys.argv.append("--dropout_p=0.3")
 sys.argv.append("--loss_ce_weight=0.0")
-#sys.argv.append("--load")
-#sys.argv.append("--load_iter=332000")
+sys.argv.append("--load")
+sys.argv.append("--load_iter=2000")
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()

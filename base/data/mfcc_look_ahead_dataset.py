@@ -16,7 +16,7 @@ class MfccLookAheadDataset(BaseDataset):
         self.receptive_field = receptive_field
         data_path = Path(opt.data_dir)
         if not data_path.is_dir():
-            raise ValueError(f'Invalid directory: {opt.data_dir}')
+            raise ValueError('Invalid directory: '+opt.data_dir)
         # self.audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
@@ -107,11 +107,13 @@ class MfccLookAheadDataset(BaseDataset):
 
         # for short
         y = mfcc
+        # we pad the song features with zeros to imitate during training what happens during generation
+        receptive_field = self.receptive_field
+        y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
 
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
         # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
-        receptive_field = self.receptive_field
         output_length = self.opt.output_length
         input_length = receptive_field + output_length -1
         indices = np.random.choice(range(y.shape[1]-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)

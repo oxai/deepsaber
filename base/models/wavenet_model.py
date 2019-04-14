@@ -8,6 +8,7 @@ class WaveNetModel(BaseModel):
 
     def __init__(self, opt):
         super().__init__(opt)
+        self.opt = opt
         self.loss_names = ['ce']
         self.metric_names = ['accuracy']
         self.module_names = ['']  # changed from 'model_names'
@@ -49,6 +50,7 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--output_channels', type=int, default=(4*3))
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
+        parser.add_argument('--entropy_loss_coeff', type=float, default=0.1)
         return parser
 
     def set_input(self, data):
@@ -71,6 +73,9 @@ class WaveNetModel(BaseModel):
         x = x.view(n * l * channels, classes)
 
         self.loss_ce = F.cross_entropy(x, self.target)
+        S = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
+        S = -1.0 * S.mean()
+        self.loss_ce += self.opt.entropy_loss_coeff * S
         self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
 
     def backward(self):

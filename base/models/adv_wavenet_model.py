@@ -32,15 +32,16 @@ class AdvWaveNetModel(BaseModel):
         # discriminator net
         self.discriminator = WaveNet(layers=opt.layers,
                                     blocks=opt.blocks,
-                                    dilation_channels=opt.dilation_channels,
-                                    residual_channels=opt.residual_channels,
-                                    skip_channels=opt.skip_channels,
-                                    end_channels=opt.end_channels,
+                                    dilation_channels=opt.dilation_channels//4,
+                                    residual_channels=opt.residual_channels//2,
+                                    skip_channels=opt.skip_channels//2,
+                                    end_channels=opt.end_channels//4,
                                     input_channels=opt.input_channels,
                                     output_length=1,
                                     output_channels=1,
                                     num_classes=1,
-                                    dropout_p=opt.dropout_p,
+                                    #dropout_p=opt.dropout_p,
+                                    dropout_p=0.0,
                                     kernel_size=opt.kernel_size,
                                     bias=opt.bias)
 
@@ -134,6 +135,7 @@ class AdvWaveNetModel(BaseModel):
             generated_level = F.softmax(self.output[:n//2,:,:,:-1],2).contiguous().view(n,channels*classes,l-1).cuda()
             
             # we concatenate the song features and the generated level before feeding to discriminator
+            #print(generated_level[0,:,0])
             logits_gen = self.discriminator.forward(torch.cat((self.input[:n//2,:-self.opt.output_channels*self.opt.num_classes,-(l-1):],generated_level),1)).squeeze()
         else:
             
@@ -178,8 +180,13 @@ class AdvWaveNetModel(BaseModel):
         l = self.opt.output_length
         # smoothing the one-hot vectors into softmaxes (helps the generator, by making the real ones not so easy to identify for being one-hot)
         output_features = self.opt.output_channels*self.opt.num_classes
-        softmax_beta = random.randint(2,10)
-        smoothed_real = torch.cat((self.input[n//2:,:-output_features,:l],F.softmax(softmax_beta*self.input[n//2:,-output_features:,:l],dim=1)),1)
+        softmax_beta = random.randint(2,7)
+        level_features = self.input[n//2:,-output_features:,:l]
+        shape = level_features.shape
+        level_features = F.softmax(softmax_beta*level_features.view(shape[0],self.opt.output_channels,self.opt.num_classes,shape[2]),dim=2)
+        level_features = level_features.contiguous().view(shape[0],output_features,shape[2])
+        #print(level_features[0,:,0])
+        smoothed_real = torch.cat((self.input[n//2:,:-output_features,:l],level_features),1)
         # we are feeding the first half of the batch to the discriminator and the second half to the generator, so that the generated and real inputs are uncorrelated
         # NOTE: this requires n_batches*n_windows > 1
         logits_real = self.discriminator.forward(smoothed_real).squeeze()

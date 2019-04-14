@@ -34,6 +34,9 @@ output_length = 95
 input_length = receptive_field + output_length -1
 time_shifts = 16
 
+
+# path = candidate_audio_files[1099]
+
 for i in tasks:
     path = candidate_audio_files[i]
     #print(path)
@@ -57,24 +60,59 @@ for i in tasks:
         beat_duration = int(60*sr/bpm) #beat duration in samples
 
         mel_hop = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-        num_samples_per_feature = mel_hop + 1 
+        num_samples_per_feature = mel_hop
         mel_window = 4*mel_hop
 
         notes = level['_notes']
-
+        # from math import floor
         # uncomment to look for notes beyond the end of time
         for note in notes:
-            sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+            sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
             # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
             if sample_index >= y.shape[1]:
+                print(note['_time']*60/bpm)
                 print("note beyond the end of time")
                 continue
 
+# sample_index
+# note['_time']
+# sr*note['_time']*60/bpm
+# sr*note['_time']*60/bpm/num_samples_per_feature
+# print((note['_time']*60/bpm)-(y_wav.shape[0]/sr))
+# y_wav.shape[0]
+# y_wav.shape[0]/sr
+#
+# y_wav.shape[0]//mel_hop
+#
+# y.shape
+
         # uncomment to create mfcc features
-        #y, sr = librosa.load(song_file_path, sr=sampling_rate)
+        y_wav, sr = librosa.load(song_file_path, sr=sampling_rate)
 
         ## get mfcc feature
-        #mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
+        mfcc = librosa.feature.mfcc(y_wav, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
+        y = mfcc
+
+# import matplotlib.pyplot as plt
+# %matplotlib inline
+# plt.plot(y)
+# mfcc.shape
+# plt.matshow(mfcc[:,-60:-1])
+#
+# import IPython.display as ipd
+# sampling_rate = 16000
+# y_harm, y_perc = librosa.effects.hpss(y_wav)
+# ipd.Audio(y_perc, rate=sampling_rate)
+# ipd.Audio(y_wav, rate=sampling_rate)
+#
+#
+# ipd.Audio(y_harm, rate=sampling_rate)
+
+# import pit
+
+# ipd.Audio(pitch_shift(y,sampling_rate,n_steps=5), rate=sampling_rate)
+
+# from process_beat_saber_data import pitch_shift
 
 
         #if mfcc.shape[1]-(input_length+time_shifts-1) < 1:

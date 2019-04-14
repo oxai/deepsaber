@@ -17,6 +17,7 @@ import os
 #%%
 #experiment_name = "reduced_states_gan_exp_smoothedinput/"
 experiment_name = "reduced_states_lookahead_likelihood/"
+experiment_name = "zeropad_entropy_regularization/"
 # experiment_name = "reduced_states_gan_exp_smoothedinput/"
 
 opt = json.loads(open(experiment_name+"opt.json","r").read())
@@ -35,8 +36,8 @@ else:
 
 #%%
 
-checkpoint = "5000"
-checkpoint = "166000"
+# checkpoint = "5000"
+checkpoint = "55000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -44,7 +45,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "36"
+song_number = "21"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -60,6 +61,7 @@ bpms = {
 "20": 105,
 "21": 80,
 "22": 106,
+"23": 122,
 "24": 106,
 "25": 66,
 "26": 68,
@@ -153,7 +155,7 @@ def run_bash_command(bashCommand):
 bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
 run_bash_command(bashCommand)
 
-bashCommand = "zip -r "+generated_folder+song_name+".zip "+level_folder
+bashCommand = "zip -r "+generated_folder+song_name+"_"+signature_string+".zip "+level_folder
 run_bash_command(bashCommand)
 
 bashCommand = "./dropbox_uploader.sh upload "+generated_folder+song_name+"_"+signature_string+".zip /deepsaber_generated/"
@@ -163,6 +165,7 @@ bashCommand = "./dropbox_uploader.sh share /deepsaber_generated/"+song_name+"_"+
 link = run_bash_command(bashCommand)
 demo_link = "https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/"+link[15:-2].decode("utf-8") +'1'
 print(demo_link)
+run_bash_command("google-chrome "+demo_link)
 # zip -r test_song11 test_song11.wav
 # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
 # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/inewlbkzg5jopyy/test_song21.wav.zip?dl=1

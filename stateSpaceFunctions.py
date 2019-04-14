@@ -119,11 +119,11 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
         # WE SHOULD ALSO USE THE PERCUSSIVE FREQUENCIES IN OUR DATA, Otherwise the ML is losing valuable information
     return level_state_feature_maps
 
-def feature_extraction_hybrid_raw(y,sr,bpm,beat_discretisation=1/16,mel_dim=12):
+def feature_extraction_hybrid_raw(y,sr,bpm,beat_discretisation=1/16,mel_dim=12,window_mult=1):
     beat_duration = int(60 * sr / bpm)  # beat duration in samples
     hop = int(beat_duration * beat_discretisation) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
     hop -= hop % 32
-    window = 4 * hop
+    window = window_mult * hop
     y_harm, y_perc = librosa.effects.hpss(y)
     mels = librosa.feature.melspectrogram(y=y_perc, sr=sr,n_fft=window,hop_length=hop,n_mels=mel_dim, fmax=65.4)  # C2 is 65.4 Hz
     cqts = librosa.feature.chroma_cqt(y=y_harm, sr=sr,hop_length= hop,

@@ -4,6 +4,7 @@ import librosa
 from pathlib import Path
 import json
 import os.path
+from stateSpaceFunctions import feature_extraction_hybrid_raw
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -12,17 +13,21 @@ size = comm.Get_size()
 print(rank)
 
 data_path = Path("AugData")
-#data_path = Path("DataE/")
+# data_path = Path("DataE/")
 
 candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
 
 num_tasks = len(candidate_audio_files)
+# num_tasks = 10
 
 num_tasks_per_job = num_tasks//size
 tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
 
 if rank < num_tasks%size:
     tasks.append(size*num_tasks_per_job+rank)
+
+feature_name = "chroma"
+feature_size = 24
 
 difficulty = "Expert"
 sampling_rate = 16000
@@ -34,19 +39,19 @@ output_length = 95
 input_length = receptive_field + output_length -1
 time_shifts = 16
 
-# path = candidate_audio_files[1099]
+path = candidate_audio_files[4]
 
 for i in tasks:
     path = candidate_audio_files[i]
     #print(path)
     song_file_path = path.__str__()
-    mfcc_file = song_file_path+"_"+str(n_mfcc)+"_"+str(beat_subdivision)+"_mfcc.npy"
+    features_file = song_file_path+"_"+feature_name+"_"+str(feature_size)+".npy"
     try:
         level = list(path.parent.glob('./'+difficulty+'.json'))[0]
         level = level.__str__()
     except (TypeError, IndexError):
             continue
-    if not os.path.isfile(mfcc_file):
+    if not os.path.isfile(features_file):
         #mfcc = pickle.load(open(mfcc_file,"rb"))
         #print("found mfcc file already")
 
@@ -78,11 +83,31 @@ for i in tasks:
         #         continue
 
         #get feature
+        features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+        np.save(features_file,features)
 
         ## get mfcc feature
         # mfcc = librosa.feature.mfcc(y_wav, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
         # y = mfcc
 
+# import matplotlib.pyplot as plt
+# %matplotlib
+# import IPython.display as ipd
+#
+# plt.matshow(features)
+#
+# sampling_rate = 22050
+# y_wav, sr = librosa.load(song_file_path, sr=sampling_rate)
+# features = np.load(features_file)
+# features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+# sr = sampling_rate
+# beat_duration = int(60*sr/bpm) #beat duration in samples
+#
+# #hop = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+# hop = int(beat_duration * 1/beat_subdivision)
+# hop -= hop % 32
+# librosa.display.specshow(features[:12,:],x_axis='time',hop_length=hop)
+# librosa.display.specshow(features[12:,:],x_axis='time',hop_length=hop)
 # sample_index
 # note['_time']
 # sr*note['_time']*60/bpm
@@ -95,17 +120,14 @@ for i in tasks:
 #
 # y.shape
 
-# import matplotlib.pyplot as plt
-# %matplotlib inline
 # plt.plot(y)
 # mfcc.shape
 # plt.matshow(mfcc[:,-60:-1])
 #
-# import IPython.display as ipd
 # sampling_rate = 16000
 # y_harm, y_perc = librosa.effects.hpss(y_wav)
 # ipd.Audio(y_perc, rate=sampling_rate)
-# ipd.Audio(y_wav, rate=sampling_rate)
+ipd.Audio(y_wav, rate=sampling_rate)
 #
 #
 # ipd.Audio(y_harm, rate=sampling_rate)

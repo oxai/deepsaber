@@ -11,7 +11,7 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 feature_name = "chroma"
 feature_size = 24
 
-class MfccReducedStatesLookAheadDataset(BaseDataset):
+class GeneralReducedStatesLookAheadDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
         super().__init__()

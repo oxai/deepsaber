@@ -28,13 +28,6 @@ class GeneralReducedStatesLookAheadDataset(BaseDataset):
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
-            try:
-                level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
-                self.level_jsons.append(level)
-                self.audio_files.append(path)
-            except IndexError:
-                continue
-
             features_file = path.__str__()+"_"+feature_name+"_"+str(feature_size)+".npy"
             try:
                 features = np.load(features_file)
@@ -46,13 +39,21 @@ class GeneralReducedStatesLookAheadDataset(BaseDataset):
 
                 if features.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
                     print("Smol song; ignoring..")
-                    self.level_jsons.pop()
-                    self.audio_files.pop()
                     continue
 
                 self.features[path.__str__()] = features
             except FileNotFoundError:
                 raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
+
+            try:
+                for diff in ["Hard","Expert"]
+                    #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
+                    level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
+                    self.level_jsons.append(level)
+                    self.audio_files.append(path)
+            except IndexError:
+                continue
+
 
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"

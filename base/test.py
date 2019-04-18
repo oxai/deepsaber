@@ -11,6 +11,8 @@ import torch
 import pickle
 import os
 
+from stateSpaceFunctions import feature_extraction_hybrid_raw
+
 #opt = TrainOptions().parse()
 # open(opt.experiment_name+"/opt.json","w").write(json.dumps(vars(opt)))
 
@@ -18,6 +20,7 @@ import os
 #experiment_name = "reduced_states_gan_exp_smoothedinput/"
 experiment_name = "reduced_states_lookahead_likelihood/"
 experiment_name = "zeropad_entropy_regularization/"
+experiment_name = "chroma_features_likelihood_exp1/"
 # experiment_name = "reduced_states_gan_exp_smoothedinput/"
 
 opt = json.loads(open(experiment_name+"opt.json","r").read())
@@ -37,7 +40,7 @@ else:
 #%%
 
 # checkpoint = "5000"
-checkpoint = "55000"
+checkpoint = "39000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -45,11 +48,11 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "21"
+song_number = "35"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
-y, sr = librosa.load(song_path, sr=16000)
+y_wav, sr = librosa.load(song_path, sr=16000)
 
 bpms = {
 "6": 106,
@@ -82,18 +85,21 @@ bpms = {
 }
 
 bpm = bpms[song_number]
-beat_duration = int(60*sr/bpm) #beat duration in samples
 
 # get mfcc feature
-mel_hop = beat_duration//16
-mel_window = 4*mel_hop
-mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=20) #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-song = torch.tensor(mfcc).unsqueeze(0)
+# beat_duration = int(60 * sr / bpm)  # beat duration in samples
+# hop = int(beat_duration * (1/16)) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
+# hop -= hop % 32
+# mel_window = 1*hop
+# mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=20) #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+
+features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+song = torch.tensor(features).unsqueeze(0)
 song.size(-1)
 
 #generate level
 #output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
-output = model.net.module.generate(song.size(-1)-opt.time_shifts,song,time_shifts=opt.time_shifts,temperature=1.0)
+output = model.net.module.generate(song.size(-1)-opt.time_shifts-opt.output_length,song,time_shifts=opt.time_shifts,temperature=1.0)
 states_list = output[0,:,:].permute(1,0)
 
 #if using reduced_state representation convert from reduced_state_index to state tuple

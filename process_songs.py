@@ -39,7 +39,7 @@ output_length = 95
 input_length = receptive_field + output_length -1
 time_shifts = 16
 
-path = candidate_audio_files[4]
+#path = candidate_audio_files[4]
 
 for i in tasks:
     path = candidate_audio_files[i]
@@ -127,7 +127,7 @@ for i in tasks:
 # sampling_rate = 16000
 # y_harm, y_perc = librosa.effects.hpss(y_wav)
 # ipd.Audio(y_perc, rate=sampling_rate)
-ipd.Audio(y_wav, rate=sampling_rate)
+#ipd.Audio(y_wav, rate=sampling_rate)
 #
 #
 # ipd.Audio(y_harm, rate=sampling_rate)

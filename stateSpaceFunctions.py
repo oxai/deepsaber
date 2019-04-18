@@ -3,7 +3,8 @@ from identifyStateSpace import compute_explicit_states_from_json
 import math, numpy as np
 import librosa
 import os
-from featuresBase import extract_beat_times_chroma_tempo_from_ogg
+#from featuresBase import extract_beat_times_chroma_tempo_from_ogg
+
 '''
 This file contains all helper functions to take a JSON level file and convert it to the current note representation
 Requirements: The stateSpace directory. It contains sorted_states.pkl, which stores all identified states in the dataset.
@@ -105,6 +106,11 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
         length = int(librosa.get_duration(y) * (bpm / 60) / beat_discretization) + 1
         if length <= len(level_states):
             level_states = level_states[:length] # Trim to match the length of the song
+        else: # Song plays on after final state
+            level_states_2 = [EMPTY_STATE_INDEX]*length
+            level_states_2[:len(level_states)] = level_states # Add empty states to the end. New Assumption.
+            level_states = level_states_2
+        print(len(level_states))
         feature_extraction_times = [(i*beat_discretization)*(60/bpm) for i in range(len(level_states))]
         feature_extraction_frames = librosa.core.time_to_frames(feature_extraction_times,sr=sr)
         if audio_feature_select == "Chroma": # for chroma
@@ -112,23 +118,22 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
         elif audio_feature_select == "MFCC": # for mfccs
             audio_features = mfcc_feature_extraction(y, sr, feature_extraction_frames)
         elif audio_feature_select == "Hybrid":
-            audio_features = feature_extraction_hybrid(y, sr, feature_extraction_frames)
+            audio_features = feature_extraction_hybrid(y, sr, feature_extraction_frames,bpm,beat_discretization)
         # chroma_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
-        print(len(level_states))
-        print(audio_features.shape)
         level_state_feature_maps[os.path.basename(JSON_file)] = (level_states, audio_features)
 
         # To obtain the chroma features for each pitch you access it like: chroma_features[0][0]
         # the first index number refers to the 12 pitches, so is indexes 0 to 11
         # the second index number refers to the chroma values, so is indexed from 0 to numOfStates - 1
+        print(audio_features.shape)
 
         # WE SHOULD ALSO USE THE PERCUSSIVE FREQUENCIES IN OUR DATA, Otherwise the ML is losing valuable information
     return level_state_feature_maps
 
 
-def feature_extraction_hybrid_raw(y,sr,bpm,beat_discretisation=1/16,mel_dim=12,window_mult=1):
+def feature_extraction_hybrid_raw(y,sr,bpm,beat_discretization=1/16,mel_dim=12,window_mult=1):
     beat_duration = int(60 * sr / bpm)  # beat duration in samples
-    hop = int(beat_duration * beat_discretisation) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
+    hop = int(beat_duration * beat_discretization) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
     hop -= hop % 32
     window = window_mult * hop
     y_harm, y_perc = librosa.effects.hpss(y)
@@ -140,15 +145,23 @@ def feature_extraction_hybrid_raw(y,sr,bpm,beat_discretisation=1/16,mel_dim=12,w
     return joint
 
 
-def feature_extraction_hybrid(y, sr, state_times, mel_dim=12):
+def feature_extraction_hybrid(y, sr, state_times,bpm,beat_discretization=1/16,mel_dim=12):
     y_harm, y_perc = librosa.effects.hpss(y)
-    mels = librosa.feature.melspectrogram(y=y_perc, sr=sr, n_mels=mel_dim, fmax=65.4)  # C2 is 65.4 Hz
-    cqts = librosa.feature.chroma_cqt(y=y_harm, sr=sr, C=None,
+    hop = 512 # Tnis is the default hop length
+    print(sr)
+    if hop > beat_discretization * sr * (60 / bpm):
+        hop = int(beat_discretization * sr * 60 / bpm) # Make small enough to do the job. NOTE: FIX ME
+        hop -= hop % 32 # Has to be a multiple of 32 for CQT to work
+        print(hop)
+    mels = librosa.feature.melspectrogram(y=y_perc, sr=sr, n_mels=mel_dim, fmax=65.4,hop_length=hop)  # C2 is 65.4 Hz
+    cqts = librosa.feature.chroma_cqt(y=y_harm, sr=sr, C=None, hop_length=hop,
                                       norm=np.inf, threshold=0, tuning=None, n_chroma=12,
                                       n_octaves=6, fmin=65.4, window=None, cqt_mode='full')
+    # Problem: Sync is returning shorter sequences than the state times
     beat_chroma = librosa.util.sync(cqts, state_times, aggregate=np.median, pad=True, axis=-1)
     beat_mel = librosa.util.sync(mels, state_times, aggregate=np.median,pad=True,axis=-1)
-    return beat_chroma
+    output = np.concatenate((beat_mel,beat_chroma),axis=0)
+    return output
 
 
 def chroma_feature_extraction(y,sr, state_times):

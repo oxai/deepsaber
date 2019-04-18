@@ -12,8 +12,8 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 print(rank)
 
-data_path = Path("AugData")
-# data_path = Path("DataE/")
+# data_path = Path("AugData")
+data_path = Path("DataE/")
 
 candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
 
@@ -39,7 +39,7 @@ output_length = 95
 input_length = receptive_field + output_length -1
 time_shifts = 16
 
-path = candidate_audio_files[4]
+# path = candidate_audio_files[4]
 
 for i in tasks:
     path = candidate_audio_files[i]
@@ -100,14 +100,8 @@ for i in tasks:
 # y_wav, sr = librosa.load(song_file_path, sr=sampling_rate)
 # features = np.load(features_file)
 # features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
-# sr = sampling_rate
-# beat_duration = int(60*sr/bpm) #beat duration in samples
-#
-# #hop = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-# hop = int(beat_duration * 1/beat_subdivision)
-# hop -= hop % 32
-# librosa.display.specshow(features[:12,:],x_axis='time',hop_length=hop)
-# librosa.display.specshow(features[12:,:],x_axis='time',hop_length=hop)
+# librosa.display.specshow(features[:12,:],x_axis='time')
+# librosa.display.specshow(features[12:,:],x_axis='time')
 # sample_index
 # note['_time']
 # sr*note['_time']*60/bpm
@@ -127,7 +121,7 @@ for i in tasks:
 # sampling_rate = 16000
 # y_harm, y_perc = librosa.effects.hpss(y_wav)
 # ipd.Audio(y_perc, rate=sampling_rate)
-ipd.Audio(y_wav, rate=sampling_rate)
+# ipd.Audio(y_wav, rate=sampling_rate)
 #
 #
 # ipd.Audio(y_harm, rate=sampling_rate)

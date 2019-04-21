@@ -46,7 +46,7 @@ class GeneralReducedStatesLookAheadDataset(BaseDataset):
                 raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
             try:
-                for diff in ["Hard","Expert"]
+                for diff in ["Hard","Expert"]:
                     #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                     level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                     self.level_jsons.append(level)

@@ -29,14 +29,11 @@ if rank < num_tasks%size:
 feature_name = "chroma"
 feature_size = 24
 
-difficulty = "Expert"
+difficulty = "Hard"
 sampling_rate = 16000
 beat_subdivision = 16
 n_mfcc = 20
 
-receptive_field = 94
-output_length = 95
-input_length = receptive_field + output_length -1
 time_shifts = 16
 
 #path = candidate_audio_files[4]

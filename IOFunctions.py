@@ -49,10 +49,10 @@ def loadFile(filename, load_dir=None):
         return data
 
 
-def parse_json(file_directory):
+def parse_json(json_filepath):
     # input json file
     # returns: dataframes of: events, notes, obstacles, as well as additional parameters (in the form of a dictionary)
-    json_data = open(file_directory).read()
+    json_data = open(json_filepath).read()
     data = json.loads(json_data)
     events = data.get('_events')
     notes = data.get('_notes')

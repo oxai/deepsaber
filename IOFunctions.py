@@ -17,14 +17,6 @@ if not os.path.isdir(EXTRACT_DIR):
 
 difficulties = ['Easy', 'Normal', 'Hard', 'Expert', 'ExpertPlus']
 
-def loadFile(filename):
-    print('Loading file: ' + filename)
-    loadfile = open(filename, 'rb')
-    object = pickle.load(loadfile)
-    loadfile.close()
-    return object
-
-
 def saveFile(object, filename=None, save_dir=None, append=False):
     if save_dir is None or save_dir is '':
         save_dir = os.path.join(os.getcwd(), 'Temp')
@@ -44,16 +36,19 @@ def saveFile(object, filename=None, save_dir=None, append=False):
     savefile.close()
     return filename
 
-def loadFile(filename,load_dir=None):
+
+def loadFile(filename, load_dir=None):
     if load_dir is None or load_dir is '':
-        load_dir = os.path.join(os.getcwd(),'Temp')
+        load_dir = os.path.join(os.getcwd(), 'Temp')
     if not os.path.isdir(load_dir):  # SUBJECT TO RACE CONDITION
-        print("Directory does not exist.")
-        return
-    filename = os.path.join(load_dir,filename)
-    with open(filename,'rb') as f:
+        print("Directory does not exist, creating directory.")
+        os.mkdir(load_dir)
+    filename = os.path.join(load_dir, filename)
+    with open(filename, 'rb') as f:
         data = pickle.load(f)
         return data
+
+
 def parse_json(file_directory):
     # input json file
     # returns: dataframes of: events, notes, obstacles, as well as additional parameters (in the form of a dictionary)

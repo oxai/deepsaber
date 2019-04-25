@@ -12,8 +12,8 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 print(rank)
 
-# data_path = Path("AugData")
-data_path = Path("DataE/")
+data_path = Path("AugData")
+#data_path = Path("DataE/")
 
 candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
 

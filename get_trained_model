@@ -4,7 +4,7 @@
 
 if [ $1 = bria ] #briareos
 then
-    port=10432
+    port=16384
     url=0.tcp.ngrok.io
     path=/home/guillefix/code/
 elif [ $1 = lbria ] #local briareos

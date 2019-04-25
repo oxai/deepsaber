@@ -11,7 +11,7 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 feature_name = "chroma"
 feature_size = 24
 
-class MfccReducedStatesLookAheadDataset(BaseDataset):
+class GeneralReducedStatesLookAheadDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
         super().__init__()
@@ -28,13 +28,6 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
-            try:
-                level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
-                self.level_jsons.append(level)
-                self.audio_files.append(path)
-            except IndexError:
-                continue
-
             features_file = path.__str__()+"_"+feature_name+"_"+str(feature_size)+".npy"
             try:
                 features = np.load(features_file)
@@ -46,13 +39,21 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
 
                 if features.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
                     print("Smol song; ignoring..")
-                    self.level_jsons.pop()
-                    self.audio_files.pop()
                     continue
 
                 self.features[path.__str__()] = features
             except FileNotFoundError:
                 raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
+
+            try:
+                for diff in ["Hard","Expert"]
+                    #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
+                    level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
+                    self.level_jsons.append(level)
+                    self.audio_files.append(path)
+            except IndexError:
+                continue
+
 
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"
@@ -102,7 +103,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
         sr = self.opt.sampling_rate
         beat_duration = int(60*sr/bpm) #beat duration in samples
         # duration of one time step in samples:
-        hop = int(beat_duration * 1/beat_subdivision)
+        hop = int(beat_duration * 1/self.opt.beat_subdivision)
         hop -= hop % 32
         num_samples_per_feature = hop
         #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
@@ -148,7 +149,7 @@ class MfccReducedStatesLookAheadDataset(BaseDataset):
             # does librosa add some padding too?
             # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
             if sample_index >= y.shape[1]:
-                print("note beyond the end of time")
+                #print("note beyond the end of time")
                 continue
 
             #constructing the representation of the block (as a number from 0 to 19)

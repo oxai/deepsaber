@@ -110,22 +110,21 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
             level_states_2 = [EMPTY_STATE_INDEX]*length
             level_states_2[:len(level_states)] = level_states # Add empty states to the end. New Assumption.
             level_states = level_states_2
-        print(len(level_states))
+        # print(len(level_states)) # Sanity Checks
         feature_extraction_times = [(i*beat_discretization)*(60/bpm) for i in range(len(level_states))]
-        feature_extraction_frames = librosa.core.time_to_frames(feature_extraction_times,sr=sr)
         if audio_feature_select == "Chroma": # for chroma
-            audio_features = chroma_feature_extraction(y, sr, feature_extraction_frames)
+            audio_features = chroma_feature_extraction(y, sr, feature_extraction_times)
         elif audio_feature_select == "MFCC": # for mfccs
-            audio_features = mfcc_feature_extraction(y, sr, feature_extraction_frames)
+            audio_features = mfcc_feature_extraction(y, sr, feature_extraction_times)
         elif audio_feature_select == "Hybrid":
-            audio_features = feature_extraction_hybrid(y, sr, feature_extraction_frames,bpm,beat_discretization)
+            audio_features = feature_extraction_hybrid(y, sr, feature_extraction_times,bpm,beat_discretization)
         # chroma_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
         level_state_feature_maps[os.path.basename(JSON_file)] = (level_states, audio_features)
 
         # To obtain the chroma features for each pitch you access it like: chroma_features[0][0]
         # the first index number refers to the 12 pitches, so is indexes 0 to 11
         # the second index number refers to the chroma values, so is indexed from 0 to numOfStates - 1
-        print(audio_features.shape)
+        # print(audio_features.shape) # Sanity Check
 
         # WE SHOULD ALSO USE THE PERCUSSIVE FREQUENCIES IN OUR DATA, Otherwise the ML is losing valuable information
     return level_state_feature_maps
@@ -147,20 +146,24 @@ def feature_extraction_hybrid_raw(y,sr,bpm,beat_discretization=1/16,mel_dim=12,w
 
 def feature_extraction_hybrid(y, sr, state_times,bpm,beat_discretization=1/16,mel_dim=12):
     y_harm, y_perc = librosa.effects.hpss(y)
-    hop = 512 # Tnis is the default hop length
-    print(sr)
-    if hop > beat_discretization * sr * (60 / bpm):
-        hop = int(beat_discretization * sr * 60 / bpm) # Make small enough to do the job. NOTE: FIX ME
+    hop = 256 # Tnis is the default hop length
+    SANITY_RATIO = 0.25 # HAS TO BE AT MOST  0.5 to produce different samples per beat
+    if hop > SANITY_RATIO * beat_discretization * sr * (60 / bpm):
+        hop = int(SANITY_RATIO * beat_discretization * sr * 60 / bpm) # Make small enough to do the job. NOTE: FIX ME
         hop -= hop % 32 # Has to be a multiple of 32 for CQT to work
-        print(hop)
-    mels = librosa.feature.melspectrogram(y=y_perc, sr=sr, n_mels=mel_dim, fmax=65.4,hop_length=hop)  # C2 is 65.4 Hz
+        if hop <= 0:
+            hop = 32 # Just in Case
+        # print(hop) # Sanity Check
+    mels = librosa.feature.melspectrogram(y=y_perc, sr=sr, n_mels=mel_dim, fmax=65.4, hop_length=hop)  # C2 is 65.4 Hz
     cqts = librosa.feature.chroma_cqt(y=y_harm, sr=sr, C=None, hop_length=hop,
                                       norm=np.inf, threshold=0, tuning=None, n_chroma=12,
                                       n_octaves=6, fmin=65.4, window=None, cqt_mode='full')
     # Problem: Sync is returning shorter sequences than the state times
-    beat_chroma = librosa.util.sync(cqts, state_times, aggregate=np.median, pad=True, axis=-1)
-    beat_mel = librosa.util.sync(mels, state_times, aggregate=np.median,pad=True,axis=-1)
-    output = np.concatenate((beat_mel,beat_chroma),axis=0)
+    state_frames = librosa.core.time_to_frames(state_times,hop_length=hop,sr=sr) # Hop-Aware Synchronisation
+    # print(state_frames)
+    beat_chroma = librosa.util.sync(cqts, state_frames, aggregate=np.median, pad=True, axis=-1)
+    beat_mel = librosa.util.sync(mels, state_frames, aggregate=np.median,pad=True,axis=-1)
+    output = np.concatenate((beat_mel,beat_chroma), axis=0)
     return output
 
 
@@ -171,13 +174,16 @@ def chroma_feature_extraction(y,sr, state_times):
                                             n_octaves=7, window=None, bins_per_octave=None, cqt_mode='full')
     # Aggregate chroma features between beat events
     # We'll use the median value of each feature between beat frames
-    beat_chroma = librosa.util.sync(chromagram, state_times, aggregate=np.median, pad=True, axis=-1)
+    state_frames = librosa.core.time_to_frames(state_times,sr=sr) # Default hop length of 512
+    #TODO: CHANGE THIS TO BECOME LIKE HYBRID IF WE ARE TO EVER USE THIS
+    beat_chroma = librosa.util.sync(chromagram, state_frames, aggregate=np.median, pad=True, axis=-1)
     return beat_chroma
 
 
 def mfcc_feature_extraction(y,sr,state_times):
     mfcc = librosa.feature.mfcc(y=y, sr=sr) # we can add other specified parameters
-    beat_mfcc = librosa.util.sync(mfcc, state_times, aggregate=np.median, pad=True, axis=-1)
+    state_frames = librosa.core.time_to_frames(state_times,sr=sr)
+    beat_mfcc = librosa.util.sync(mfcc, state_frames, aggregate=np.median, pad=True, axis=-1)
     return beat_mfcc
 
 

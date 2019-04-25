@@ -18,8 +18,8 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw
 
 #%%
 #experiment_name = "reduced_states_gan_exp_smoothedinput/"
-experiment_name = "reduced_states_lookahead_likelihood/"
-experiment_name = "zeropad_entropy_regularization/"
+# experiment_name = "reduced_states_lookahead_likelihood/"
+# experiment_name = "zeropad_entropy_regularization/"
 experiment_name = "chroma_features_likelihood_exp1/"
 # experiment_name = "reduced_states_gan_exp_smoothedinput/"
 
@@ -40,7 +40,7 @@ else:
 #%%
 
 # checkpoint = "5000"
-checkpoint = "39000"
+checkpoint = "162000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -48,7 +48,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "35"
+song_number = "34"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -81,16 +81,18 @@ bpms = {
 "37": 129,
 "38": 100,
 "39": 130,
-"40": 150,
+"40": 140,
+"41": 72,
+"42": 100,
 }
 
 bpm = bpms[song_number]
 
 # get mfcc feature
-# beat_duration = int(60 * sr / bpm)  # beat duration in samples
-# hop = int(beat_duration * (1/16)) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
-# hop -= hop % 32
-# mel_window = 1*hop
+beat_duration = int(60 * sr / bpm)  # beat duration in samples
+hop = int(beat_duration * (1/16)) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
+hop -= hop % 32
+mel_window = 1*hop
 # mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=20) #one vec of mfcc features per 16th of a beat (hop is in num of samples)
 
 features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
@@ -99,7 +101,8 @@ song.size(-1)
 
 #generate level
 #output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
-output = model.net.module.generate(song.size(-1)-opt.time_shifts-opt.output_length,song,time_shifts=opt.time_shifts,temperature=1.0)
+temperature=1.05
+output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature)
 states_list = output[0,:,:].permute(1,0)
 
 #if using reduced_state representation convert from reduced_state_index to state tuple
@@ -107,14 +110,20 @@ unique_states = pickle.load(open("../stateSpace/sorted_states2.pkl","rb"))
 states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
 
 #convert from states to beatsaber notes
-notes = [[{"_time":float(i/16.0), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
-notes += [[{"_time":float(i/16.0), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":3} for j,y in enumerate(x) if y==19] for i,x in enumerate(states_list)]
+notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
+notes += [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":3} for j,y in enumerate(x) if y==19] for i,x in enumerate(states_list)]
 notes = sum(notes,[])
+
+# song.size(-1)
+# output.shape
+# i*bpm*hop/(sr*60)
+# y_wav.shape[0]/hop
+
 
 print("Number of generated notes: ", len(notes))
 
 #make song and info jsons
-song_json = {u'_beatsPerBar': 16,
+song_json = {u'_beatsPerBar': 4,
  u'_beatsPerMinute': bpm,
  u'_events': [],
  u'_noteJumpSpeed': 10,
@@ -127,7 +136,7 @@ song_json = {u'_beatsPerBar': 16,
 info_json = {"songName":song_name,"songSubName":song_name,"authorName":"DeepSaber","beatsPerMinute":bpm,"previewStartTime":12,"previewDuration":10,"coverImagePath":"cover.jpg","environmentName":"NiceEnvironment","difficultyLevels":[{"difficulty":"Expert","difficultyRank":4,"audioPath":"song.ogg","jsonPath":"Expert.json"}]}
 
 generated_folder = "generated/"
-signature_string = song_number+"_"+opt.model+"_"+opt.dataset_name+"_"+opt.experiment_name+"_"+checkpoint
+signature_string = song_number+"_"+opt.model+"_"+opt.dataset_name+"_"+opt.experiment_name+"_"+str(temperature)+"_"+checkpoint
 with open(generated_folder+"test_song"+signature_string+".json", "w") as f:
     f.write(json.dumps(song_json))
 
@@ -174,17 +183,6 @@ print(demo_link)
 run_bash_command("google-chrome "+demo_link)
 # zip -r test_song11 test_song11.wav
 # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
-# https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/inewlbkzg5jopyy/test_song21.wav.zip?dl=1
-# https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/7qti2l9z9d5z30a/test_song16.wav.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/868fxby48185m39/test_song26.wav.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/p3m7hjhyy2bdp31/test_song28.wav.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/5q41minz7fflf9r/test_song29.wav.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/ecowbvlithlyyu4/test_song34.wav.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/3lpelefj9m61dqd/test_song35.wav.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/7w4yw2samilch23/test_song36.wav.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/l6zhk40tni6i42x/test_song36.wav2.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/119zefz9252we8h/test_song35.wav2.zip?dl=1
-#https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/119zefz9252we8h/test_song35.wav2.zip?dl=1
 # sox -t wav -b 16 ~/code/test_song11.wav -t ogg song.ogg
 
 #useful to inspect song..

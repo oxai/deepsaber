@@ -656,7 +656,7 @@ def generate_beatsaber_notes_from_ogg(ogg_file, difficulty=0):
     meta_filename = 'meta_info.pkl'
     meta_file = os.path.join(meta_dir, meta_filename)
     if os.path.isfile(meta_file):
-        content = loadFile(meta_file)
+        content = loadFile(meta_filename, meta_dir)
         tempo = content[0]
         beat_times = content[1]
         beat_chroma = content[2]
@@ -671,7 +671,7 @@ def generate_beatsaber_obstacles_from_ogg(ogg_file, difficulty=0):
     meta_filename = 'meta_info.pkl'
     meta_file = os.path.join(meta_dir, meta_filename)
     if os.path.isfile(meta_file):
-        content = loadFile(meta_file)
+        content = loadFile(meta_filename, meta_dir)
         tempo = content[0]
         beat_times = content[1]
         beat_chroma = content[2]
@@ -687,7 +687,7 @@ def generate_beatsaber_events_from_ogg(ogg_file, difficulty=0):
     meta_filename = 'meta_info.pkl'
     meta_file = os.path.join(meta_dir, meta_filename)
     if os.path.isfile(meta_file):
-        content = loadFile(meta_file)
+        content = loadFile(meta_filename, meta_dir)
         tempo = content[0]
         beat_times = content[1]
         beat_chroma = content[2]

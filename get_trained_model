@@ -21,5 +21,5 @@ fi
 exp=$2
 iter=$3
 mkdir base/${exp}
-scp -P $port ${url}:${path}beatsaber/base/${exp}opt.json base/${exp}
-scp -P $port ${url}:${path}beatsaber/base/${exp}iter_${iter}_net_.pth base/${exp}
+scp -P $port ${url}:${path}beatsaber/base/${exp}/opt.json base/${exp}
+scp -P $port ${url}:${path}beatsaber/base/${exp}/iter_${iter}_net_.pth base/${exp}

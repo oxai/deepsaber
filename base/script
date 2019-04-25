@@ -15,7 +15,7 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --skip_channels=256 \
     --end_channels=512 \
     --gpu_ids=0,1,2,3,4,5,6,7 \
-    --entropy_loss_coeff=0.3 \
-    --workers=8
-    #--load \
-    #--load_iter=1000 \
+    --entropy_loss_coeff=0.0 \
+    --workers=8 \
+    --load \
+    --load_iter=141000 \

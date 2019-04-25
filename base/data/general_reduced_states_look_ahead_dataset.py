@@ -29,6 +29,8 @@ class GeneralReducedStatesLookAheadDataset(BaseDataset):
         for i, path in enumerate(candidate_audio_files):
             #print(path)
             features_file = path.__str__()+"_"+feature_name+"_"+str(feature_size)+".npy"
+            if not (Path(path.parent.__str__()+"/Hard.json").is_file() or Path(path.parent.__str__()+"/hard.json").is_file() or Path(path.parent.__str__()+"/Expert.json").is_file()):
+                continue
             try:
                 features = np.load(features_file)
 
@@ -45,14 +47,14 @@ class GeneralReducedStatesLookAheadDataset(BaseDataset):
             except FileNotFoundError:
                 raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
-            try:
-                for diff in ["Hard","Expert"]:
-                    #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
+            for diff in ["Hard","hard","Expert"]:
+                #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
+                try:
                     level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                     self.level_jsons.append(level)
                     self.audio_files.append(path)
-            except IndexError:
-                continue
+                except:
+                    continue
 
 
         assert self.audio_files, "List of audio files cannot be empty"

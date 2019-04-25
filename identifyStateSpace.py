@@ -16,8 +16,13 @@ EXTRACTED_DATA_DIR = os.path.join(THIS_DIR, 'DataE')
 
 
 def compute_explicit_states_from_json(level_json, as_tuple = True):
-    json_representation = IOFunctions.parse_json(level_json)
-    notes = json_representation["_notes"]  # Parse the JSON notes to use the notes representation
+    bs_level = IOFunctions.parse_json(level_json)
+    states_as_tuples = compute_explicit_states_from_bs_level(bs_level, as_tuple)
+    return states_as_tuples
+
+
+def compute_explicit_states_from_bs_level(bs_level, as_tuple = True):
+    notes = bs_level["_notes"]  # Parse the JSON notes to use the notes representation
     note_times = set(notes["_time"])  # Extract the distinct note times
     state_dict = {eventTime: np.zeros(12) for eventTime in note_times}  # Initialise a state at every time event
     for entry in notes.itertuples():

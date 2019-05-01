@@ -116,6 +116,16 @@ def extract_level_product_distance_travelled(bs_level):
     return 0
 
 
+
+def convert_lin_col_to_coordinates(lineIndex, lineLayer):
+    # takes as input the line and the column of the element, and returns an array 3x4, with 1 for the entry, where the element
+    noteArray = np.zeros((3,4))
+    for j in range(0,4):
+        for i in range(0,3):
+            if i == lineIndex and j == lineLayer:
+                noteArray[i, j] = 1
+    return noteArray
+
 #def generate_difficulty_features():
     # Generating Data Frame
     # Step 1 - Load json file

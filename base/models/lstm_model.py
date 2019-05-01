@@ -47,14 +47,13 @@ class LSTMModel(BaseModel):
     def forward(self):
         self.output = self.net.forward(self.input)
         x = self.output
-        [n, channels, classes, l] = x.size()
-        x = x.transpose(1, 3).contiguous()
-        x = x.view(n * l * channels, classes)
+        [n, l, classes] = x.size()
+        x = x.view(n * l, classes)
 
         self.loss_ce = F.cross_entropy(x, self.target)
-        S = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
-        S = -1.0 * S.mean()
-        self.loss_ce += self.opt.entropy_loss_coeff * S
+        # S = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
+        # S = -1.0 * S.mean()
+        # self.loss_ce += self.opt.entropy_loss_coeff * S
         self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
 
     def backward(self):
@@ -84,7 +83,7 @@ class LSTMNet(nn.Module):
                                          opt.vocab_size)  # vocab_size used so far is 2001 by default (2000 + empty state)
 
     def forward(self, input):
-        lstm_out, _ = self.lstm(input)  # Input is a 3D Tensor: [length, batch_size, dim] !! Feeder Functions Needed
+        lstm_out, _ = self.lstm(input.permute(2, 0, 1))  # Input is a 3D Tensor: [length, batch_size, dim]
         state_preoutput = self.hidden_to_state(lstm_out)  # lstm_out shape compatibility (Need to transpose?)
         state_output = F.log_softmax(state_preoutput, dim=1)
         return state_output

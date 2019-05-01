@@ -3,8 +3,8 @@ import sys
 #sys.path.append("/users/guillefix/beatsaber")
 #sys.path.append("/home/guillefix/code/beatsaber/base")
 #sys.path.append("/home/guillefix/code/beatsaber")
-sys.path.append("/home_directory/beatsaber/base")
-sys.path.append("/home_directory/beatsaber")
+sys.path.append("/home/mackenzie/PycharmProjects/beatsaber/base")
+sys.path.append("/home/mackenzie/PycharmProjects/beatsaber")
 import time
 from options.train_options import TrainOptions
 from data import create_dataset, create_dataloader
@@ -49,13 +49,15 @@ if __name__ == '__main__':
     opt = TrainOptions().parse()
     model = create_model(opt)
     model.setup()
-    if not opt.gpu_ids:
-        receptive_field = model.net.receptive_field
+    if opt.model=='wavenet' or opt.model=='adv_wavenet':
+        if not opt.gpu_ids:
+            receptive_field = model.net.receptive_field
+        else:
+            receptive_field = model.net.module.receptive_field
     else:
-        receptive_field = model.net.module.receptive_field
-
-    print("Receptive field is "+str(receptive_field)+" time points")
-    print("Receptive field is "+str(receptive_field/opt.beat_subdivision)+" beats")
+        receptive_field = 1
+    print("Receptive field is " + str(receptive_field) + " time points")
+    print("Receptive field is " + str(receptive_field / opt.beat_subdivision) + " beats")
     train_dataset = create_dataset(opt, receptive_field=receptive_field)
     train_dataset.setup()
     train_dataloader = create_dataloader(train_dataset)

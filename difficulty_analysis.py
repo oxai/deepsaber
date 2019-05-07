@@ -2,6 +2,7 @@ from urllib.request import Request, urlopen
 import os
 import re
 import html
+import numpy as np
 
 import IOFunctions
 from IOFunctions import read_meta_data_file, get_list_of_downloaded_songs, get_all_json_level_files_from_data_directory
@@ -108,7 +109,19 @@ def extract_level_distance_travelled(bs_level):
     return 0
 
 
+# v1.v2 = |V1||V2|cos(theta)
+# cos(theta) = v1.v2 / |V1||V2|
+# sin(theta) = sqrt(1 - cos(theta))
+# outer angle is angle of difficulty / 180 - cos(angle)
+
 def extract_level_angles_travelled(bs_level):
+    x_1, x_2, x_3, y_1, y_2, y_3 = 0, 1, 2, 4
+    vector_1 = [x_2 - x_1, y_2 - y_1]
+    vector_2 = [x_3 - x_2, y_3 - y_2]
+    angle_1 = np.cos(vector_1[1]/vector_1[0])
+    angle_2 = np.cos(vector_2[1] / vector_2[0])
+    angle_diff = np.abs(np.pi - (angle_2 - angle_1))
+
     return 0
 
 

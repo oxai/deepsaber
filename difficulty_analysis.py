@@ -52,7 +52,7 @@ def extract_features_from_beatsaber_level(bs_level):
     blocks_per_beat = extract_level_blocks_per_beat(bs_level)
     song_length = extract_level_song_length(bs_level)
 
-    distance_travelled = extract_level_distance_travelled(bs_level)
+    [distance_acc_blue, distance_acc_red, velocity_blue, velocity_red] = extract_level_distance_velocity(bs_level)
     angles_travelled = extract_level_angles_travelled(bs_level)
     product_distance_travelled = extract_level_product_distance_travelled(bs_level)
 
@@ -105,8 +105,49 @@ def extract_level_song_length(bs_level):
     return max(note_times)
 
 
-def extract_level_distance_travelled(bs_level):
-    return 0
+def extract_level_distance_velocity(bs_level):
+    #input is a json file with beatsaber data, json path
+    #event Type is either: "events", "notes", "obstacles"
+
+    df_notes = bs_level['_notes']
+    bpm = bs_level['_beatsPerMinute']
+
+    # separate the red an blue blocks
+    array_blue = df_notes.loc[array['_type'] == 0]
+    array_red = df_notes.loc[array['_type']==1]
+    # event value = 0 or 1 (red and blue)
+    [distance_acc_blue, velocity_blue] = return_distance_velocity(array_blue)
+    [distance_acc_red, velocity_red] = return_distance_velocity(array_red)
+    return distance_acc_blue, distance_acc_red, velocity_blue, velocity_red
+
+
+def return_distance_velocity(df):
+    #initialize starting positions
+    tMinus1 = 0
+    rowMinus1 =0
+    columnMinus1 =0
+    distance_acc = 0
+    df = df.sort_values('_time')
+    counter = 0
+    for index, element in df.iterrows():
+        counter += 1
+        t = element['_time']
+        row = element['_lineIndex']
+        column = element['_lineLayer']
+        distance = ((row-rowMinus1)**2+(column-columnMinus1)**2)**(1/2)
+        dt = t-tMinus1
+        if dt ==0: #because there are some blocks postioned right next to each other at the same time.
+            dt = 0.1
+        #velocity = distance/(dt)*bpm #convert to blocks per beat to blocks per second
+        #velocity_avg = distance_acc/t*bpm
+        rowMinus1 = row
+        columnMinus1 = column
+        tMinus1 = t
+        distance_acc += distance
+
+    velocity_avg = distance_acc/t
+
+    return distance_acc, velocity_avg
 
 
 # v1.v2 = |V1||V2|cos(theta)
@@ -129,7 +170,7 @@ def extract_level_product_distance_travelled(bs_level):
     return 0
 
 
-
+#actually not really need...oh well
 def convert_lin_col_to_coordinates(lineIndex, lineLayer):
     # takes as input the line and the column of the element, and returns an array 3x4, with 1 for the entry, where the element
     noteArray = np.zeros((3,4))

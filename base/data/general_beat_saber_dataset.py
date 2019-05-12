@@ -77,6 +77,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--time_shifts', type=int, default=1, help='number of shifted sequences to include as input')
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
         parser.add_argument('--using_sync_features', action='store_true', help='if true, use synced features')
+        parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
         ## IF REDUCED STATE
         # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
         # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
@@ -159,8 +160,14 @@ class GeneralBeatSaberDataset(BaseDataset):
         else:
             blocks_windows, blocks_targets = get_full_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,self.opt.output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length)
 
-        # concatenate the song and block input features before returning
-        return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': block_reduced_classes_windows}
+        if self.opt.concat_outputs:
+            # concatenate the song and block input features before returning
+            return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': blocks_targets}
+            return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': blocks_targets}
+        else:
+            # concatenate the song and block input features before returning
+            return {'input': input_windowss, 'target': blocks_targets}
+            return {'input': input_windowss, 'target': blocks_targets}
 
     def __len__(self):
         return len(self.audio_files)

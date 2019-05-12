@@ -3,16 +3,18 @@
 export PYTHONPATH="/home_directory/.local/lib/python3.5/site-packages/"
 
 py=python3
-dataset=general_reduced_states_look_ahead
+dataset=general_beat_saber
 model=lstm
 layers=7
 blocks=3
 exp=lstm_testing
-sequence_length=100
+sequence_length=500
 
 $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=1 --output_length=$sequence_length --num_windows=10 --nepoch=500 --nepoch_decay=500 --layers=$layers --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=1000 \
     --gpu_ids=0 \
-    --level_diff=Expert\
-    --workers=0
-    #--load \
-    #--load_iter=1000 \
+    --level_diff=Expert \
+    --workers=0 \
+    --reduced_state \
+    --concat_outputs \
+    --load \
+    --load_iter=4000 \

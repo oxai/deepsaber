@@ -127,6 +127,7 @@ class GeneralBeatSaberDataset(BaseDataset):
 
         # for short
         y = features
+        print(y)
 
         receptive_field = self.receptive_field
         # we pad the song features with zeros to imitate during training what happens during generation
@@ -140,7 +141,7 @@ class GeneralBeatSaberDataset(BaseDataset):
             input_length = receptive_field + self.opt.output_length -1
             indices = np.random.choice(range(sequence_length-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
         elif self.opt.time_shifts == 1:
-            indices=[0]
+            indices=np.array([0])
             input_length = sequence_length
         else:
             raise Exception("Can't have time_shifts with setting num_windows=0 (which means take the whole sequence)")
@@ -163,10 +164,8 @@ class GeneralBeatSaberDataset(BaseDataset):
         if self.opt.concat_outputs:
             # concatenate the song and block input features before returning
             return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': blocks_targets}
-            return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': blocks_targets}
         else:
             # concatenate the song and block input features before returning
-            return {'input': input_windowss, 'target': blocks_targets}
             return {'input': input_windowss, 'target': blocks_targets}
 
     def __len__(self):

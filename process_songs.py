@@ -47,6 +47,7 @@ for i in tasks:
     #print(path)
     song_file_path = path.__str__()
     features_file = song_file_path+"_"+feature_name+"_"+str(feature_size)+".npy"
+    level_file_found = False
     for diff in difficulties.split(","):
         if Path(path.parent.__str__()+"/"+diff+".json").is_file():
             level = list(path.parent.glob('./'+diff+'.json'))[0]

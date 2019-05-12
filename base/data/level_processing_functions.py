@@ -1,3 +1,8 @@
+import numpy as np
+import torch
+from math import *
+import pickle
+unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 
 def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length):
     ## BLOCKS TENSORS ##
@@ -5,7 +10,7 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
     # this variable is here only used to construct the blocks_reduced later; in the non-reduced representation dataset, it would be used directly.
     blocks = np.zeros((l,12))
     # reduced state version of the above. The reduced-state "class" at each time is represented as a one-hot vector of size `self.opt.num_classes`
-    blocks_reduced = np.zeros((l,self.opt.num_classes))
+    blocks_reduced = np.zeros((l,num_classes))
     # same as above but with class number, rather than one-hot, used as target
     blocks_reduced_classes = np.zeros((l,1))
 

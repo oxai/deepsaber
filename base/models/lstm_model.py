@@ -75,7 +75,7 @@ class LSTMNet(nn.Module):
         '''  hidden_dim: LSTM Output Dimensionality
              embedding_dim: LSTM Input Dimensionality
         '''
-
+        self.opt = opt
         self.hidden_dim = opt.hidden_dim
         embedding_dim = opt.embedding_dim
 
@@ -88,3 +88,34 @@ class LSTMNet(nn.Module):
         state_preoutput = self.hidden_to_state(lstm_out)  # lstm_out shape compatibility (Need to transpose?)
         state_output = F.log_softmax(state_preoutput, dim=1)
         return state_output
+
+    def generate(self, input):
+        y = input
+        y = torch.cat([torch.zeros(y.shape[0],y.shape[1],1),y.float()],2)
+
+        # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
+        shifted_inputs = []
+        for ii in range(self.opt.time_shifts):
+            shifted_input = y[:,:,ii:-self.opt.time_shifts+ii]
+            shifted_input = (shifted_input - shifted_input.mean(2)[:,:,None])
+            shifted_input /= torch.abs(shifted_input).max(2)[0][:,:,None]
+            shifted_inputs.append(shifted_input.float())
+
+        input = torch.cat(shifted_inputs,1)
+        # print(input.shape)
+
+        input = input.permute(2, 0, 1) # Input is a 3D Tensor: [length, batch_size, dim]
+        input_shape = input.shape
+        #initialize the first state to be the empty one
+        outputs = torch.zeros(input_shape[0],input_shape[1],2001).float().cuda()
+        outputs[0,:,0] = 1.0
+        hidden = (torch.randn(1, input_shape[1], self.hidden_dim).cuda(), torch.randn(1, input_shape[1], self.hidden_dim).cuda())  # clean out hidden state
+        input = input.cuda()
+        for i in range(input.size(0)):
+            lstm_out, hidden = self.lstm(torch.cat([input[i:i+1,:,:],outputs[i:i+1,:,:]],dim=2),hidden)
+            state_preoutput = self.hidden_to_state(lstm_out)  # lstm_out shape compatibility (Need to transpose?)
+            state_output = F.log_softmax(state_preoutput, dim=1)
+            # print(torch.argmax(state_output,2).shape)
+            # print(outputs[i:i+1,:,:].shape)
+            outputs[i:i+1,:,:] = outputs[i:i+1,:,:].scatter_(2,torch.argmax(state_output,2).unsqueeze(2),1.0)
+        return outputs

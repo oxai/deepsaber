@@ -21,6 +21,7 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw
 # experiment_name = "reduced_states_lookahead_likelihood/"
 # experiment_name = "zeropad_entropy_regularization/"
 experiment_name = "chroma_features_likelihood_exp1/"
+# experiment_name = "chroma_features_likelihood_exp2/"
 # experiment_name = "reduced_states_gan_exp_smoothedinput/"
 
 opt = json.loads(open(experiment_name+"opt.json","r").read())
@@ -39,8 +40,8 @@ else:
 
 #%%
 
-# checkpoint = "5000"
-checkpoint = "162000"
+checkpoint = "590000"
+# checkpoint = "259000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -48,7 +49,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "34"
+song_number = "36"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -76,8 +77,10 @@ bpms = {
 "32": 52,
 "33": 60,
 "34": 80,
-"35": 128,
-"36": 130,
+"35": 256,
+# "35": 128,
+# "36": 130,
+"36": 260,
 "37": 129,
 "38": 100,
 "39": 130,
@@ -96,12 +99,21 @@ mel_window = 1*hop
 # mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=20) #one vec of mfcc features per 16th of a beat (hop is in num of samples)
 
 features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+import matplotlib.pyplot as plt
+%matplotlib
+import IPython.display as ipd
+import librosa.display
+librosa.display.specshow(features[:12,:],x_axis='time')
+librosa.display.specshow(features[12:,:],x_axis='time')
+ipd.Audio(y_wav, rate=sr)
+
+
 song = torch.tensor(features).unsqueeze(0)
 song.size(-1)
 
 #generate level
 #output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
-temperature=1.05
+temperature=1.00
 output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature)
 states_list = output[0,:,:].permute(1,0)
 

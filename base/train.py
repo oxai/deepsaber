@@ -1,8 +1,8 @@
 import sys
 #sys.path.append("/users/guillefix/beatsaber/base")
 #sys.path.append("/users/guillefix/beatsaber")
-#sys.path.append("/home/guillefix/code/beatsaber/base")
-#sys.path.append("/home/guillefix/code/beatsaber")
+sys.path.append("/home/guillefix/code/beatsaber/base")
+sys.path.append("/home/guillefix/code/beatsaber")
 sys.path.append("/home/mackenzie/PycharmProjects/beatsaber/base")
 sys.path.append("/home/mackenzie/PycharmProjects/beatsaber")
 import time
@@ -20,7 +20,7 @@ import random
 #sys.argv.append("--batch_size=1")
 ##sys.argv.append("--output_length=767") # needs to be at least the receptive field (in time points) + 1 if using the GAN (adv_wavenet model)!
 #                                      # this is because the song part of the input will have length 94+94 for an output of length 95; then we can take the second part of the song input with the first 94 outputs as input to discriminator
-#sys.argv.append("--output_length=64") 
+#sys.argv.append("--output_length=64")
 #sys.argv.append("--num_windows=10")
 #sys.argv.append("--gpu_ids=0")
 #sys.argv.append("--nepoch=500")

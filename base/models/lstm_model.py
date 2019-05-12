@@ -27,6 +27,7 @@ class LSTMModel(BaseModel):
     @staticmethod
     def modify_commandline_options(parser, is_train):
         parser.add_argument('--hidden_dim', type=int, default=100)
+        parser.add_argument('--layers', type=int, default=2)
         parser.add_argument('--embedding_dim', type=int, default=24*16+2001)
         parser.add_argument('--vocab_size', type=int, default=2001)
         parser.add_argument('--output_length', type=int, default=128)

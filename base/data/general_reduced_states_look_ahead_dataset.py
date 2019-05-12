@@ -47,10 +47,11 @@ class GeneralReducedStatesLookAheadDataset(BaseDataset):
             except FileNotFoundError:
                 raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
-            for diff in ["Hard","hard","Expert"]:
+            #for diff in ["Hard","hard","Expert"]:
+            for diff in self.opt.level_diff.split(","):
                 #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                 try:
-                    level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
+                    level = list(path.parent.glob('./'+diff+'.json'))[0]
                     self.level_jsons.append(level)
                     self.audio_files.append(path)
                 except:

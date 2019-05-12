@@ -80,6 +80,7 @@ for i in tasks:
         #         continue
 
         #get feature
+        #features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
         features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
         np.save(features_file,features)
 

@@ -49,7 +49,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "36"
+song_number = "30"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -77,10 +77,9 @@ bpms = {
 "32": 52,
 "33": 60,
 "34": 80,
-"35": 256,
-# "35": 128,
-# "36": 130,
-"36": 260,
+# "35": 256,
+"35": 128,
+"36": 130,
 "37": 129,
 "38": 100,
 "39": 130,

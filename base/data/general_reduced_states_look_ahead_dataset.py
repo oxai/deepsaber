@@ -181,7 +181,7 @@ class GeneralReducedStatesLookAheadDataset(BaseDataset):
 
         blocks_reduced_windows = [blocks_reduced[i:i+input_length,:] for i in indices]
         blocks_reduced_windows = torch.tensor(blocks_reduced_windows)
-        # this is because the input features have dimensions (num_windows,time_steps,num_features)
+        # this is because the input features must have dimensions (num_windows,num_features,time_steps)
         blocks_reduced_windows = blocks_reduced_windows.permute(0,2,1)
 
         # concatenate the song and block input features before returning

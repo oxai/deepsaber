@@ -31,7 +31,11 @@ class GeneralBeatSaberDataset(BaseDataset):
         for i, path in enumerate(candidate_audio_files):
             #print(path)
             features_file = path.__str__()+"_"+feature_name+"_"+str(feature_size)+".npy"
-            if not (Path(path.parent.__str__()+"/Hard.json").is_file() or Path(path.parent.__str__()+"/hard.json").is_file() or Path(path.parent.__str__()+"/Expert.json").is_file()):
+            level_file_found = False
+            for diff in self.opt.level_diff.split(","):
+                if Path(path.parent.__str__()+"/"+diff+".json").is_file():
+                    level_file_found = True
+            if not level_file_found:
                 continue
             try:
                 features = np.load(features_file)

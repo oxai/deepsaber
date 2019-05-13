@@ -3,7 +3,7 @@ base/.idea
 **/.idea
 Data/
 DataE/
-AugData_*
+AugData*
 AugData/*
 Readings/
 Driver.py

@@ -3,8 +3,9 @@ import torch
 from math import *
 import pickle
 unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
+import Constants
 
-def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length):
+def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length,extra_output):
     ## BLOCKS TENSORS ##
     # variable `blocks` of shape (time steps, number of locations in the block grid), storing the class of block (as a number from 0 to 19) at each point in the grid, at each point in time
     # this variable is here only used to construct the blocks_reduced later; in the non-reduced representation dataset, it would be used directly.
@@ -38,16 +39,26 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
 
     # convert blocks tensor to reduced_blocks using the dictionary `unique states` (reduced representation) provided by Ralph (loaded at beginning of file)
     for i,block in enumerate(blocks):
-        try:
-            state_index = unique_states.index(tuple(block))
-            blocks_reduced[i,1+state_index] = 1.0
-            blocks_reduced_classes[i,0] = 1+state_index
-        except: # if not in top 2000 states, then we consider it the empty state (no blocks; class = 0)
-            blocks_reduced[i,0] = 1.0
-            blocks_reduced_classes[i,0] = 0
+        if i==0:
+            blocks_reduced[i,Constants.START_STATE] = 1.0
+            blocks_reduced_classes[i,0] = Constants.START_STATE
+        elif i==len(blocks)-1:
+            blocks_reduced[i,Constants.END_STATE] = 1.0
+            blocks_reduced_classes[i,0] = Constants.END_STATE
+        else:
+            try:
+                state_index = unique_states.index(tuple(block))
+                blocks_reduced[i,4+state_index] = 1.0
+                blocks_reduced_classes[i,0] = 4+state_index
+            except (ValueError, IndexError): # if not in top 2000 states, then we consider it the empty state (no blocks; class = 0)
+                blocks_reduced[i,Constants.EMPTY_STATE] = 1.0
+                blocks_reduced_classes[i,0] = Constants.EMPTY_STATE
 
     # get the block features corresponding to the windows
-    block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
+    if extra_output:
+        block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
+    else:
+        block_reduced_classes_windows = [blocks_reduced_classes[i:i+input_length,:] for i in indices]
     block_reduced_classes_windows = torch.tensor(block_reduced_classes_windows,dtype=torch.long)
 
     blocks_reduced_windows = [blocks_reduced[i:i+input_length,:] for i in indices]

@@ -3,6 +3,7 @@ import sys
 #sys.path.append("/users/guillefix/beatsaber")
 sys.path.append("/home/guillefix/code/beatsaber/base")
 sys.path.append("/home/guillefix/code/beatsaber")
+sys.path.append("/home/guillefix/code/beatsaber/base/models")
 # sys.path.append("/home/mackenzie/PycharmProjects/beatsaber/base")
 # sys.path.append("/home/mackenzie/PycharmProjects/beatsaber")
 import time
@@ -11,39 +12,6 @@ from data import create_dataset, create_dataloader
 from models import create_model
 import random
 
-##sys.argv.append("--data_dir=../DataE")
-#sys.argv.append("--data_dir=../AugData")
-#sys.argv.append("--dataset_name=general_reduced_states_look_ahead")
-##sys.argv.append("--model=adv_wavenet")
-#sys.argv.append("--model=wavenet")
-##sys.argv.append("--frequency_gen_updates=2")
-#sys.argv.append("--batch_size=1")
-##sys.argv.append("--output_length=767") # needs to be at least the receptive field (in time points) + 1 if using the GAN (adv_wavenet model)!
-#                                      # this is because the song part of the input will have length 94+94 for an output of length 95; then we can take the second part of the song input with the first 94 outputs as input to discriminator
-#sys.argv.append("--output_length=64")
-#sys.argv.append("--num_windows=10")
-#sys.argv.append("--gpu_ids=0")
-#sys.argv.append("--nepoch=500")
-#sys.argv.append("--nepoch_decay=500")
-#sys.argv.append("--layers=7")
-#sys.argv.append("--blocks=3")
-##sys.argv.append("--layers=5")
-##sys.argv.append("--blocks=3")
-#sys.argv.append("--dilation_channels=512")
-#sys.argv.append("--residual_channels=256")
-#sys.argv.append("--skip_channels=256")
-#sys.argv.append("--end_channels=512")
-#sys.argv.append("--print_freq=10")
-##sys.argv.append("--print_freq=1")
-#sys.argv.append("--experiment_name=chroma_features_likelihood_exp1")
-#sys.argv.append("--save_by_iter")
-#sys.argv.append("--save_latest_freq=1000")
-#sys.argv.append("--workers=0")
-##sys.argv.append("--dropout_p=0.5")
-##sys.argv.append("--loss_ce_weight=0.0")
-#sys.argv.append("--entropy_loss_coeff=0.1")
-##sys.argv.append("--load")
-##sys.argv.append("--load_iter=2000")
 #
 if __name__ == '__main__':
     opt = TrainOptions().parse()

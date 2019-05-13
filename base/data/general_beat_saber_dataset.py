@@ -12,6 +12,7 @@ feature_name = "chroma"
 feature_size = 24
 number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
+import Constants
 
 class GeneralBeatSaberDataset(BaseDataset):
 
@@ -82,11 +83,14 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
         parser.add_argument('--using_sync_features', action='store_true', help='if true, use synced features')
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
+        parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
+        parser.add_argument('--max_token_seq_len', type=int, default=1000)
+        parser.set_defaults(output_length=1)
         ## IF REDUCED STATE
         # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
         # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
         # parser.set_defaults(input_channels=(feature_size*16+2001))
-        parser.set_defaults(input_channels=(feature_size*1+number_reduced_states+1))
+        parser.set_defaults(input_channels=(feature_size*1+number_reduced_states+1+3)) # 3 more for PAD, START, END
         # the number of output classes is one per state in the set of reduced states
         parser.set_defaults(num_classes=number_reduced_states+1)
         # channels is just one, just prediting one output, one of the 2001 classes
@@ -131,16 +135,18 @@ class GeneralBeatSaberDataset(BaseDataset):
 
         # for short
         y = features
-        print(y)
 
         receptive_field = self.receptive_field
         # we pad the song features with zeros to imitate during training what happens during generation
+        # this is helpful for models that have a big receptive field like wavent, but we also use it with a receptive_field=1 for LSTM and Transformer
         y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
+        # we also pad one more state at the end, to accommodate an "end" symbol for the blocks
+        y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
 
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
         # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
-        sequence_length = y.shape[1]
+        sequence_length = min(y.shape[1],self.opt.max_token_seq_len)
         if self.opt.num_windows >= 1:
             input_length = receptive_field + self.opt.output_length -1
             indices = np.random.choice(range(sequence_length-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
@@ -161,7 +167,7 @@ class GeneralBeatSaberDataset(BaseDataset):
 
         ## BLOCKS TENSORS ##
         if self.opt.reduced_state:
-            blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length)
+            blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length,self.opt.extra_output)
         else:
             blocks_windows, blocks_targets = get_full_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,self.opt.output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length)
 
@@ -170,7 +176,7 @@ class GeneralBeatSaberDataset(BaseDataset):
             return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': blocks_targets}
         else:
             # concatenate the song and block input features before returning
-            return {'input': input_windowss, 'target': blocks_targets}
+            return {'input': torch.cat(input_windowss), 'target': blocks_targets}
 
     def __len__(self):
         return len(self.audio_files)

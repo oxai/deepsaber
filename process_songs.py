@@ -33,6 +33,7 @@ if rank < num_tasks%size:
 feature_name = "mel"
 feature_size = 100
 use_sync=True
+replace_present=True
 
 difficulties = sys.argv[2]
 sampling_rate = 16000
@@ -56,7 +57,7 @@ for i in tasks:
             level_file_found = True
     if not level_file_found:
         continue
-    if not os.path.isfile(features_file):
+    if replace_present or not os.path.isfile(features_file):
         print("creating feature file",i)
         level = json.load(open(level, 'r'))
 

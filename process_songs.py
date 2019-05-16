@@ -29,8 +29,9 @@ tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
 if rank < num_tasks%size:
     tasks.append(size*num_tasks_per_job+rank)
 
-feature_name = "chroma"
-feature_size = 24
+# feature_name = "chroma"
+feature_name = "mel"
+feature_size = 100
 use_sync=True
 
 difficulties = sys.argv[2]
@@ -77,7 +78,8 @@ for i in tasks:
         if use_sync:
             features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
         else:
-            features = feature_extraction_hybrid(y_wav,sr,bpm)
+            # features = feature_extraction_hybrid(y_wav,sr,bpm)
+            features = feature_extraction_mel(y_wav,sr,bpm,mel_dim=feature_size)
         np.save(features_file,features)
 
         ## get mfcc feature

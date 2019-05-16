@@ -51,7 +51,7 @@ def compute_discretized_state_sequence_from_json(json_file, top_k=2000,beat_disc
     output_sequence[list(alternative_dict.keys())] = list(alternative_dict.values()) # Use advanced indexing to fill where needed
     '''
     Note About advanced indexing: Advanced indexing updates values based on order , so if index i appears more than once
-    the latest appearance sets the value e.g. x[2,2] = 1,3 sets x[2] to 3, this means that , in the very unlikely event 
+    the latest appearance sets the value e.g. x[2,2] = 1,3 sets x[2] to 3, this means that , in the very unlikely event
     that two states are mapped to the same beat discretization, the later state survives.
     '''
     return output_sequence
@@ -166,6 +166,24 @@ def feature_extraction_hybrid(y, sr, state_times,bpm,beat_discretization=1/16,me
     output = np.concatenate((beat_mel,beat_chroma), axis=0)
     return output
 
+def feature_extraction_mel(y, sr, state_times,bpm,beat_discretization=1/16,mel_dim=100):
+    # y_harm, y_perc = librosa.effects.hpss(y)
+    hop = 256 # Tnis is the default hop length
+    SANITY_RATIO = 0.25 # HAS TO BE AT MOST  0.5 to produce different samples per beat
+    if hop > SANITY_RATIO * beat_discretization * sr * (60 / bpm):
+        hop = int(SANITY_RATIO * beat_discretization * sr * 60 / bpm) # Make small enough to do the job. NOTE: FIX ME
+        hop -= hop % 32 # Has to be a multiple of 32 for CQT to work
+        if hop <= 0:
+            hop = 32 # Just in Case
+        # print(hop) # Sanity Check
+    mels = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=mel_dim, hop_length=hop)  # C2 is 65.4 Hz
+    # Problem: Sync is returning shorter sequences than the state times
+    state_frames = librosa.core.time_to_frames(state_times,hop_length=hop,sr=sr) # Hop-Aware Synchronisation
+    # print(state_frames)
+    beat_chroma = librosa.util.sync(cqts, state_frames, aggregate=np.median, pad=True, axis=-1)
+    beat_mel = librosa.util.sync(mels, state_frames, aggregate=np.median,pad=True,axis=-1)
+    output = np.concatenate((beat_mel,beat_chroma), axis=0)
+    return output
 
 def chroma_feature_extraction(y,sr, state_times):
     #hop = #int((44100 * 60 * beat_discretization) / bpm) Hop length must be a multiple of 2^6
@@ -185,8 +203,3 @@ def mfcc_feature_extraction(y,sr,state_times):
     state_frames = librosa.core.time_to_frames(state_times,sr=sr)
     beat_mfcc = librosa.util.sync(mfcc, state_frames, aggregate=np.median, pad=True, axis=-1)
     return beat_mfcc
-
-
-
-
-

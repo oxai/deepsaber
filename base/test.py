@@ -21,7 +21,8 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw
 # experiment_name = "reduced_states_lookahead_likelihood/"
 # experiment_name = "zeropad_entropy_regularization/"
 # experiment_name = "chroma_features_likelihood_exp1/"
-experiment_name = "lstm_testing/"
+experiment_name = "chroma_features_likelihood_syncc/"
+# experiment_name = "lstm_testing/"
 # experiment_name = "chroma_features_likelihood_exp2/"
 # experiment_name = "reduced_states_gan_exp_smoothedinput/"
 
@@ -44,8 +45,8 @@ else:
 
 #%%
 
-# checkpoint = "590000"
-checkpoint = "21000"
+# checkpoint = "632000"
+checkpoint = "54000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -53,7 +54,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "16"
+song_number = "21_fixed"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -68,9 +69,11 @@ bpms = {
 "19": 120,
 "20": 105,
 "21": 80,
+"21_fixed": 80,
 "22": 106,
 "23": 122,
 "24": 106,
+"24_fixed": 86,
 "25": 66,
 "26": 68,
 "27": 84,
@@ -117,17 +120,23 @@ song = torch.tensor(features).unsqueeze(0)
 #%%
 
 temperature=1.00
-output = model.net.module.generate(song)
-states_list = output[:,0,:]
+# output = model.net.module.generate(song)
+# states_list = output[:,0,:]
 
 #generate level
 #output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
-# output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature)
-# states_list = output[0,:,:].permute(1,0)
+import Constants
+first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
+first_samples[0,0,0] = Constants.START_STATE
+output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
+states_list = output[0,:,:].permute(1,0)
 
 #if using reduced_state representation convert from reduced_state_index to state tuple
 unique_states = pickle.load(open("../stateSpace/sorted_states2.pkl","rb"))
-states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
+#old
+# states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
+#new (after transformer)
+states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
 
 #convert from states to beatsaber notes
 notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
@@ -205,15 +214,38 @@ run_bash_command("google-chrome "+demo_link)
 # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
 # sox -t wav -b 16 ~/code/test_song11.wav -t ogg song.ogg
 
-#useful to inspect song..
-# y.shape
+# features.shape
+#
+# #useful to inspect song..
+# # y.shape
 # import matplotlib.pyplot as plt
 # %matplotlib
-# plt.plot(y)
+# plt.plot(y_wav)
+# import numpy as np
+# D = np.abs(librosa.stft(y_wav))
+# D.shape
+# librosa.display.specshow(librosa.amplitude_to_db(D, ref=np.max), y_axis='log', x_axis='time',sr=sr)
+#
+# mfcc=librosa.feature.mfcc(y_wav,sr=sr)
+# import librosa.display
+# librosa.display.specshow(mfcc, x_axis='time',sr=sr)
+# chroma=librosa.feature.chroma_cqt(y_wav,sr=sr)
+# chroma=librosa.feature.chroma_stft(y_wav,sr=sr)
+# chroma=librosa.feature.chroma_cens(y_wav,sr=sr)
+# librosa.display.specshow(chroma, x_axis='time',sr=sr)
+#
+# D = np.abs(librosa.stft(y_wav))**2
+# S=librosa.feature.melspectrogram(S=D,sr=sr)
+# S.shape
+# librosa.display.specshow(librosa.power_to_db(S, ref=np.max), y_axis='mel', fmax=8000, x_axis='time',sr=sr)
+# librosa.display.specshow(melspec, x_axis='time',sr=sr)
+#
+# # librosa.display.specshow(features[12:], x_axis='time')
+# # librosa.display.specshow(features[:12], x_axis='time')
 # import IPython.display as ipd
-# sampling_rate = 16000
-# ipd.Audio(y, rate=sampling_rate)
-#
-# ipd.Audio(pitch_shift(y,sampling_rate,n_steps=5), rate=sampling_rate)
-#
-# from process_beat_saber_data import pitch_shift
+# # sampling_rate = 16000
+# ipd.Audio(y_wav, rate=sr)
+# #
+# # ipd.Audio(pitch_shift(y,sampling_rate,n_steps=5), rate=sampling_rate)
+# #
+# # from process_beat_saber_data import pitch_shift

@@ -92,7 +92,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         # parser.set_defaults(input_channels=(feature_size*16+2001))
         parser.set_defaults(input_channels=(feature_size*1+number_reduced_states+1+3)) # 3 more for PAD, START, END
         # the number of output classes is one per state in the set of reduced states
-        parser.set_defaults(num_classes=number_reduced_states+1)
+        parser.set_defaults(num_classes=number_reduced_states+1+3)
         # channels is just one, just prediting one output, one of the 2001 classes
         parser.set_defaults(output_channels=1)
         ### IF FULL STATE

@@ -22,7 +22,7 @@ def compute_state_sequence_representation_from_json(json_file, top_k=2000):
     :return: The sequence of state ranks (of those in the top K) appearing in the level
     '''
     states = IOFunctions.loadFile("sorted_states.pkl", "stateSpace") # Load the state representation
-    if EMPTY_STATE_INDEX == 0: # RANK 0 is reserved for the empty state
+    if EMPTY_STATE_INDEX == 0:  # RANK 0 is reserved for the empty state
         states_rank = {state: i+1 for i, state in enumerate(states)}
     else: # The empty state has rank NUM_DISTINCT_STATES
         states_rank = {state: i for i, state in enumerate(states)}
@@ -31,6 +31,19 @@ def compute_state_sequence_representation_from_json(json_file, top_k=2000):
     state_sequence = {time: states_rank[exp_state] for time, exp_state in explicit_states.items()
                       if states_rank[exp_state] <= top_k}
     return state_sequence
+
+
+def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000):
+    state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k)
+    times = [time*60/bpm for time, state in state_sequence.items() if (time*60/bpm) <= song_length] # Real-time
+    states = [state for time, state in state_sequence.items() if (time*60/bpm) <= song_length]
+    pos_enc = np.arange(len(states))
+    time_diffs = np.diff(times)
+    delta_backward = np.insert(time_diffs,0,times[0])
+    delta_forward = np.append(time_diffs, song_length - times[-1])
+    return states, pos_enc, delta_forward, delta_backward
+
+
 
 
 def compute_discretized_state_sequence_from_json(json_file, top_k=2000,beat_discretization = 1/16):
@@ -108,13 +121,13 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
             level_states = level_states[:length] # Trim to match the length of the song
         else: # Song plays on after final state
             level_states_2 = [EMPTY_STATE_INDEX]*length
-            level_states_2[:len(level_states)] = level_states # Add empty states to the end. New Assumption.
+            level_states_2[:len(level_states)] = level_states  # Add empty states to the end. New Assumption.
             level_states = level_states_2
         # print(len(level_states)) # Sanity Checks
         feature_extraction_times = [(i*beat_discretization)*(60/bpm) for i in range(len(level_states))]
-        if audio_feature_select == "Chroma": # for chroma
+        if audio_feature_select == "Chroma":  # for chroma
             audio_features = chroma_feature_extraction(y, sr, feature_extraction_times)
-        elif audio_feature_select == "MFCC": # for mfccs
+        elif audio_feature_select == "MFCC":  # for mfccs
             audio_features = mfcc_feature_extraction(y, sr, feature_extraction_times)
         elif audio_feature_select == "Hybrid":
             audio_features = feature_extraction_hybrid(y, sr, feature_extraction_times,bpm,beat_discretization)

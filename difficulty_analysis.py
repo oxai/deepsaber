@@ -109,12 +109,8 @@ def extract_level_distance_velocity(bs_level):
     #input is a json file with beatsaber data, json path
     #event Type is either: "events", "notes", "obstacles"
 
-    df_notes = bs_level['_notes']
-    bpm = bs_level['_beatsPerMinute']
+    array_blue, array_red = extract_notes_from_bs_level(bs_level)
 
-    # separate the red an blue blocks
-    array_blue = df_notes.loc[array['_type'] == 0]
-    array_red = df_notes.loc[array['_type']==1]
     # event value = 0 or 1 (red and blue)
     [distance_acc_blue, velocity_blue] = return_distance_velocity(array_blue)
     [distance_acc_red, velocity_red] = return_distance_velocity(array_red)
@@ -124,10 +120,9 @@ def extract_level_distance_velocity(bs_level):
 def return_distance_velocity(df):
     #initialize starting positions
     tMinus1 = 0
-    rowMinus1 =0
-    columnMinus1 =0
+    rowMinus1 = 0
+    columnMinus1 = 0
     distance_acc = 0
-    df = df.sort_values('_time')
     counter = 0
     for index, element in df.iterrows():
         counter += 1
@@ -155,15 +150,107 @@ def return_distance_velocity(df):
 # sin(theta) = sqrt(1 - cos(theta))
 # outer angle is angle of difficulty / 180 - cos(angle)
 
-def extract_level_angles_travelled(bs_level):
-    x_1, x_2, x_3, y_1, y_2, y_3 = 0, 1, 2, 4
-    vector_1 = [x_2 - x_1, y_2 - y_1]
-    vector_2 = [x_3 - x_2, y_3 - y_2]
-    angle_1 = np.cos(vector_1[1]/vector_1[0])
-    angle_2 = np.cos(vector_2[1] / vector_2[0])
-    angle_diff = np.abs(np.pi - (angle_2 - angle_1))
 
-    return 0
+def calc_angle_of_vector(vector):
+    #vector = [dx, dy]
+    #angle = arctan(dx/dy)
+    assert(len(vector) == 2)
+    if vector[1] == 0:
+        if vector[0] < 0:
+            angle = np.arctan(-np.inf)
+        elif vector[0] > 0:
+            angle = np.arctan(np.inf)
+        else:
+            angle = None
+    elif vector[0] == 0:
+        if vector[1] < 0:
+            angle = np.pi
+        if vector[1] > 0:
+            angle = 0
+        else:
+            angle = None
+    else:
+        angle = np.arctan(vector[0] / vector[1])
+    return angle
+
+def calc_vector_of_points(pt1, pt2):
+    return [pt2[0] - pt1[0], pt2[1] - pt1[1]]
+
+def extract_notes_from_bs_level(bs_level):
+    df_notes = bs_level['_notes']
+
+    # separate the red and blue blocks
+    array_blue = df_notes.loc[df_notes['_type'] == 0]
+    array_red = df_notes.loc[df_notes['_type'] == 1]
+    return array_blue, array_red
+
+def calc_angles_travelled(df):
+    angles_travelled = 0
+    i = 0
+    while df.iloc[i]['_time'] == df.iloc[i+1]['_time']:
+        pass
+        #i+=1
+
+    cut_direction_delta_switcher = [
+        [[0., -0.5], [0., 0.5]], #up cut
+        [[0., 0.5], [0., -0.5]], #down cut
+        [[0.5, 0.], [-0.5, 0.]], #left cut
+        [[-0.5, 0.], [0.5, 0.]], #right cut
+        [[0.5, -0.5], [-0.5, 0.5]], #up-left cut
+        [[-0.5, -0.5], [5.0, 0.5]], #up-right cut
+        [[0.5, 0.5], [-0.5, -0.5]], #down-left cut
+        [[-0.5, 0.5], [0.5, -0.5]], #down-right cut
+        [[0., 0.], [0., 0.]],  #no direction
+    ]
+
+    last_angle = None
+    #pt1 and pt2 are created from the first note position plus start and end points, based on the cut direction
+    pt1 = [df.iloc[i]['_lineIndex'], df.iloc[i]['_lineLayer']]
+    ptc1 = np.add(pt1, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][0])
+    ptc2 = np.add(pt1, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][1])
+    for i in range(1, len(df) - 1, 1):
+        # pt3 and pt4 are created from subsequent note positions plus start and end points
+        pt2 = [df.iloc[i]['_lineIndex'], df.iloc[i]['_lineLayer']]
+        ptc3 = np.add(pt2, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][0])
+        ptc4 = np.add(pt2, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][1])
+        #calc angle between beginning of note[i-1] and end of note[i-1]
+        vec = calc_vector_of_points(ptc1, ptc2)
+        angle = calc_angle_of_vector(vec)
+        #If the two points are in the same location then the angle between them is none
+        if angle is not None:
+            if last_angle is None:
+                last_angle = angle # first angle that != none
+            else:
+                angle_diff = np.abs(angle - last_angle)
+                angles_travelled += angle_diff
+                last_angle = angle
+
+        # calc angle between end of note[i-1] and beginning of note[i]
+        vec = calc_vector_of_points(ptc2, ptc3)
+        angle = calc_angle_of_vector(vec)
+        if angle is not None:
+            if last_angle is None:
+                last_angle = angle
+            else:
+                angle_diff = np.abs(angle - last_angle)
+                angles_travelled += angle_diff
+                last_angle = angle
+        else:
+            angles_travelled += np.pi #  start and end point in same position, reversal of direction is necessary
+        #update notes[i-1] while 0 < i < len(df)
+        pt1 = pt2
+        ptc1 = ptc3
+        ptc2 = ptc4
+    return angles_travelled
+
+
+def extract_level_angles_travelled(bs_level):
+    array_blue, array_red = extract_notes_from_bs_level(bs_level)
+
+    angles_travelled_blue = calc_angles_travelled(array_blue)
+    angles_travelled_red = calc_angles_travelled(array_red)
+
+    return [angles_travelled_blue, angles_travelled_red]
 
 
 def extract_level_product_distance_travelled(bs_level):
@@ -197,6 +284,7 @@ def convert_lin_col_to_coordinates(lineIndex, lineLayer):
     #           Number of votes
 
 
+
 if __name__ == '__main__':
     downloaded_songs_full, downloaded_songs = get_list_of_downloaded_songs()
     for song_dir in downloaded_songs_full:
@@ -208,4 +296,5 @@ if __name__ == '__main__':
             json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
             for json_file in json_files:
                 bs_level = IOFunctions.parse_json(json_file)
+                angles_travelled = extract_level_angles_travelled(bs_level)
                 features = extract_features_from_beatsaber_level(bs_level)

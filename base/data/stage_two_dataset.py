@@ -153,7 +153,7 @@ class StageTwoDataset(BaseDataset):
         input_length = sequence_length
 
         ## BLOCKS TENSORS ##
-        states, pos_enc, delta_forward, delta_backward = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,self.opt.beat_subdivision)
+        states, pos_enc, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,self.opt.beat_subdivision,unique_states)
         block_sequence = np.stack([states,delta_forward,delta_backward])
         block_sequence = torch.Tensor(block_sequence)
 

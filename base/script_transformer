@@ -3,7 +3,7 @@
 export PYTHONPATH="/home_directory/.local/lib/python3.5/site-packages/"
 
 py=python3
-dataset=general_beat_saber
+dataset=stage_two
 model=transformer
 exp=transformer_testing
 
@@ -12,7 +12,6 @@ $py train.py --data_dir=../AugDataTest --dataset_name=$dataset --model=$model --
     --label_smoothing \
     --max_token_seq_len=500 \
     --reduced_state \
-    --using_sync_features \
     --gpu_ids=0 \
     --level_diff=Expert\
     --workers=0

@@ -33,15 +33,17 @@ def compute_state_sequence_representation_from_json(json_file, top_k=2000):
     return state_sequence
 
 
-def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000):
+def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16):
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k)
-    times = [time*60/bpm for time, state in state_sequence.items() if (time*60/bpm) <= song_length] # Real-time
+    times_beats = [time for time, state in state_sequence.items() if (time*60/bpm) <= song_length]
+    feature_indices = [int((time/beat_discretization)+0.5) for time in times_beats]  # + 0.5 is for rounding
+    times_real = times_beats * (60/bpm)
     states = [state for time, state in state_sequence.items() if (time*60/bpm) <= song_length]
     pos_enc = np.arange(len(states))
-    time_diffs = np.diff(times)
-    delta_backward = np.insert(time_diffs,0,times[0])
-    delta_forward = np.append(time_diffs, song_length - times[-1])
-    return states, pos_enc, delta_forward, delta_backward
+    time_diffs = np.diff(times_real)
+    delta_backward = np.insert(time_diffs,0,times_real[0])
+    delta_forward = np.append(time_diffs, song_length - times_real[-1])
+    return states, pos_enc, delta_forward, delta_backward, feature_indices
 
 
 

@@ -92,11 +92,11 @@ class StageTwoDataset(BaseDataset):
         # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
         # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
         # parser.set_defaults(input_channels=(feature_size*16+2001))
-        parser.set_defaults(input_channels=(feature_size*1+number_reduced_states+1+3)) # 3 more for PAD, START, END
+        parser.set_defaults(d_src=24) # 3 more for PAD, START, END
         # the number of output classes is one per state in the set of reduced states
-        parser.set_defaults(num_classes=number_reduced_states+1+2)
+        parser.set_defaults(tgt_vocab_size=number_reduced_states+1+2)
         # channels is just one, just prediting one output, one of the 2001 classes
-        parser.set_defaults(output_channels=1)
+        # parser.set_defaults(output_channels=1)
         ### IF FULL STATE
         # parser.set_defaults(input_channels=(20*16+12*20))
         # # there are 12 outputs, one per grid point, with 20 possible classes each.

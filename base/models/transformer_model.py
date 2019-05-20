@@ -81,7 +81,7 @@ class TransformerModel(BaseModel):
     def modify_commandline_options(parser, is_train):
         parser.add_argument('--hidden_dim', type=int, default=100)
         parser.add_argument('--d_src', type=int, default=24)
-        parser.add_argument('--tgt_vocab_size', type=int, default=2004)
+        parser.add_argument('--tgt_vocab_size', type=int, default=2003)
         parser.add_argument('--proj_share_weight', action='store_true')
         parser.add_argument('--embs_share_weight', action='store_true')
         parser.add_argument('--label_smoothing', action='store_true')

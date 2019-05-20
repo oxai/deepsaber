@@ -45,7 +45,6 @@ def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000):
 
 
 
-
 def compute_discretized_state_sequence_from_json(json_file, top_k=2000,beat_discretization = 1/16):
     '''
     :param json_file: The input JSON level file

@@ -46,7 +46,7 @@ else:
 #%%
 
 # checkpoint = "632000"
-checkpoint = "54000"
+checkpoint = "11000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -54,7 +54,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "21_fixed"
+song_number = "43_fixed"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -86,13 +86,16 @@ bpms = {
 "34": 80,
 # "35": 256,
 "35": 128,
-"36": 130,
+"35_fixed": 128,
+"36": 128,
 "37": 129,
 "38": 100,
 "39": 130,
 "40": 140,
 "41": 72,
 "42": 100,
+"43": 118.5,
+"43_fixed": 118.5,
 }
 
 bpm = bpms[song_number]
@@ -100,7 +103,7 @@ bpm = bpms[song_number]
 # get mfcc feature
 beat_duration = int(60 * sr / bpm)  # beat duration in samples
 hop = int(beat_duration * (1/16)) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
-hop -= hop % 32
+# hop -= hop % 32
 mel_window = 1*hop
 # mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=20) #one vec of mfcc features per 16th of a beat (hop is in num of samples)
 

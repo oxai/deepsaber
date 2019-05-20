@@ -14,14 +14,15 @@ NUM_DISTINCT_STATES = 4672 # This is the number of distinct states in our datase
 EMPTY_STATE_INDEX = 0 # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
 SAMPLING_RATE = 16000
 
-def compute_state_sequence_representation_from_json(json_file, top_k=2000):
+def compute_state_sequence_representation_from_json(json_file, states=None, top_k=2000):
     '''
 
     :param json_file: The input JSON level file
     :param top_k: the top K states to keep (discard the rest)
     :return: The sequence of state ranks (of those in the top K) appearing in the level
     '''
-    states = IOFunctions.loadFile("sorted_states.pkl", "stateSpace") # Load the state representation
+    if states is None:  # Only load if state is not passed
+        states = IOFunctions.loadFile("sorted_states.pkl", "stateSpace") # Load the state representation
     if EMPTY_STATE_INDEX == 0:  # RANK 0 is reserved for the empty state
         states_rank = {state: i+1 for i, state in enumerate(states)}
     else: # The empty state has rank NUM_DISTINCT_STATES
@@ -33,10 +34,10 @@ def compute_state_sequence_representation_from_json(json_file, top_k=2000):
     return state_sequence
 
 
-def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16):
-    state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k)
-    times_beats = [time for time, state in state_sequence.items() if (time*60/bpm) <= song_length]
-    feature_indices = [int((time/beat_discretization)+0.5) for time in times_beats]  # + 0.5 is for rounding
+def get_block_sequence_with_deltas(json_file, song_length, bpm, states=None, top_k=2000, beat_discretization = 1/16):
+    state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
+    times_beats = np.array([time for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
+    feature_indices = np.array([int((time/beat_discretization)+0.5) for time in times_beats])  # + 0.5 is for rounding
     times_real = times_beats * (60/bpm)
     states = [state for time, state in state_sequence.items() if (time*60/bpm) <= song_length]
     pos_enc = np.arange(len(states))

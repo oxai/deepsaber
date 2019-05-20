@@ -34,7 +34,7 @@ def cal_loss(pred, gold, smoothing):
 
         non_pad_mask = gold.ne(Constants.PAD_STATE)
         loss = -(one_hot * log_prb).sum(dim=1)
-        loss = loss.masked_select(non_pad_mask).mean()  
+        loss = loss.masked_select(non_pad_mask).mean()
     else:
         loss = F.cross_entropy(pred, gold, ignore_index=Constants.PAD, reduction='mean')
 
@@ -102,7 +102,8 @@ class TransformerModel(BaseModel):
         input_shape = input_.shape
         target_shape = target_.shape
         # 0 batch dimension, 1 window dimension, 2 input channel dimension, 3 time dimension
-        self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3])).to(self.device)
+        self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3])).permute(0,2,1).to(self.device)
+        #we permute the dimensions because transformer input expects (batch_size, time, input_dim)
         # the _pos variables correspond to the positional encoding (see Transformer paper). These are generated correctly from the collate_fn defined in data/__init__.py
         self.input_pos = input_pos_
 

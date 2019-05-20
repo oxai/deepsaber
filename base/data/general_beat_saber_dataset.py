@@ -84,6 +84,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--using_sync_features', action='store_true', help='if true, use synced features')
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
         parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
+        parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
         parser.add_argument('--max_token_seq_len', type=int, default=1000)
         parser.set_defaults(output_length=1)
         ## IF REDUCED STATE
@@ -92,7 +93,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         # parser.set_defaults(input_channels=(feature_size*16+2001))
         parser.set_defaults(input_channels=(feature_size*1+number_reduced_states+1+3)) # 3 more for PAD, START, END
         # the number of output classes is one per state in the set of reduced states
-        parser.set_defaults(num_classes=number_reduced_states+1+3)
+        parser.set_defaults(num_classes=number_reduced_states+1+2)
         # channels is just one, just prediting one output, one of the 2001 classes
         parser.set_defaults(output_channels=1)
         ### IF FULL STATE
@@ -168,6 +169,8 @@ class GeneralBeatSaberDataset(BaseDataset):
         ## BLOCKS TENSORS ##
         if self.opt.reduced_state:
             blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length,self.opt.extra_output)
+        elif self.opt.binarized:
+            blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,1+3,bpm,sr,num_samples_per_feature,receptive_field,input_length,self.opt.extra_output)
         else:
             blocks_windows, blocks_targets = get_full_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,self.opt.output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length)
 
@@ -176,7 +179,7 @@ class GeneralBeatSaberDataset(BaseDataset):
             return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': blocks_targets}
         else:
             # concatenate the song and block input features before returning
-            return {'input': torch.cat(input_windowss), 'target': blocks_targets}
+            return {'input': torch.cat(input_windowss,1), 'target': blocks_targets}
 
     def __len__(self):
         return len(self.audio_files)

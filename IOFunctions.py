@@ -8,6 +8,7 @@ from glob import glob
 import html
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+# THIS_DIR = "../"
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
 EXTRACT_DIR = os.path.join(THIS_DIR, 'DataE')
 if not os.path.isdir(DATA_DIR):
@@ -283,5 +284,3 @@ def write_meta_data_file(filename, meta_data):
         f.write('levelQuality: ' + html.unescape(meta_data['levelQuality']) + '\n')
     f.close()
     return meta_data
-
-

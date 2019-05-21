@@ -148,22 +148,33 @@ class StageTwoDataset(BaseDataset):
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
         # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
-        sequence_length = min(y.shape[1],self.opt.max_token_seq_len)
-        indices=np.array([0])
-        input_length = sequence_length
+        # indices=np.array([0])
+        # input_length = sequence_length
+        sequence_length = y.shape[1]
 
         ## BLOCKS TENSORS ##
-        states, pos_enc, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,self.opt.beat_subdivision,unique_states)
-        block_sequence = np.stack([states,delta_forward,delta_backward])
-        block_sequence = torch.Tensor(block_sequence)
+        states, pos_enc, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,2000,self.opt.beat_subdivision,unique_states)
+        truncated_sequence_length = min(len(states),self.opt.max_token_seq_len)
+        states = states[:truncated_sequence_length]
+        indices = indices[:truncated_sequence_length]
+        delta_forward = delta_forward[:truncated_sequence_length]
+        delta_backward = delta_backward[:truncated_sequence_length]
+        pos_enc = pos_enc[:truncated_sequence_length]
+
+        # block_sequence = np.cat([states,delta_forward,delta_backward],axis=0)
+        # block_sequence = torch.tensor(block_sequence).unsqueeze(0)
+        block_sequence = torch.tensor(states).unsqueeze(0).unsqueeze(2)
+        # print(block_sequence.shape)
 
         ## CONSTRUCT TENSOR OF INPUT SOUND FEATURES (MFCC) ##
         # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
-        input_windows = [y[:,i:i+input_length] for i in indices]
-        input_windows = input_windows[:,indices]
-        input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max().float()
+        # sequence_length = min(len(indices),self.opt.max_token_seq_len)
+        y = y[:,indices]
+        # print(y.shape)
+        input_windows = [y]
 
         song_sequence = torch.tensor(input_windows)
+        song_sequence = (song_sequence - song_sequence.mean())/torch.abs(song_sequence).max().float()
 
         return {'input': song_sequence, 'target': block_sequence}
 

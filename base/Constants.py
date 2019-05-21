@@ -1,7 +1,9 @@
-import numpy as np
+# import numpy as np
 
 
-PAD_STATE = -np.NINF
-START_STATE = 0
-END_STATE = 1
-EMPTY_STATE = 2
+# PAD_STATE = -np.NINF
+PAD_STATE = 0
+START_STATE = 1
+END_STATE = 2
+EMPTY_STATE = 3
+NUM_SPECIAL_STATES = 4

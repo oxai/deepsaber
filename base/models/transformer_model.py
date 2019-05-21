@@ -11,7 +11,11 @@ def cal_performance(pred, gold, smoothing=False):
     loss = cal_loss(pred, gold, smoothing)
 
     pred = pred.max(1)[1]
+    # gold = gold.contiguous().view(-1)
     gold = gold.contiguous().view(-1)
+    # print(pred.shape, gold.shape)
+    # print(pred, gold)
+    # name = input("Enter your name: ")   # Python 3
     non_pad_mask = gold.ne(Constants.PAD_STATE)
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
@@ -81,7 +85,7 @@ class TransformerModel(BaseModel):
     def modify_commandline_options(parser, is_train):
         parser.add_argument('--hidden_dim', type=int, default=100)
         parser.add_argument('--d_src', type=int, default=24)
-        parser.add_argument('--tgt_vocab_size', type=int, default=2003)
+        parser.add_argument('--tgt_vocab_size', type=int, default=2004)
         parser.add_argument('--proj_share_weight', action='store_true')
         parser.add_argument('--embs_share_weight', action='store_true')
         parser.add_argument('--label_smoothing', action='store_true')
@@ -117,9 +121,14 @@ class TransformerModel(BaseModel):
     def forward(self):
         # we are using self.target as mas both for input and target, because we are assuming both sequences are of the same length, for now!
         # if we try for instance, the event based representation of the music transformer, then e would need to change this
+        # print(self.input.shape,self.target.shape, self.target_pos.shape, self.input_pos.shape)
+        # print(self.target)
+        # name = input("Enter your name: ")   # Python 3
         self.output = self.net.forward(self.input.float(),self.target,self.input_pos,self.target,self.target,self.input_pos)
 
         # using the smoothened loss function from the pytorch Transformer implementation, which also calculates masked accuracy (ignoring the PAD symbol)
+        # print(self.output.shape, self.target[:,1:].shape)
+        # name = input("Enter your name: ")   # Python 3
         self.loss_ce, n_correct = cal_performance(self.output, self.target[:,1:], smoothing=self.opt.label_smoothing)
         self.metric_accuracy = n_correct/len(self.output)
 

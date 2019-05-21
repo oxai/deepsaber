@@ -34,17 +34,23 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
     return state_sequence
 
 
-def get_block_sequence_with_deltas(json_file, song_length, bpm, states=None, top_k=2000, beat_discretization = 1/16):
+def get_block_sequence_with_deltas(json_file, song_length, bpm, states=None, top_k=2000, beat_discretization = 1/16, one_hot=False):
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
     times_beats = np.array([time for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
     feature_indices = np.array([int((time/beat_discretization)+0.5) for time in times_beats])  # + 0.5 is for rounding
     times_real = times_beats * (60/bpm)
-    states = [state for time, state in state_sequence.items() if (time*60/bpm) <= song_length]
+    states = np.array([state for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
     pos_enc = np.arange(len(states))
+    if one_hot:
+        one_hot_states = np.zeros((top_k + 1, states.shape[0]))
+        one_hot_states[states, pos_enc] = 1
     time_diffs = np.diff(times_real)
-    delta_backward = np.insert(time_diffs,0,times_real[0])
-    delta_forward = np.append(time_diffs, song_length - times_real[-1])
-    return states, pos_enc, delta_forward, delta_backward, feature_indices
+    delta_backward = np.expand_dims(np.insert(time_diffs, 0, times_real[0]), axis=0)
+    delta_forward = np.expand_dims(np.append(time_diffs, song_length - times_real[-1]), axis=0)
+    if one_hot:
+        return one_hot_states, pos_enc, delta_forward, delta_backward, feature_indices
+    else:
+        return states, pos_enc, delta_forward, delta_backward, feature_indices
 
 
 

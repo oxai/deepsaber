@@ -58,7 +58,7 @@ def download_top_k_played_songs(k, update_existing=False):
         for index, match in enumerate(fileNameMatches):
             # Download the corresponding ZIP file
             if nbDownloaded < k:
-                fileName = re.sub(illegalNameChars, "", html.unescape(titleMatches[index]))
+                fileName = re.sub(illegalNameChars, "", html.unescape(titleMatches[index])).rstrip(' - ')
 
                 if fileName not in downloaded_songs:
                     new_song = True
@@ -71,6 +71,7 @@ def download_top_k_played_songs(k, update_existing=False):
                         song_name = str(total_downloaded+1)+')'
                         pickle.dump(data, open(os.path.join(DATA_DIR, song_name + ").zip"), "wb"))  # Safe file name choice
                     # Extract the zipfile contents to other folder
+                    os.mkdir(os.path.join(EXTRACT_DIR, song_name))
                     zip_ref = zipfile.ZipFile(os.path.join(DATA_DIR, song_name+".zip"), 'r')
                     zip_ref.extractall(os.path.join(EXTRACT_DIR, song_name))  # Need to create new folder DataE to work
                     zip_ref.close()
@@ -272,6 +273,6 @@ def get_beastsaber_meta_from_id(song_id):
     return beastsaber_meta
 
 if __name__ == "__main__":
-    fileNamesA, titlesA = download_top_k_played_songs(1, update_existing=False)
+    fileNamesA, titlesA = download_top_k_played_songs(20, update_existing=False)
     #update_meta_data_for_downloaded_songs()
 

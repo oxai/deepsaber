@@ -39,7 +39,7 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
 
     # convert blocks tensor to reduced_blocks using the dictionary `unique states` (reduced representation) provided by Ralph (loaded at beginning of file)
     for i,block in enumerate(blocks):
-        if i==0:
+        if i<receptive_field:
             blocks_reduced[i,Constants.START_STATE] = 1.0
             blocks_reduced_classes[i,0] = Constants.START_STATE
         elif i==len(blocks)-1:
@@ -48,10 +48,10 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
         else:
             try:
                 state_index = unique_states.index(tuple(block))
-                if num_classes <= Constants.NUM_SPECIAL_STATES:
+                if num_classes <= Constants.NUM_SPECIAL_STATES + 1:
                     state_index = 0
-                blocks_reduced[i,Constants.NUM_SPECIAL_STATES-1+state_index] = 1.0
-                blocks_reduced_classes[i,0] = Constants.NUM_SPECIAL_STATES-1+state_index
+                blocks_reduced[i,Constants.NUM_SPECIAL_STATES+state_index] = 1.0
+                blocks_reduced_classes[i,0] = Constants.NUM_SPECIAL_STATES+state_index
             except (ValueError, IndexError): # if not in top 2000 states, then we consider it the empty state (no blocks; class = 0)
                 blocks_reduced[i,Constants.EMPTY_STATE] = 1.0
                 blocks_reduced_classes[i,0] = Constants.EMPTY_STATE

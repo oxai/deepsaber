@@ -25,5 +25,5 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --reduced_state \
     --concat_outputs \
     --gpu_ids=0 \
-    --load \
-    --load_iter=70000 \
+    #--load \
+    #--load_iter=70000 \

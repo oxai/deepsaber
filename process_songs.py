@@ -4,7 +4,7 @@ import librosa
 from pathlib import Path
 import json
 import os.path
-from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel
+from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel,feature_extraction_hybrid
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD

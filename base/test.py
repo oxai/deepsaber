@@ -10,8 +10,9 @@ import librosa
 import torch
 import pickle
 import os
+import numpy as np
 
-from stateSpaceFunctions import feature_extraction_hybrid_raw
+from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction_mel,feature_extraction_hybrid
 
 #opt = TrainOptions().parse()
 # open(opt.experiment_name+"/opt.json","w").write(json.dumps(vars(opt)))
@@ -21,7 +22,8 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw
 # experiment_name = "reduced_states_lookahead_likelihood/"
 # experiment_name = "zeropad_entropy_regularization/"
 # experiment_name = "chroma_features_likelihood_exp1/"
-experiment_name = "chroma_features_likelihood_syncc/"
+# experiment_name = "chroma_features_likelihood_syncc/"
+experiment_name = "test/"
 # experiment_name = "lstm_testing/"
 # experiment_name = "chroma_features_likelihood_exp2/"
 # experiment_name = "reduced_states_gan_exp_smoothedinput/"
@@ -45,8 +47,8 @@ else:
 
 #%%
 
-# checkpoint = "632000"
-checkpoint = "55000"
+checkpoint = "2190"
+# checkpoint = "55000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -54,10 +56,9 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "43_fixed"
+song_number = "believer"
 print("Song number: ",song_number)
-# song_name = "test_song"+song_number+".wav"
-song_name="believer.wav"
+song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
 y_wav, sr = librosa.load(song_path, sr=16000)
 
@@ -97,19 +98,45 @@ bpms = {
 "42": 100,
 "43": 118.5,
 "43_fixed": 118.5,
+"believer": 125,
 }
 
-# bpm = bpms[song_number]
-bpm = 125
+bpm = bpms[song_number]
 
 # get mfcc feature
-beat_duration = int(60 * sr / bpm)  # beat duration in samples
-hop = int(beat_duration * (1/16)) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
-# hop -= hop % 32
-mel_window = 1*hop
+feature_name = "mel"
+feature_size = 100
+# feature_size = 24
+use_sync=True
+
+sampling_rate = 16000
+beat_subdivision = opt.beat_subdivision
+sr = sampling_rate
+beat_duration = 60/bpm #beat duration in seconds
+
+beat_duration_samples = int(60*sr/bpm) #beat duration in samples
+# duration of one time step in samples:
+hop = int(beat_duration_samples * 1/opt.beat_subdivision)
+if not opt.using_sync_features:
+    hop -= hop % 32
+# num_samples_per_feature = hop
+
+#
+step_size = beat_duration/beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
 # mfcc = librosa.feature.mfcc(y, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=20) #one vec of mfcc features per 16th of a beat (hop is in num of samples)
 
-features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+state_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
+if opt.feature_name == "chroma":
+    if use_sync:
+        features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_discretization=1/beat_subdivision,mel_dim=12)
+    else:
+        features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+elif opt.feature_name == "mel":
+    # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
+    features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
+
+
+# features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
 # import matplotlib.pyplot as plt
 # %matplotlib
 # import IPython.display as ipd
@@ -131,9 +158,13 @@ temperature=1.00
 #generate level
 #output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
 import Constants
+# first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.START_STATE)
 first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
 first_samples[0,0,0] = Constants.START_STATE
-output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
+if opt.binarized:
+    output = model.net.module.generate_no_autoregressive(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
+else:
+    output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
 states_list = output[0,:,:].permute(1,0)
 
 #if using reduced_state representation convert from reduced_state_index to state tuple
@@ -141,11 +172,16 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 #old
 # states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
 #new (after transformer)
-states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
+
+notes
 
 #convert from states to beatsaber notes
-notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
-notes += [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":3} for j,y in enumerate(x) if y==19] for i,x in enumerate(states_list)]
+if opt.binarized:
+    notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0}] for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+else:
+    states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
+    notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
+    notes += [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":3} for j,y in enumerate(x) if y==19] for i,x in enumerate(states_list)]
 notes = sum(notes,[])
 
 # song.size(-1)

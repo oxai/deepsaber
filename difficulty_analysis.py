@@ -48,15 +48,16 @@ def extract_features_from_all_levels():
         else:
             meta_data = read_meta_data_file(meta_data_filename)
             difficulty_rating = meta_data['scoresaberDifficulty'].replace(' ', '').split(',')
-            json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
-            for i in range(len(json_files)):
-                bs_level = IOFunctions.parse_json(json_files[i])
-                features.append(extract_features_from_beatsaber_level(bs_level))
-                targets.append([int(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']), float(meta_data['rating']), \
-                               float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
-                               float(meta_data['patternQuality']), float(meta_data['readability']), float(meta_data['levelQuality'])])
+            if difficulty_rating != ['']:
+                json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
+                for i in range(len(json_files)):
+                    bs_level = IOFunctions.parse_json(json_files[i])
+                    features.append(np.array(extract_features_from_beatsaber_level(bs_level)))
+                    targets.append(np.array([float(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']), float(meta_data['rating']), \
+                                   float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
+                                   float(meta_data['patternQuality']), float(meta_data['readability']), float(meta_data['levelQuality'])]))
 
-    return features, targets
+    return np.array(features), np.array(targets)
 
 def extract_features_from_beatsaber_level(bs_level):
     #feature_1 = distance travelled
@@ -305,6 +306,30 @@ def convert_lin_col_to_coordinates(lineIndex, lineLayer):
     # Read:     Difficulty Rating
     #           Number of votes
 
+def linear_regression_model(features, target):
+    assert(len(features) == len(target))
+    x_mean = np.mean(features, axis=0)
+    y_mean = np.mean(target)
+    xy_cov = np.inner(np.subtract(features, x_mean).T, np.subtract(y_mean, target))
+    x_var = np.mean(np.power(np.subtract(features, x_mean), 2), axis=0)
+    beta = np.divide(np.sum(xy_cov), np.sum(x_var))
+    alpha = np.subtract(y_mean, np.multiply(beta, x_mean))
+    return [alpha, beta]
+
+def get_linear_regression_model_for_all_targets(features, targets):
+    num_samples, num_features = features.shape
+    _, num_targets = targets.shape
+    models = []
+    for i in range(num_targets):
+        models.append(linear_regression_model(features[:], targets[:, i]))
+
+
 if __name__ == '__main__':
     features, targets = extract_features_from_all_levels()
     IOFunctions.saveFile([features, targets], 'dataset_features_and_target_metrics.pkl')
+    features_and_targets = IOFunctions.loadFile('dataset_features_and_target_metrics.pkl')
+    models = get_linear_regression_model_for_all_targets(features_and_targets[0], features_and_targets[1])
+    IOFunctions.saveFile(models, 'dataset_targets_linear_model.pkl')
+    features_and_targets = IOFunctions.loadFile('dataset_targets_linear_model.pkl')
+
+

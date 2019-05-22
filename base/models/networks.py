@@ -122,7 +122,7 @@ class WaveNetModel(nn.Module):
                 new_dilation *= 2
                 # self.dropouts.append(nn.Dropout(self.dropout_p))
 
-        self.dropout = nn.Dropout(self.dropout_p)    
+        self.dropout = nn.Dropout(self.dropout_p)
         self.end_conv_1 = nn.Conv1d(in_channels=skip_channels,
                                   out_channels=end_channels,
                                   kernel_size=1,
@@ -180,7 +180,7 @@ class WaveNetModel(nn.Module):
 
             x = self.residual_convs[i](x)
             x = x + residual[:, :, (self.kernel_size - 1):]
-        
+
         x = self.dropout(x)
 
         x = F.relu(skip)
@@ -261,7 +261,7 @@ class WaveNetModel(nn.Module):
             input = torch.cat(mfcc_featuress+[input.float()],1).cuda() #eeh need to have it work without cuda too
 
             x = self.wavenet(input,dilation_func=self.wavenet_dilate)[0:1, :, :, -1:]
-            x = x.transpose(1, 3).contiguous() # need to undertand why transposing here makes a difference.. This line is necessary.. what I mean is that I think it broke when using permute, but perhaps I was being stupid :P 
+            x = x.transpose(1, 3).contiguous() # need to undertand why transposing here makes a difference.. This line is necessary.. what I mean is that I think it broke when using permute, but perhaps I was being stupid :P
             x = x.view(self.output_channels ,self.num_classes)
 
             if temperature > 0:
@@ -283,6 +283,70 @@ class WaveNetModel(nn.Module):
 
         # generated = (generated / self.input_channels) * 2. - 1
         # mu_gen = mu_law_expansion(generated, self.input_channels)
+
+    #TODO: this should be parallelized.... but I'm not doing it yet :PP
+    def generate_no_autoregressive(self,
+                 num_samples,
+                 conditioning_seq, #the song in our case
+                 time_shifts, # number of look ahead times
+                 first_samples=None,
+                 temperature=1.):
+        self.eval()
+        if first_samples is None:
+            # first_samples = torch.zeros((1,12)) #self.dtype(1).zero_()
+            first_samples = torch.zeros((1,self.output_channels,self.receptive_field)) #self.dtype(1).zero_()
+        generated = Variable(first_samples, volatile=True)
+        #
+        num_pad = self.receptive_field - generated.size(2)
+        if num_pad > 0:
+            generated = constant_pad_1d(generated.permute(2,1,0), self.receptive_field, pad_start=True).permute(2,1,0)
+            generated = generated.unsqueeze(0)
+            print("pad zero")
+
+        #size of this is (1,n_mfcc,timesteps)
+        conditioning_seq = constant_pad_1d(conditioning_seq.permute(2,1,0),conditioning_seq.size(2)+self.receptive_field,pad_start=True).permute(2,1,0)
+
+        for i in range(num_samples):
+            # input = Variable(torch.FloatTensor(1, self.output_channels, self.num_classes, self.receptive_field).zero_())
+            # # input = input.scatter_(1, generated[:,:,-self.receptive_field:].long(), 1.)
+            # # input = input.scatter_(2, (generated[:,:,-self.receptive_field:].view(1,12,-1,self.receptive_field).long()-1)%28, 1.)
+            # input = input.scatter_(2, generated[:,:,-self.receptive_field:].view(1,self.output_channels,-1,self.receptive_field).long(), 1.)
+            #
+            # shape = input.shape
+            # input = input.view(shape[0],shape[1]*shape[2],shape[3])
+            # #this is because "nothing" is a class, but I haven't put a one on the many_hot vector in its position
+            # #fixed that now
+            # for j in range(self.output_channels):
+            #     input[:,self.num_classes*j,:]=0
+
+            mfcc_featuress = []
+            for ii in range(time_shifts):
+                mfcc_features = conditioning_seq[:,:,i+ii:i+ii+self.receptive_field].float()
+                if torch.abs(mfcc_features).max() > 0: mfcc_features = (mfcc_features - mfcc_features.mean())/torch.abs(mfcc_features).max()
+                mfcc_featuress.append(mfcc_features.float())
+
+            input = torch.cat(mfcc_featuress,1).cuda() #eeh need to have it work without cuda too
+
+            x = self.wavenet(input,dilation_func=self.wavenet_dilate)[0:1, :, :, -1:]
+            x = x.transpose(1, 3).contiguous() # need to undertand why transposing here makes a difference.. This line is necessary.. what I mean is that I think it broke when using permute, but perhaps I was being stupid :P
+            x = x.view(self.output_channels ,self.num_classes)
+
+            if temperature > 0:
+                x /= temperature
+                xs = []
+                for i in range(self.output_channels):
+                    x1 = x[i,:]
+                    prob = F.softmax(x1, dim=0)
+                    prob = prob.cpu()
+                    np_prob = prob.data.numpy()
+                    x1 = np.random.choice(self.num_classes, p=np_prob)
+                    xs.append(x1)
+                x = Variable(torch.LongTensor([xs]))#np.array([x])
+            else:
+                x = torch.max(x, 1)[1].float()
+
+            x = x.unsqueeze(2)
+            generated = torch.cat((generated, x.float()), 2)
 
         self.train()
         return generated[:,:,self.receptive_field:]

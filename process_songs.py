@@ -4,7 +4,7 @@ import librosa
 from pathlib import Path
 import json
 import os.path
-from stateSpaceFunctions import feature_extraction_hybrid_raw
+from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -29,9 +29,10 @@ tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
 if rank < num_tasks%size:
     tasks.append(size*num_tasks_per_job+rank)
 
-# feature_name = "chroma"
-feature_name = "mel"
-feature_size = 100
+feature_name = "chroma"
+# feature_name = "mel"
+# feature_size = 100
+feature_size = 24
 use_sync=True
 replace_present=True
 
@@ -40,7 +41,7 @@ sampling_rate = 16000
 beat_subdivision = 16
 # n_mfcc = 20
 
-# path = candidate_audio_files[0]
+path = candidate_audio_files[0]
 
 #%%
 
@@ -66,21 +67,25 @@ for i in tasks:
 
         bpm = level['_beatsPerMinute']
         sr = sampling_rate
-        # beat_duration = int(60*sr/bpm) #beat duration in samples
+        beat_duration = int(60*sr/bpm) #beat duration in samples
         #
-        # #hop = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-        # hop = int(beat_duration * 1/beat_subdivision)
+        hop = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+        hop = int(beat_duration * 1/beat_subdivision)
         # hop -= hop % 32
         # num_samples_per_feature = hop
         # mel_window = hop
 
         #get feature
         #features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
-        if use_sync:
-            features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
-        else:
-            # features = feature_extraction_hybrid(y_wav,sr,bpm)
-            features = feature_extraction_mel(y_wav,sr,bpm,mel_dim=feature_size)
+        state_times = np.arange(0,y_wav.shape[0],step=hop)
+        if feature_name == "chroma":
+            if use_sync:
+                features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
+            else:
+                features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+        elif feature_name == "mel":
+            # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
+            # features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_subdivision=beat_subdivision)
         np.save(features_file,features)
 
         ## get mfcc feature

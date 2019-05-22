@@ -48,8 +48,10 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
         else:
             try:
                 state_index = unique_states.index(tuple(block))
-                blocks_reduced[i,4+state_index] = 1.0
-                blocks_reduced_classes[i,0] = 4+state_index
+                if num_classes <= Constants.NUM_SPECIAL_STATES:
+                    state_index = 0
+                blocks_reduced[i,Constants.NUM_SPECIAL_STATES-1+state_index] = 1.0
+                blocks_reduced_classes[i,0] = Constants.NUM_SPECIAL_STATES-1+state_index
             except (ValueError, IndexError): # if not in top 2000 states, then we consider it the empty state (no blocks; class = 0)
                 blocks_reduced[i,Constants.EMPTY_STATE] = 1.0
                 blocks_reduced_classes[i,0] = Constants.EMPTY_STATE

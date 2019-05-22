@@ -13,16 +13,19 @@ To generate this folder, run identifyStateSpace.py
 NUM_DISTINCT_STATES = 4672 # This is the number of distinct states in our dataset
 EMPTY_STATE_INDEX = 0 # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
 SAMPLING_RATE = 16000
+# NUM_SPECIAL_STATES=2 # also padding
 
-def compute_state_sequence_representation_from_json(json_file, top_k=2000):
+def compute_state_sequence_representation_from_json(json_file, states=None, top_k=2000):
     '''
 
     :param json_file: The input JSON level file
     :param top_k: the top K states to keep (discard the rest)
     :return: The sequence of state ranks (of those in the top K) appearing in the level
     '''
-    states = IOFunctions.loadFile("sorted_states.pkl", "stateSpace") # Load the state representation
+    if states is None:  # Only load if state is not passed
+        states = IOFunctions.loadFile("sorted_states.pkl", "stateSpace") # Load the state representation
     if EMPTY_STATE_INDEX == 0:  # RANK 0 is reserved for the empty state
+        # states_rank = {state: i+1 for i, state in enumerate(states)}
         states_rank = {state: i+1 for i, state in enumerate(states)}
     else: # The empty state has rank NUM_DISTINCT_STATES
         states_rank = {state: i for i, state in enumerate(states)}
@@ -33,16 +36,23 @@ def compute_state_sequence_representation_from_json(json_file, top_k=2000):
     return state_sequence
 
 
-def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000):
-    state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k)
-    times = [time*60/bpm for time, state in state_sequence.items() if (time*60/bpm) <= song_length] # Real-time
-    states = [state for time, state in state_sequence.items() if (time*60/bpm) <= song_length]
+def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16,states=None,one_hot=False):
+    state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
+    times_beats = np.array([time for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
+    feature_indices = np.array([int((time/beat_discretization)+0.5) for time in times_beats])  # + 0.5 is for rounding
+    times_real = times_beats * (60/bpm)
+    states = np.array([state for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
     pos_enc = np.arange(len(states))
-    time_diffs = np.diff(times)
-    delta_backward = np.insert(time_diffs,0,times[0])
-    delta_forward = np.append(time_diffs, song_length - times[-1])
-    return states, pos_enc, delta_forward, delta_backward
-
+    if one_hot:
+        one_hot_states = np.zeros((top_k + 1, states.shape[0]))
+        one_hot_states[states, pos_enc] = 1
+    time_diffs = np.diff(times_real)
+    delta_backward = np.expand_dims(np.insert(time_diffs, 0, times_real[0]), axis=0)
+    delta_forward = np.expand_dims(np.append(time_diffs, song_length - times_real[-1]), axis=0)
+    if one_hot:
+        return one_hot_states, pos_enc, delta_forward, delta_backward, feature_indices
+    else:
+        return states, pos_enc, delta_forward, delta_backward, feature_indices
 
 
 
@@ -193,10 +203,10 @@ def feature_extraction_mel(y, sr, state_times,bpm,beat_discretization=1/16,mel_d
     # Problem: Sync is returning shorter sequences than the state times
     state_frames = librosa.core.time_to_frames(state_times,hop_length=hop,sr=sr) # Hop-Aware Synchronisation
     # print(state_frames)
-    beat_chroma = librosa.util.sync(cqts, state_frames, aggregate=np.median, pad=True, axis=-1)
-    beat_mel = librosa.util.sync(mels, state_frames, aggregate=np.median,pad=True,axis=-1)
-    output = np.concatenate((beat_mel,beat_chroma), axis=0)
-    return output
+    # beat_chroma = librosa.util.sync(cqts, state_frames, aggregate=np.median, pad=True, axis=-1)
+    mel = librosa.util.sync(mels, state_frames, aggregate=np.median,pad=True,axis=-1)
+    # output = np.concatenate((beat_mel,beat_chroma), axis=0)
+    return mel
 
 def chroma_feature_extraction(y,sr, state_times):
     #hop = #int((44100 * 60 * beat_discretization) / bpm) Hop length must be a multiple of 2^6

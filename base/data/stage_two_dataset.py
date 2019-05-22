@@ -13,8 +13,9 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 # number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
 import Constants
+from stateSpaceFunctions import get_block_sequence_with_deltas
 
-class GeneralBeatSaberDataset(BaseDataset):
+class StageTwoDataset(BaseDataset):
 
     def __init__(self, opt,receptive_field=None):
         super().__init__()
@@ -31,7 +32,7 @@ class GeneralBeatSaberDataset(BaseDataset):
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
-            features_file = path.__str__()+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
+            features_file = path.__str__()+"_"+opt.feature_name+"_"+str(opt.feature_size)+".npy"
             level_file_found = False
             for diff in self.opt.level_diff.split(","):
                 if Path(path.parent.__str__()+"/"+diff+".json").is_file():
@@ -74,12 +75,12 @@ class GeneralBeatSaberDataset(BaseDataset):
     def modify_commandline_options(parser, is_train):
         parser.add_argument('--sampling_rate', default=16000, type=float)
         parser.add_argument('--level_diff', default='Expert', help='Difficulty level for beatsaber level')
-        parser.add_argument('--feature_name', default='chroma')
         parser.add_argument('--hop_length', default=256, type=int)  # Set the hop length; at 22050 Hz, 512 samples ~= 23ms
         parser.add_argument('--compute_feats', action='store_true', help="Whether to extract musical features from the song")
         parser.add_argument('--padded_length', type=int, default=3000000)
-        parser.add_argument('--feature_size', type=int, default=24)
         parser.add_argument('--chunk_length', type=int, default=9000)
+        parser.add_argument('--feature_name', default='chroma')
+        parser.add_argument('--feature_size', type=int, default=24)
         # the input features at each time step consiste of the features at the time steps from now to time_shifts in the future
         parser.add_argument('--time_shifts', type=int, default=1, help='number of shifted sequences to include as input')
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
@@ -93,11 +94,11 @@ class GeneralBeatSaberDataset(BaseDataset):
         # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
         # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
         # parser.set_defaults(input_channels=(feature_size*16+2001))
-        # parser.set_defaults(input_channels=(feature_size*1+number_reduced_states+Constants.NUM_SPECIAL_STATES)) # 3 more for PAD, START, END
+        # parser.set_defaults(d_src=24) # 3 more for PAD, START, END
         # the number of output classes is one per state in the set of reduced states
-        # parser.set_defaults(num_classes=number_reduced_states+Constants.NUM_SPECIAL_STATES)
+        # parser.set_defaults(tgt_vocab_size=number_reduced_states+1+2)
         # channels is just one, just prediting one output, one of the 2001 classes
-        parser.set_defaults(output_channels=1)
+        # parser.set_defaults(output_channels=1)
         ### IF FULL STATE
         # parser.set_defaults(input_channels=(20*16+12*20))
         # # there are 12 outputs, one per grid point, with 20 possible classes each.
@@ -127,13 +128,13 @@ class GeneralBeatSaberDataset(BaseDataset):
         notes = level['_notes']
 
         #useful quantities, to sync notes to song features
-        sr = self.opt.sampling_rate
-        beat_duration = int(60*sr/bpm) #beat duration in samples
+        # sr = self.opt.sampling_rate
+        # beat_duration = int(60*sr/bpm) #beat duration in samples
         # duration of one time step in samples:
-        hop = int(beat_duration * 1/self.opt.beat_subdivision)
-        if not self.opt.using_sync_features:
-            hop -= hop % 32
-        num_samples_per_feature = hop
+        # hop = int(beat_duration * 1/self.opt.beat_subdivision)
+        # if not self.opt.using_sync_features:
+        #     hop -= hop % 32
+        # num_samples_per_feature = hop
         #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
 
         # for short
@@ -149,41 +150,35 @@ class GeneralBeatSaberDataset(BaseDataset):
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
         # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
-        sequence_length = min(y.shape[1],self.opt.max_token_seq_len)
-        if self.opt.num_windows >= 1:
-            input_length = receptive_field + self.opt.output_length -1
-            indices = np.random.choice(range(sequence_length-(input_length+self.opt.time_shifts-1)),size=self.opt.num_windows,replace=True)
-        elif self.opt.time_shifts == 1:
-            indices=np.array([0])
-            input_length = sequence_length
-        else:
-            raise Exception("Can't have time_shifts with setting num_windows=0 (which means take the whole sequence)")
+        # indices=np.array([0])
+        # input_length = sequence_length
+        sequence_length = y.shape[1]
+
+        ## BLOCKS TENSORS ##
+        states, pos_enc, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,2000,self.opt.beat_subdivision,unique_states)
+        truncated_sequence_length = min(len(states),self.opt.max_token_seq_len)
+        states = states[:truncated_sequence_length]
+        indices = indices[:truncated_sequence_length]
+        delta_forward = delta_forward[:truncated_sequence_length]
+        delta_backward = delta_backward[:truncated_sequence_length]
+        pos_enc = pos_enc[:truncated_sequence_length]
+
+        # block_sequence = np.cat([states,delta_forward,delta_backward],axis=0)
+        # block_sequence = torch.tensor(block_sequence).unsqueeze(0)
+        block_sequence = torch.tensor(states).unsqueeze(0).unsqueeze(2)
+        # print(block_sequence.shape)
 
         ## CONSTRUCT TENSOR OF INPUT SOUND FEATURES (MFCC) ##
         # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
-        input_windowss = []
-        for ii in range(self.opt.time_shifts):
-            input_windows = [y[:,i+ii:i+ii+input_length] for i in indices]
-            input_windows = torch.tensor(input_windows)
-            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
-            input_windowss.append(input_windows.float())
+        # sequence_length = min(len(indices),self.opt.max_token_seq_len)
+        y = y[:,indices]
+        # print(y.shape)
+        input_windows = [y]
 
-        ## BLOCKS TENSORS ##
-        if self.opt.reduced_state:
-            blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length,self.opt.extra_output)
-        elif self.opt.binarized:
-            blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,1+Constants.NUM_SPECIAL_STATES,bpm,sr,num_samples_per_feature,receptive_field,input_length,self.opt.extra_output)
-        else:
-            blocks_windows, blocks_targets = get_full_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,self.opt.output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length)
+        song_sequence = torch.tensor(input_windows)
+        song_sequence = (song_sequence - song_sequence.mean())/torch.abs(song_sequence).max().float()
 
-        # print(blocks_targets.shape)
-
-        if self.opt.concat_outputs:
-            # concatenate the song and block input features before returning
-            return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': blocks_targets}
-        else:
-            # concatenate the song and block input features before returning
-            return {'input': torch.cat(input_windowss,1), 'target': blocks_targets}
+        return {'input': song_sequence, 'target': block_sequence}
 
     def __len__(self):
         return len(self.audio_files)

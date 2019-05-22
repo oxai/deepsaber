@@ -64,6 +64,7 @@ class WaveNetModel(BaseModel):
         #we collapse all the dimensions of target_ because that is the same way the output of the network is being processed for the cross entropy calculation (see self.forward)
         # here, 0 is the batch dimension, 1 is the window index, 2 is the time dimension, 3 is the output channel dimension
         self.target = target_.reshape((target_shape[0]*target_shape[1]*target_shape[2]*target_shape[3])).to(self.device)
+        # print(self.target)
 
     def forward(self):
         self.output = self.net.forward(self.input)

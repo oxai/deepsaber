@@ -67,9 +67,9 @@ for i in tasks:
 
         bpm = level['_beatsPerMinute']
         sr = sampling_rate
-        beat_duration = int(60/bpm) #beat duration in seconds
+        beat_duration = 60/bpm #beat duration in seconds
         #
-        step_size = beat_duration//beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+        step_size = beat_duration/beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
         # hop = int(beat_duration * 1/beat_subdivision)
         # hop -= hop % 32
         # num_samples_per_feature = hop
@@ -85,7 +85,7 @@ for i in tasks:
                 features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
         elif feature_name == "mel":
             # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
-            features = feature_extraction_mel(y_wav,sr,state_frames,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
+            features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
         np.save(features_file,features)
 
         ## get mfcc feature

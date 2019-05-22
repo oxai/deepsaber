@@ -7,10 +7,10 @@ dataset=general_beat_saber
 model=wavenet
 layers=7
 blocks=3
-exp=chroma_features_likelihood_test
+exp=chroma_features_likelihood_syncc
 num_windows=10
 
-$py train.py --data_dir=../AugDataTest --dataset_name=$dataset --model=$model --batch_size=1 --output_length=32 --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 --layers=$layers --blocks=$blocks --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=10 \
+$py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=1 --output_length=32 --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 --layers=$layers --blocks=$blocks --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=5000 \
     --time_shifts=16 \
     --input_channels=$((24*16+2004)) \
     --num_classes=$((2004)) \
@@ -24,7 +24,6 @@ $py train.py --data_dir=../AugDataTest --dataset_name=$dataset --model=$model --
     --level_diff=Expert \
     --reduced_state \
     --concat_outputs \
-    --gpu_ids=0 
-    # --gpu_ids=0,1,2,3,4,5,6,7 \
-    # --load \
-    # --load_iter=141000 \
+    --gpu_ids=0 \
+    --load \
+    --load_iter=70000 \

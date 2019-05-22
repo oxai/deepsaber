@@ -37,6 +37,28 @@ _Version 1_
 Linear model: y = a0 + a1*x1 + a2*x2 + a3*x3 + a4*x4 + a5*x5
 '''
 
+def extract_features_from_all_levels():
+    features = []
+    targets = []
+    downloaded_songs_full, downloaded_songs = get_list_of_downloaded_songs()
+    for song_dir in downloaded_songs_full:
+        meta_data_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'meta_data.txt'))
+        if not os.path.exists(meta_data_filename):
+            pass
+        else:
+            meta_data = read_meta_data_file(meta_data_filename)
+            difficulty_rating = meta_data['scoresaberDifficulty'].replace(' ', '').split(',')
+            if difficulty_rating != ['']:
+                json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
+                for i in range(len(json_files)):
+                    bs_level = IOFunctions.parse_json(json_files[i])
+                    features.append(np.array(extract_features_from_beatsaber_level(bs_level)))
+                    targets.append(np.array([float(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']), float(meta_data['rating']), \
+                                   float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
+                                   float(meta_data['patternQuality']), float(meta_data['readability']), float(meta_data['levelQuality'])]))
+
+    return np.array(features), np.array(targets)
+
 def extract_features_from_beatsaber_level(bs_level):
     #feature_1 = distance travelled
     #feature_2 = angles travelled
@@ -53,12 +75,13 @@ def extract_features_from_beatsaber_level(bs_level):
     song_length = extract_level_song_length(bs_level)
 
     [distance_acc_blue, distance_acc_red, velocity_blue, velocity_red] = extract_level_distance_velocity(bs_level)
-    angles_travelled = extract_level_angles_travelled(bs_level)
+    [angles_travelled_blue, angles_travelled_red] = extract_level_angles_travelled(bs_level)
     product_distance_travelled = extract_level_product_distance_travelled(bs_level)
 
     return [num_blocks, num_obstacles, num_bombs, num_unique_states,\
            beats_per_minute, blocks_per_minute, blocks_per_beat, song_length, \
-           distance_travelled, angles_travelled, product_distance_travelled]
+           distance_acc_blue, distance_acc_red, velocity_blue, velocity_red, \
+           angles_travelled_blue, angles_travelled_red, product_distance_travelled]
 
 
 def extract_level_num_blocks(bs_level):
@@ -71,7 +94,7 @@ def extract_level_num_blocks(bs_level):
 
 
 def extract_level_num_obstacles(bs_level):
-    return bs_level['_obstacles']['values'].shape[0]
+    return bs_level['_obstacles'].shape[0]
 
 
 def extract_level_num_bombs(bs_level):
@@ -283,18 +306,30 @@ def convert_lin_col_to_coordinates(lineIndex, lineLayer):
     # Read:     Difficulty Rating
     #           Number of votes
 
+def linear_regression_model(features, target):
+    assert(len(features) == len(target))
+    x_mean = np.mean(features, axis=0)
+    y_mean = np.mean(target)
+    xy_cov = np.inner(np.subtract(features, x_mean).T, np.subtract(y_mean, target))
+    x_var = np.mean(np.power(np.subtract(features, x_mean), 2), axis=0)
+    beta = np.divide(np.sum(xy_cov), np.sum(x_var))
+    alpha = np.subtract(y_mean, np.multiply(beta, x_mean))
+    return [alpha, beta]
+
+def get_linear_regression_model_for_all_targets(features, targets):
+    num_samples, num_features = features.shape
+    _, num_targets = targets.shape
+    models = []
+    for i in range(num_targets):
+        models.append(linear_regression_model(features[:], targets[:, i]))
 
 
 if __name__ == '__main__':
-    downloaded_songs_full, downloaded_songs = get_list_of_downloaded_songs()
-    for song_dir in downloaded_songs_full:
-        meta_data_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'meta_data.txt'))
-        if not os.path.exists(meta_data_filename):
-            pass
-        else:
-            meta_data = read_meta_data_file(meta_data_filename)
-            json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
-            for json_file in json_files:
-                bs_level = IOFunctions.parse_json(json_file)
-                angles_travelled = extract_level_angles_travelled(bs_level)
-                features = extract_features_from_beatsaber_level(bs_level)
+    features, targets = extract_features_from_all_levels()
+    IOFunctions.saveFile([features, targets], 'dataset_features_and_target_metrics.pkl')
+    features_and_targets = IOFunctions.loadFile('dataset_features_and_target_metrics.pkl')
+    models = get_linear_regression_model_for_all_targets(features_and_targets[0], features_and_targets[1])
+    IOFunctions.saveFile(models, 'dataset_targets_linear_model.pkl')
+    features_and_targets = IOFunctions.loadFile('dataset_targets_linear_model.pkl')
+
+

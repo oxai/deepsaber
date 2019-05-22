@@ -306,4 +306,5 @@ def convert_lin_col_to_coordinates(lineIndex, lineLayer):
     #           Number of votes
 
 if __name__ == '__main__':
-    features = extract_features_from_all_levels()
+    features, targets = extract_features_from_all_levels()
+    IOFunctions.saveFile([features, targets], 'dataset_features_and_target_metrics.pkl')

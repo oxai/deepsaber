@@ -61,7 +61,7 @@ def paired_collate_fn(insts):
     return {'input':src_insts, 'target':tgt_insts}
 
 from Constants import PAD_STATE
-def collate_fn(insts,dim=-1):
+def collate_fn(insts,dim=-1): #dim is time dim
     ''' Pad the instance to the max seq length in batch '''
 
     max_len = max(inst.shape[dim] for inst in insts)
@@ -70,7 +70,6 @@ def collate_fn(insts,dim=-1):
     batch_seq = [
         torch.cat([inst.long(),torch.full(inst.shape[:dim]+((max_len - inst.shape[dim]),)+inst.shape[dim+1:],PAD_STATE).long()],dim)
         for inst in insts]
-    # print(batch_seq)
 
     batch_pos = np.array([
         [pos_i+1 for pos_i in range(inst.shape[dim])] + [PAD_STATE]*(max_len - inst.shape[dim]) for inst in insts])

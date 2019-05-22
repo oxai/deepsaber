@@ -46,7 +46,7 @@ else:
 #%%
 
 # checkpoint = "632000"
-checkpoint = "11000"
+checkpoint = "55000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -56,7 +56,8 @@ model.load_networks(checkpoint)
 # from pathlib import Path
 song_number = "43_fixed"
 print("Song number: ",song_number)
-song_name = "test_song"+song_number+".wav"
+# song_name = "test_song"+song_number+".wav"
+song_name="believer.wav"
 song_path = "../../"+song_name
 y_wav, sr = librosa.load(song_path, sr=16000)
 
@@ -98,7 +99,8 @@ bpms = {
 "43_fixed": 118.5,
 }
 
-bpm = bpms[song_number]
+# bpm = bpms[song_number]
+bpm = 125
 
 # get mfcc feature
 beat_duration = int(60 * sr / bpm)  # beat duration in samples
@@ -135,7 +137,7 @@ output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shi
 states_list = output[0,:,:].permute(1,0)
 
 #if using reduced_state representation convert from reduced_state_index to state tuple
-unique_states = pickle.load(open("../stateSpace/sorted_states2.pkl","rb"))
+unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 #old
 # states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
 #new (after transformer)

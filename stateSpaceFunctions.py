@@ -203,10 +203,10 @@ def feature_extraction_mel(y, sr, state_times,bpm,beat_discretization=1/16,mel_d
     # Problem: Sync is returning shorter sequences than the state times
     state_frames = librosa.core.time_to_frames(state_times,hop_length=hop,sr=sr) # Hop-Aware Synchronisation
     # print(state_frames)
-    beat_chroma = librosa.util.sync(cqts, state_frames, aggregate=np.median, pad=True, axis=-1)
-    beat_mel = librosa.util.sync(mels, state_frames, aggregate=np.median,pad=True,axis=-1)
-    output = np.concatenate((beat_mel,beat_chroma), axis=0)
-    return output
+    # beat_chroma = librosa.util.sync(cqts, state_frames, aggregate=np.median, pad=True, axis=-1)
+    mel = librosa.util.sync(mels, state_frames, aggregate=np.median,pad=True,axis=-1)
+    # output = np.concatenate((beat_mel,beat_chroma), axis=0)
+    return mel
 
 def chroma_feature_extraction(y,sr, state_times):
     #hop = #int((44100 * 60 * beat_discretization) / bpm) Hop length must be a multiple of 2^6

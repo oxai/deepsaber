@@ -47,7 +47,7 @@ else:
 
 #%%
 
-checkpoint = "2190"
+checkpoint = "51200"
 # checkpoint = "55000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
@@ -56,7 +56,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "believer"
+song_number = "35_fixed"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -161,10 +161,10 @@ import Constants
 # first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.START_STATE)
 first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
 first_samples[0,0,0] = Constants.START_STATE
-if opt.binarized:
-    output = model.net.module.generate_no_autoregressive(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
-else:
+if opt.concat_outputs:
     output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
+else:
+    output = model.net.module.generate_no_autoregressive(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
 states_list = output[0,:,:].permute(1,0)
 
 #if using reduced_state representation convert from reduced_state_index to state tuple
@@ -173,7 +173,7 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 # states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
 #new (after transformer)
 
-notes
+# notes
 
 #convert from states to beatsaber notes
 if opt.binarized:

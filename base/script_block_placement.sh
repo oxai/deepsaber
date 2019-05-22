@@ -15,7 +15,8 @@ $py train.py --data_dir=../AugDataTest --dataset_name=$dataset --model=$model --
     --time_shifts=16 \
     --feature_name=mel \
     --feature_size=100 \
-    --input_channels=$((100*16)) \
+    --concat_outputs \
+    --input_channels=$((100*16+1+4)) \
     --num_classes=$((1+4)) \
     --extra_output \
     --using_sync_features \

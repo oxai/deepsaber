@@ -8,9 +8,9 @@ import json
 from math import floor, ceil
 import pickle
 unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
-feature_name = "chroma"
-feature_size = 24
-number_reduced_states = 2000
+# feature_name = "chroma"
+# feature_size = 24
+# number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
 import Constants
 from stateSpaceFunctions import get_block_sequence_with_deltas
@@ -32,7 +32,7 @@ class StageTwoDataset(BaseDataset):
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
-            features_file = path.__str__()+"_"+feature_name+"_"+str(feature_size)+".npy"
+            features_file = path.__str__()+"_"+opt.feature_name+"_"+str(opt.feature_size)+".npy"
             level_file_found = False
             for diff in self.opt.level_diff.split(","):
                 if Path(path.parent.__str__()+"/"+diff+".json").is_file():
@@ -79,6 +79,8 @@ class StageTwoDataset(BaseDataset):
         parser.add_argument('--compute_feats', action='store_true', help="Whether to extract musical features from the song")
         parser.add_argument('--padded_length', type=int, default=3000000)
         parser.add_argument('--chunk_length', type=int, default=9000)
+        parser.add_argument('--feature_name', default='chroma')
+        parser.add_argument('--feature_size', type=int, default=24)
         # the input features at each time step consiste of the features at the time steps from now to time_shifts in the future
         parser.add_argument('--time_shifts', type=int, default=1, help='number of shifted sequences to include as input')
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
@@ -92,9 +94,9 @@ class StageTwoDataset(BaseDataset):
         # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
         # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
         # parser.set_defaults(input_channels=(feature_size*16+2001))
-        parser.set_defaults(d_src=24) # 3 more for PAD, START, END
+        # parser.set_defaults(d_src=24) # 3 more for PAD, START, END
         # the number of output classes is one per state in the set of reduced states
-        parser.set_defaults(tgt_vocab_size=number_reduced_states+1+2)
+        # parser.set_defaults(tgt_vocab_size=number_reduced_states+1+2)
         # channels is just one, just prediting one output, one of the 2001 classes
         # parser.set_defaults(output_channels=1)
         ### IF FULL STATE
@@ -111,7 +113,7 @@ class StageTwoDataset(BaseDataset):
     def __getitem__(self, item):
         #NOTE: there is a lot of code repeat between this and the non-reduced version, perhaps we could fix that
         song_file_path = self.audio_files[item].__str__()
-        features = song_file_path+"_"+feature_name+"_"+str(feature_size)+".npy"
+        features = song_file_path+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
 
         # get features
         try:

@@ -13,7 +13,7 @@ To generate this folder, run identifyStateSpace.py
 NUM_DISTINCT_STATES = 4672 # This is the number of distinct states in our dataset
 EMPTY_STATE_INDEX = 0 # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
 SAMPLING_RATE = 16000
-import Constants
+import base.Constants as Constants
 NUM_SPECIAL_STATES=3 # also padding
 
 def compute_state_sequence_representation_from_json(json_file, states=None, top_k=2000):
@@ -232,3 +232,35 @@ def mfcc_feature_extraction(y,sr,state_times):
     state_frames = librosa.core.time_to_frames(state_times,sr=sr)
     beat_mfcc = librosa.util.sync(mfcc, state_frames, aggregate=np.median, pad=True, axis=-1)
     return beat_mfcc
+
+def stage_two_states_to_json_notes(state_sequence, state_times, bpm, hop, sr, state_rank=None):
+    if state_rank is None:  # Only load if state is not passed
+        # GUILLERMO: Provide the states rank yourself, otherwise let me know and we can change the
+        # load script (i.e., feed ../stateSpace)
+        state_rank = IOFunctions.loadFile("sorted_states.pkl", "stateSpace")   # Load the state representation
+        # Add three all zero states for the sake of simplicity
+        state_rank[0:0] = [tuple(12 * [0])] * 3  # Eliminate the need for conditionals
+    states_grid = [state_rank[state] for state in state_sequence]
+    if len(state_times) > len(states_grid):
+        time_new = state_times[0:len(states_grid)]
+    else:
+        time_new = state_times
+    notes = [grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr)
+            for grid_state, time in zip(states_grid, time_new) for grid_index, grid_value in enumerate(grid_state)
+            if grid_value > 0]
+
+    return notes
+
+def grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr):
+    if grid_value > 0:  # Non-EMPTY grid cell
+        json_object = {"_time": (time * bpm * hop) / (sr * 60),
+                        "_lineIndex": int(grid_index % 4),
+                       "_lineLayer": int(grid_index // 4)}
+        if grid_value == 19:  # Bomb
+            json_object["_type"] = 3
+        else:  # Standard Block
+            json_object["_type"] = int((grid_value - 1) // 9)
+            json_object["_cutDirection"] = int((grid_value - 1) % 9)
+        return json_object
+    else:
+        return None

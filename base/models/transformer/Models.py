@@ -58,14 +58,18 @@ class Encoder(nn.Module):
             self,
             d_src, len_max_seq, d_word_vec,
             n_layers, n_head, d_k, d_v,
-            d_model, d_inner, dropout=0.1):
+            d_model, d_inner, vector_input=False, dropout=0.1):
 
         super().__init__()
 
         n_position = len_max_seq + 1
 
-        self.src_word_emb = nn.Linear(
-            d_src, d_word_vec)
+        if vector_input:
+            self.src_word_emb = nn.Linear(
+                d_src, d_word_vec)
+        else:
+            self.src_word_emb = nn.Embedding(
+                n_src_vocab, d_word_vec, padding_idx=Constants.PAD)
 
         self.position_enc = nn.Embedding.from_pretrained(
             get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),
@@ -104,15 +108,19 @@ class Decoder(nn.Module):
 
     def __init__(
             self,
-            n_tgt_vocab, len_max_seq, d_word_vec,
+            d_tgt, n_tgt_vocab, len_max_seq, d_word_vec,
             n_layers, n_head, d_k, d_v,
-            d_model, d_inner, dropout=0.1):
+            d_model, d_inner, vector_input=False, dropout=0.1):
 
         super().__init__()
         n_position = len_max_seq + 1
 
-        self.tgt_word_emb = nn.Embedding(
-            n_tgt_vocab, d_word_vec, padding_idx=Constants.PAD)
+        if vector_input:
+            self.tgt_word_emb = nn.Linear(
+                d_tgt, d_word_vec)
+        else:
+            self.tgt_word_emb = nn.Embedding(
+                n_tgt_vocab, d_word_vec, padding_idx=Constants.PAD)
 
         self.position_enc = nn.Embedding.from_pretrained(
             get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),
@@ -122,7 +130,7 @@ class Decoder(nn.Module):
             DecoderLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout)
             for _ in range(n_layers)])
 
-    def forward(self, tgt_seq, tgt_pos, src_mask, tgt_mask, enc_output, return_attns=False):
+    def forward(self, tgt_seq, tgt_input_seq, tgt_pos, src_mask, tgt_mask, enc_output, return_attns=False):
 
         dec_slf_attn_list, dec_enc_attn_list = [], []
 
@@ -136,7 +144,7 @@ class Decoder(nn.Module):
         dec_enc_attn_mask = get_attn_key_pad_mask(seq_k=src_mask, seq_q=tgt_seq)
 
         # -- Forward
-        dec_output = self.tgt_word_emb(tgt_seq) + self.position_enc(tgt_pos)
+        dec_output = self.tgt_word_emb(tgt_input_seq) + self.position_enc(tgt_pos)
 
         for dec_layer in self.layer_stack:
             dec_output, dec_slf_attn, dec_enc_attn = dec_layer(
@@ -158,11 +166,13 @@ class Transformer(nn.Module):
 
     def __init__(
             self,
-            d_src, n_tgt_vocab, len_max_seq,
+            d_tgt, d_src, n_src_vocab, n_tgt_vocab, len_max_seq,
             d_word_vec=512, d_model=512, d_inner=2048,
             n_layers=6, n_head=8, d_k=64, d_v=64, dropout=0.1,
             tgt_emb_prj_weight_sharing=True,
-            emb_src_tgt_weight_sharing=True):
+            emb_src_tgt_weight_sharing=True,
+            tgt_vector_input=False,
+            src_vector_input=True):
 
         super().__init__()
 
@@ -170,14 +180,15 @@ class Transformer(nn.Module):
             d_src=d_src, len_max_seq=len_max_seq,
             d_word_vec=d_word_vec, d_model=d_model, d_inner=d_inner,
             n_layers=n_layers, n_head=n_head, d_k=d_k, d_v=d_v,
-            dropout=dropout)
+            dropout=dropout,vector_input=src_vector_input)
 
         self.decoder = Decoder(
-            n_tgt_vocab=n_tgt_vocab, len_max_seq=len_max_seq,
+            d_tgt=d_tgt, n_tgt_vocab=n_tgt_vocab, len_max_seq=len_max_seq,
             d_word_vec=d_word_vec, d_model=d_model, d_inner=d_inner,
             n_layers=n_layers, n_head=n_head, d_k=d_k, d_v=d_v,
-            dropout=dropout)
+            dropout=dropout,vector_input=tgt_vector_input)
 
+        self.tgt_vector_input = tgt_vector_input
         self.tgt_word_prj = nn.Linear(d_model, n_tgt_vocab, bias=True)
         nn.init.xavier_normal_(self.tgt_word_prj.weight)
 
@@ -198,12 +209,17 @@ class Transformer(nn.Module):
         #     "To share word embedding table, the vocabulary size of src/tgt shall be the same."
         #     self.encoder.src_word_emb.weight = self.decoder.tgt_word_emb.weight
 
-    def forward(self, src_seq, src_mask, src_pos, tgt_seq, tgt_mask, tgt_pos):
+    def forward(self, src_seq, src_mask, src_pos, tgt_input_seq, tgt_seq, tgt_mask, tgt_pos):
 
-        tgt_seq, tgt_mask, tgt_pos = tgt_seq[:, :-1], tgt_mask[:, :-1], tgt_pos[:, :-1]
+        # print(tgt_seq, tgt_input_seq, tgt_mask, tgt_pos)
+
+        tgt_seq, tgt_input_seq, tgt_mask, tgt_pos = tgt_seq[:, :-1], tgt_input_seq[:, :-1], tgt_mask[:, :-1], tgt_pos[:, :-1]
 
         enc_output, *_ = self.encoder(src_seq, src_mask, src_pos)
-        dec_output, *_ = self.decoder(tgt_seq, tgt_pos, src_mask, tgt_mask, enc_output)
+        if self.tgt_vector_input:
+            dec_output, *_ = self.decoder(tgt_seq, tgt_input_seq, tgt_pos, src_mask, tgt_mask, enc_output)
+        else:
+            dec_output, *_ = self.decoder(tgt_seq, tgt_seq, tgt_pos, src_mask, tgt_mask, enc_output)
         seq_logit = self.tgt_word_prj(dec_output) * self.x_logit_scale
 
         return seq_logit.view(-1, seq_logit.size(2))

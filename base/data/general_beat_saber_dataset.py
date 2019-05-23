@@ -75,10 +75,10 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--sampling_rate', default=16000, type=float)
         parser.add_argument('--level_diff', default='Expert', help='Difficulty level for beatsaber level')
         parser.add_argument('--feature_name', default='chroma')
+        parser.add_argument('--feature_size', type=int, default=24)
         parser.add_argument('--hop_length', default=256, type=int)  # Set the hop length; at 22050 Hz, 512 samples ~= 23ms
         parser.add_argument('--compute_feats', action='store_true', help="Whether to extract musical features from the song")
         parser.add_argument('--padded_length', type=int, default=3000000)
-        parser.add_argument('--feature_size', type=int, default=24)
         parser.add_argument('--chunk_length', type=int, default=9000)
         # the input features at each time step consiste of the features at the time steps from now to time_shifts in the future
         parser.add_argument('--time_shifts', type=int, default=1, help='number of shifted sequences to include as input')
@@ -143,8 +143,8 @@ class GeneralBeatSaberDataset(BaseDataset):
         # we pad the song features with zeros to imitate during training what happens during generation
         # this is helpful for models that have a big receptive field like wavent, but we also use it with a receptive_field=1 for LSTM and Transformer
         y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
-        # we also pad one more state at the end, to accommodate an "end" symbol for the blocks
-        y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
+        # we also pad at the end to allow generation to be of the same length of song, by padding an amount corresponding to time_shifts
+        y = np.concatenate((y,np.zeros((y.shape[0],self.opt.time_shifts))),1)
 
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs

@@ -12,14 +12,18 @@ $py train.py --data_dir=../AugDataTest --dataset_name=$dataset --model=$model --
     --pad_batches \
     --feature_name=mel \
     --feature_size=100 \
-    --d_src=102 \
     --tgt_vocab_size=2003 \
     --label_smoothing \
     --max_token_seq_len=50 \
-    --reduced_state \
     --gpu_ids=0 \
     --level_diff=Expert \
     --workers=0 \
+    --reduced_state \
     --using_sync_features \
+    --src_vector_input \
+    --d_src=$((100+2)) \
+    # --tgt_vector_input \
+    # --d_tgt=$((2003+2)) \
+    # --d_src=$((100+0)) \
     #--continue_train \
     #--load_iter=7000 \

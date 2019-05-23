@@ -61,8 +61,8 @@ class TransformerModel(BaseModel):
                 n_tgt_vocab=opt.tgt_vocab_size,
                 n_src_vocab=0,
                 len_max_seq=opt.max_token_seq_len,
-                src_vector_input=True,
-                tgt_vector_input=False,
+                src_vector_input=opt.src_vector_input,
+                tgt_vector_input=opt.tgt_vector_input,
                 tgt_emb_prj_weight_sharing=opt.proj_share_weight,
                 emb_src_tgt_weight_sharing=opt.embs_share_weight,
                 d_k=opt.d_k,
@@ -93,6 +93,8 @@ class TransformerModel(BaseModel):
         parser.add_argument('--tgt_vocab_size', type=int, default=2004)
         parser.add_argument('--proj_share_weight', action='store_true')
         parser.add_argument('--embs_share_weight', action='store_true')
+        parser.add_argument('--src_vector_input', action='store_true')
+        parser.add_argument('--tgt_vector_input', action='store_true')
         parser.add_argument('--label_smoothing', action='store_true')
         parser.add_argument('--d_k', type=int, default=64)
         parser.add_argument('--d_v', type=int, default=64)
@@ -108,24 +110,28 @@ class TransformerModel(BaseModel):
         # move multiple samples of the same song to the second dimension and the reshape to batch dimension
         input_,input_pos_ = data['input']
         target_,target_pos_ = data['target']
-        target_block_sequence_ = target_
         ### THING BELOG IS IF WE FEED VECTORS AS INPUT TO THE DECODER!
-        # input_block_deltas_ = target_[:,:,1:,:]
-        # target_block_sequence_ = target_[:,:,:1,:]
+        if self.opt.tgt_vector_input:
+            input_block_deltas_ = target_[:,:,1:,:]
+            target_block_sequence_ = target_[:,:,:1,:]
+            input_block_deltas_shape = input_block_deltas_.shape
+        else:
+            target_block_sequence_ = target_
 
+        target_block_sequence_shape = target_block_sequence_.shape
         input_shape = input_.shape
         input_pos_shape = input_pos_.shape
-        # input_block_deltas_shape = input_block_deltas_.shape
-        target_block_sequence_shape = target_block_sequence_.shape
         # 0 batch dimension, 1 window dimension, 2 input channel dimension, 3 time dimension
         self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3])).permute(0,2,1).to(self.device)
-        self.input_pos = input_pos_.reshape((input_pos_shape[0]*input_pos_shape[1], input_pos_shape[2])).to(self.device)
+        # self.input_pos = input_pos_.reshape((input_pos_shape[0], input_pos_shape[1])).to(self.device)
+        self.input_pos = input_pos_
         #we permute the dimensions because transformer input expects (batch_size, time, input_dim)
         # the _pos variables correspond to the positional encoding (see Transformer paper). These are generated correctly from the collate_fn defined in data/__init__.py
 
         # here, 0 is the batch dimension, 1 is the window index, 2 is the output channel dimension, 3 is the time dimension
         ### THIS IS WE FEED VECTORS AS INPUT TO THE DECODER!
-        # self.input_block_deltas = input_block_deltas_.reshape((input_block_deltas_shape[0]*input_block_deltas_shape[1],input_block_deltas_shape[2],input_block_deltas_shape[3])).permute(0,2,1).to(self.device)
+        if self.opt.tgt_vector_input:
+            self.input_block_deltas = input_block_deltas_.reshape((input_block_deltas_shape[0]*input_block_deltas_shape[1],input_block_deltas_shape[2],input_block_deltas_shape[3])).permute(0,2,1).to(self.device)
         #we permute the dimensions because transformer input expects (batch_size, time, input_dim)
 
         self.target_block_sequence = target_block_sequence_.reshape((target_block_sequence_shape[0]*target_block_sequence_shape[1],target_block_sequence_shape[2]*target_block_sequence_shape[3])).to(self.device)
@@ -137,8 +143,10 @@ class TransformerModel(BaseModel):
     def forward(self):
         # we are using self.target as mas both for input and target, because we are assuming both sequences are of the same length, for now!
         # if we try for instance, the event based representation of the music transformer, then e would need to change this
-        # self.output = self.net.forward(self.input.float(),self.target_block_sequence,self.input_pos,self.input_block_deltas.float(), self.target_block_sequence,self.target_block_sequence,self.input_pos)
-        self.output = self.net.forward(self.input.float(),self.target_block_sequence,self.input_pos,self.target_block_sequence, self.target_block_sequence,self.target_block_sequence,self.input_pos)
+        if self.opt.tgt_vector_input:
+            self.output = self.net.forward(self.input.float(),self.target_block_sequence,self.input_pos,self.input_block_deltas.float(), self.target_block_sequence,self.target_block_sequence,self.input_pos)
+        else:
+            self.output = self.net.forward(self.input.float(),self.target_block_sequence,self.input_pos,self.target_block_sequence, self.target_block_sequence,self.target_block_sequence,self.input_pos)
 
         # using the smoothened loss function from the pytorch Transformer implementation, which also calculates masked accuracy (ignoring the PAD symbol)
         self.loss_ce, n_correct = cal_performance(self.output, self.target_block_sequence[:,1:], smoothing=self.opt.label_smoothing)

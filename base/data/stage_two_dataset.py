@@ -165,34 +165,26 @@ class StageTwoDataset(BaseDataset):
         one_hot_states = one_hot_states[:,:truncated_sequence_length]
         delta_forward = delta_forward[:,:truncated_sequence_length]
         delta_backward = delta_backward[:,:truncated_sequence_length]
-        # pos_enc = pos_enc[:truncated_sequence_length]
 
-        # block_sequence = torch.tensor(states).unsqueeze(0).unsqueeze(2)
         target_block_sequence = torch.tensor(states).unsqueeze(0).unsqueeze(1).long()
         input_block_sequence = torch.tensor(one_hot_states).unsqueeze(0).long()
         input_forward_deltas = torch.tensor(delta_forward).unsqueeze(0).long()
         input_backward_deltas = torch.tensor(delta_backward).unsqueeze(0).long()
-        # input_block_deltas = torch.cat([input_block_sequence,input_forward_deltas,input_backward_deltas],1)
 
-        # print(target_block_sequence.shape,input_block_sequence.shape,input_forward_deltas.shape,input_backward_deltas.shape,input_block_deltas.shape)
-        # block_sequence = np.cat([states,delta_forward,delta_backward],axis=0)
-        # print(block_sequence.shape)
-
-        ## CONSTRUCT TENSOR OF INPUT SOUND FEATURES (MFCC) ##
-        # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
-        # sequence_length = min(len(indices),self.opt.max_token_seq_len)
-        # print(y,y.shape,sequence_length)
+        # get features at the places where a note appears, to construct feature sequence to help transformer
         y = y[:,indices]
-        # print(y.shape)
         input_windows = [y]
 
         song_sequence = torch.tensor(input_windows)
         song_sequence = (song_sequence - song_sequence.mean())/torch.abs(song_sequence).max().float()
-        song_sequence = torch.cat([song_sequence,input_forward_deltas.double(),input_backward_deltas.double()],1)
 
         ## vv if we fed deltas as decoder transformer input :P
-        # return {'input': song_sequence, 'target': torch.cat([target_block_sequence,input_block_deltas],1)}
-        return {'input': song_sequence, 'target': target_block_sequence}
+        if self.opt.tgt_vector_input:
+            input_block_deltas = torch.cat([input_block_sequence,input_forward_deltas,input_backward_deltas],1)
+            return {'input': song_sequence, 'target': torch.cat([target_block_sequence,input_block_deltas],1)}
+        else:
+            song_sequence = torch.cat([song_sequence,input_forward_deltas.double(),input_backward_deltas.double()],1)
+            return {'input': song_sequence, 'target': target_block_sequence}
 
     def __len__(self):
         return len(self.audio_files)

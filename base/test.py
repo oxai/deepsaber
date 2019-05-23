@@ -25,8 +25,8 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction
 # experiment_name = "zeropad_entropy_regularization/"
 # experiment_name = "chroma_features_likelihood_exp1/"
 # experiment_name = "chroma_features_likelihood_syncc/"
-# experiment_name = "block_placement/"
-experiment_name = "transformer_testing/"
+experiment_name = "block_placement/"
+# experiment_name = "transformer_testing/"
 # experiment_name = "lstm_testing/"
 # experiment_name = "chroma_features_likelihood_exp2/"
 # experiment_name = "reduced_states_gan_exp_smoothedinput/"
@@ -55,7 +55,7 @@ else:
 #%%
 
 # checkpoint = "58000"
-checkpoint = "7000"
+checkpoint = "64000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -63,7 +63,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "24_fixed"
+song_number = "35_fixed"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name

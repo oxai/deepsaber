@@ -108,7 +108,7 @@ class StageTwoDataset(BaseDataset):
         return parser
 
     def name(self):
-        return "GeneralBeatSaberDataset"
+        return "stage_two_dataset"
 
     def __getitem__(self, item):
         #NOTE: there is a lot of code repeat between this and the non-reduced version, perhaps we could fix that
@@ -130,6 +130,8 @@ class StageTwoDataset(BaseDataset):
         #useful quantities, to sync notes to song features
         # sr = self.opt.sampling_rate
         # beat_duration = int(60*sr/bpm) #beat duration in samples
+        beat_duration = 60/bpm #beat duration in seconds
+        sample_duration = beat_duration * 1/self.opt.beat_subdivision #sample_duration in seconds
         # duration of one time step in samples:
         # hop = int(beat_duration * 1/self.opt.beat_subdivision)
         # if not self.opt.using_sync_features:
@@ -152,33 +154,45 @@ class StageTwoDataset(BaseDataset):
         # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
         # indices=np.array([0])
         # input_length = sequence_length
-        sequence_length = y.shape[1]
+        sequence_length = y.shape[1]*sample_duration
 
         ## BLOCKS TENSORS ##
-        states, pos_enc, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,2000,self.opt.beat_subdivision,unique_states)
+        one_hot_states, states, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,top_k=2000,beat_discretization=1/self.opt.beat_subdivision,states=unique_states,one_hot=True)
+        # print(indices.shape,states.shape,one_hot_states.shape,delta_forward.shape,delta_backward.shape)
         truncated_sequence_length = min(len(states),self.opt.max_token_seq_len)
         states = states[:truncated_sequence_length]
         indices = indices[:truncated_sequence_length]
-        delta_forward = delta_forward[:truncated_sequence_length]
-        delta_backward = delta_backward[:truncated_sequence_length]
-        pos_enc = pos_enc[:truncated_sequence_length]
+        one_hot_states = one_hot_states[:,:truncated_sequence_length]
+        delta_forward = delta_forward[:,:truncated_sequence_length]
+        delta_backward = delta_backward[:,:truncated_sequence_length]
+        # pos_enc = pos_enc[:truncated_sequence_length]
 
+        # block_sequence = torch.tensor(states).unsqueeze(0).unsqueeze(2)
+        target_block_sequence = torch.tensor(states).unsqueeze(0).unsqueeze(1).long()
+        input_block_sequence = torch.tensor(one_hot_states).unsqueeze(0).long()
+        input_forward_deltas = torch.tensor(delta_forward).unsqueeze(0).long()
+        input_backward_deltas = torch.tensor(delta_backward).unsqueeze(0).long()
+        # input_block_deltas = torch.cat([input_block_sequence,input_forward_deltas,input_backward_deltas],1)
+
+        # print(target_block_sequence.shape,input_block_sequence.shape,input_forward_deltas.shape,input_backward_deltas.shape,input_block_deltas.shape)
         # block_sequence = np.cat([states,delta_forward,delta_backward],axis=0)
-        # block_sequence = torch.tensor(block_sequence).unsqueeze(0)
-        block_sequence = torch.tensor(states).unsqueeze(0).unsqueeze(2)
         # print(block_sequence.shape)
 
         ## CONSTRUCT TENSOR OF INPUT SOUND FEATURES (MFCC) ##
         # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
         # sequence_length = min(len(indices),self.opt.max_token_seq_len)
+        # print(y,y.shape,sequence_length)
         y = y[:,indices]
         # print(y.shape)
         input_windows = [y]
 
         song_sequence = torch.tensor(input_windows)
         song_sequence = (song_sequence - song_sequence.mean())/torch.abs(song_sequence).max().float()
+        song_sequence = torch.cat([song_sequence,input_forward_deltas.double(),input_backward_deltas.double()],1)
 
-        return {'input': song_sequence, 'target': block_sequence}
+        ## vv if we fed deltas as decoder transformer input :P
+        # return {'input': song_sequence, 'target': torch.cat([target_block_sequence,input_block_deltas],1)}
+        return {'input': song_sequence, 'target': target_block_sequence}
 
     def __len__(self):
         return len(self.audio_files)

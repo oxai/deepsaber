@@ -283,6 +283,9 @@ class WaveNetModel(nn.Module):
 
         # generated = (generated / self.input_channels) * 2. - 1
         # mu_gen = mu_law_expansion(generated, self.input_channels)
+        
+        self.train()
+        return generated[:,:,self.receptive_field:]
 
     #TODO: this should be parallelized.... but I'm not doing it yet :PP
     def generate_no_autoregressive(self,

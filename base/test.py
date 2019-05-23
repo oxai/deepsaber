@@ -1,5 +1,6 @@
 import sys
 sys.path.append("/home/guillefix/code/beatsaber/base")
+sys.path.append("/home/guillefix/code/beatsaber/base/models")
 sys.path.append("/home/guillefix/code/beatsaber")
 import time
 from options.train_options import TrainOptions
@@ -11,6 +12,7 @@ import torch
 import pickle
 import os
 import numpy as np
+from transformer.Translator import Translator
 
 from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction_mel,feature_extraction_hybrid
 
@@ -23,13 +25,18 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction
 # experiment_name = "zeropad_entropy_regularization/"
 # experiment_name = "chroma_features_likelihood_exp1/"
 # experiment_name = "chroma_features_likelihood_syncc/"
-experiment_name = "test/"
+# experiment_name = "block_placement/"
+experiment_name = "transformer_testing/"
 # experiment_name = "lstm_testing/"
 # experiment_name = "chroma_features_likelihood_exp2/"
 # experiment_name = "reduced_states_gan_exp_smoothedinput/"
 
 opt = json.loads(open(experiment_name+"opt.json","r").read())
 opt["gpu_ids"] = [0]
+opt["cuda"] = True
+opt["batch_size"] = 1
+opt["beam_size"] = 5
+opt["n_best"] = 1
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)
@@ -47,8 +54,8 @@ else:
 
 #%%
 
-checkpoint = "51200"
-# checkpoint = "55000"
+# checkpoint = "58000"
+checkpoint = "7000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
@@ -56,7 +63,7 @@ model.load_networks(checkpoint)
 #%%
 
 # from pathlib import Path
-song_number = "35_fixed"
+song_number = "24_fixed"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -149,6 +156,7 @@ elif opt.feature_name == "mel":
 song = torch.tensor(features).unsqueeze(0)
 # song.size(-1)
 
+
 #%%
 
 temperature=1.00
@@ -158,9 +166,9 @@ temperature=1.00
 #generate level
 #output = model.net.module.generate(song.size(-1)-receptive_field,song,time_shifts=opt.time_shifts,temperature=1.0)
 import Constants
-# first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.START_STATE)
-first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
-first_samples[0,0,0] = Constants.START_STATE
+first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.START_STATE)
+# first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
+# first_samples[0,0,0] = Constants.START_STATE
 if opt.concat_outputs:
     output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
 else:
@@ -178,6 +186,8 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 #convert from states to beatsaber notes
 if opt.binarized:
     notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0}] for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    # times_beat = [float((i+0.0)*bpm*hop/(sr*60)) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    times_real = [float((i+0.0)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
 else:
     states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
     notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
@@ -254,6 +264,70 @@ run_bash_command("google-chrome "+demo_link)
 # zip -r test_song11 test_song11.wav
 # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
 # sox -t wav -b 16 ~/code/test_song11.wav -t ogg song.ogg
+
+
+#%%
+
+### STAGE TWO! ###
+
+import imp; import transformer.Translator; imp.reload(transformer.Translator)
+import transformer.Beam; imp.reload(transformer.Beam)
+from transformer.Translator import Translator
+
+translator = Translator(opt,model)
+
+y = features
+y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
+y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
+beat_duration = 60/bpm #beat duration in seconds
+sample_duration = beat_duration * 1/opt.beat_subdivision #sample_duration in seconds
+sequence_length = y.shape[1]*sample_duration
+
+json_file = "/home/guillefix/code/beatsaber/base/generated/test_song24_fixed_wavenet_general_beat_saber_block_placement_1.0_iter_58000.json"
+# json_file = level_folder +"/Expert.json"
+## BLOCKS TENSORS ##
+from stateSpaceFunctions import get_block_sequence_with_deltas
+unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
+one_hot_states, states, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True)
+truncated_sequence_length = min(len(states),opt.max_token_seq_len)
+# truncated_sequence_length = min(len(states),512)
+indices = indices[:truncated_sequence_length]
+delta_forward = delta_forward[:,:truncated_sequence_length]
+delta_backward = delta_backward[:,:truncated_sequence_length]
+# pos_enc = pos_enc[:truncated_sequence_length]
+
+input_block_sequence = torch.tensor(one_hot_states).unsqueeze(0).long()
+input_forward_deltas = torch.tensor(delta_forward).unsqueeze(0).long()
+input_backward_deltas = torch.tensor(delta_backward).unsqueeze(0).long()
+
+y = y[:,indices]
+input_windows = [y]
+
+song_sequence = torch.tensor(input_windows)
+song_sequence = (song_sequence - song_sequence.mean())/torch.abs(song_sequence).max().float()
+song_sequence = torch.cat([song_sequence,input_forward_deltas.double(),input_backward_deltas.double()],1)
+
+src_pos = torch.tensor(np.arange(len(indices))).unsqueeze(0)
+src_mask = torch.tensor(4*np.ones(len(indices))).unsqueeze(0)
+
+song_sequence.shape
+src_pos.shape
+src_mask.shape
+
+#%%
+
+# model.net.module.encoder(song_sequence.permute(0,2,1).float().cuda(),src_mask.cuda(),src_pos.cuda())
+
+all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask)
+
+# need to pass to beam .advance, the length of sequence :P ... I think it makes sense
+all_hyp[0][0]
+len(all_hyp[0][0])
+all_scores
+
+# opt.max_token_seq_len
+
+#%%
 
 # features.shape
 #

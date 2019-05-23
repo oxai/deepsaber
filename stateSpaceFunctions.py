@@ -13,7 +13,8 @@ To generate this folder, run identifyStateSpace.py
 NUM_DISTINCT_STATES = 4672 # This is the number of distinct states in our dataset
 EMPTY_STATE_INDEX = 0 # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
 SAMPLING_RATE = 16000
-# NUM_SPECIAL_STATES=2 # also padding
+import Constants
+NUM_SPECIAL_STATES=3 # also padding
 
 def compute_state_sequence_representation_from_json(json_file, states=None, top_k=2000):
     '''
@@ -26,7 +27,7 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
         states = IOFunctions.loadFile("sorted_states.pkl", "stateSpace") # Load the state representation
     if EMPTY_STATE_INDEX == 0:  # RANK 0 is reserved for the empty state
         # states_rank = {state: i+1 for i, state in enumerate(states)}
-        states_rank = {state: i+1 for i, state in enumerate(states)}
+        states_rank = {state: i+NUM_SPECIAL_STATES for i, state in enumerate(states)}
     else: # The empty state has rank NUM_DISTINCT_STATES
         states_rank = {state: i for i, state in enumerate(states)}
     explicit_states = compute_explicit_states_from_json(json_file)
@@ -38,21 +39,26 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
 
 def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16,states=None,one_hot=False):
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
+    state_sequence[0] = Constants.START_STATE
+    state_sequence[song_length*bpm/60] = Constants.END_STATE
     times_beats = np.array([time for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
-    feature_indices = np.array([int((time/beat_discretization)+0.5) for time in times_beats])  # + 0.5 is for rounding
+    # print(json_file)
+    # print(times_beats)
+    max_index = int((song_length*60/bpm)/beat_discretization)
+    feature_indices = np.array([min(max_index,int((time/beat_discretization)+0.5)) for time in times_beats])  # + 0.5 is for rounding
     times_real = times_beats * (60/bpm)
     states = np.array([state for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
     pos_enc = np.arange(len(states))
     if one_hot:
-        one_hot_states = np.zeros((top_k + 1, states.shape[0]))
-        one_hot_states[states, pos_enc] = 1
+        one_hot_states = np.zeros((top_k + NUM_SPECIAL_STATES, states.shape[0]))
+        one_hot_states[states.astype(int), pos_enc.astype(int)] = 1
     time_diffs = np.diff(times_real)
     delta_backward = np.expand_dims(np.insert(time_diffs, 0, times_real[0]), axis=0)
     delta_forward = np.expand_dims(np.append(time_diffs, song_length - times_real[-1]), axis=0)
     if one_hot:
-        return one_hot_states, pos_enc, delta_forward, delta_backward, feature_indices
+        return one_hot_states, states, delta_forward, delta_backward, feature_indices
     else:
-        return states, pos_enc, delta_forward, delta_backward, feature_indices
+        return states, delta_forward, delta_backward, feature_indices
 
 
 

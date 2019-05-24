@@ -39,15 +39,16 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
 
 def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16,states=None,one_hot=False,return_state_times=False):
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
-    state_sequence[0] = Constants.START_STATE
-    state_sequence[song_length*bpm/60] = Constants.END_STATE
-    times_beats = np.array([time for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
+    # state_sequence[-1] = Constants.START_STATE
+    # state_sequence[song_length*bpm/60+1] = Constants.END_STATE
+    times_beats = np.array([0] + [time for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length] + [song_length*bpm/60])
     # print(json_file)
     # print(times_beats)
     max_index = int((song_length*60/bpm)/beat_discretization)
     feature_indices = np.array([min(max_index,int((time/beat_discretization)+0.5)) for time in times_beats])  # + 0.5 is for rounding
     times_real = times_beats * (60/bpm)
-    states = np.array([state for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
+    states = np.array([Constants.START_STATE]+[state for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length]+[Constants.END_STATE])
+    # print(states)
     pos_enc = np.arange(len(states))
     if one_hot:
         one_hot_states = np.zeros((top_k + NUM_SPECIAL_STATES, states.shape[0]))

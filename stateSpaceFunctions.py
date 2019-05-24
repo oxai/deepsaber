@@ -37,7 +37,7 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
     return state_sequence
 
 
-def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16,states=None,one_hot=False):
+def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16,states=None,one_hot=False,return_state_times=False):
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
     state_sequence[0] = Constants.START_STATE
     state_sequence[song_length*bpm/60] = Constants.END_STATE
@@ -56,7 +56,10 @@ def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat
     delta_backward = np.expand_dims(np.insert(time_diffs, 0, times_real[0]), axis=0)
     delta_forward = np.expand_dims(np.append(time_diffs, song_length - times_real[-1]), axis=0)
     if one_hot:
-        return one_hot_states, states, delta_forward, delta_backward, feature_indices
+        if return_state_times:
+            return one_hot_states, states, times_beats, delta_forward, delta_backward, feature_indices
+        else:
+            return one_hot_states, states, delta_forward, delta_backward, feature_indices
     else:
         return states, delta_forward, delta_backward, feature_indices
 
@@ -239,7 +242,7 @@ def stage_two_states_to_json_notes(state_sequence, state_times, bpm, hop, sr, st
         # load script (i.e., feed ../stateSpace)
         state_rank = IOFunctions.loadFile("sorted_states.pkl", "stateSpace")   # Load the state representation
         # Add three all zero states for the sake of simplicity
-        state_rank[0:0] = [tuple(12 * [0])] * 3  # Eliminate the need for conditionals
+    state_rank[0:0] = [tuple(12 * [0])] * 3  # Eliminate the need for conditionals
     states_grid = [state_rank[state] for state in state_sequence]
     if len(state_times) > len(states_grid):
         time_new = state_times[0:len(states_grid)]
@@ -253,7 +256,9 @@ def stage_two_states_to_json_notes(state_sequence, state_times, bpm, hop, sr, st
 
 def grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr):
     if grid_value > 0:  # Non-EMPTY grid cell
-        json_object = {"_time": (time * bpm * hop) / (sr * 60),
+        # json_object = {"_time": (time * bpm * hop) / (sr * 60),
+        # this is receiving bpm time actually :P
+        json_object = {"_time": time,
                         "_lineIndex": int(grid_index % 4),
                        "_lineLayer": int(grid_index // 4)}
         if grid_value == 19:  # Bomb

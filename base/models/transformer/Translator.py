@@ -44,7 +44,7 @@ class Translator(object):
         self.model = model.net.module
         self.model.eval()
 
-    def translate_batch(self, src_seq, src_pos, src_mask):
+    def translate_batch(self, src_seq, src_pos, src_mask, sequence_length):
         ''' Translation work in one batch '''
 
         def get_inst_idx_to_tensor_position_map(inst_idx_list):
@@ -109,7 +109,7 @@ class Translator(object):
             def collect_active_inst_idx_list(inst_beams, word_prob, inst_idx_to_position_map):
                 active_inst_idx_list = []
                 for inst_idx, inst_position in inst_idx_to_position_map.items():
-                    is_inst_complete = inst_beams[inst_idx].advance(word_prob[inst_position])
+                    is_inst_complete = inst_beams[inst_idx].advance(word_prob[inst_position],sequence_length)
                     if not is_inst_complete:
                         active_inst_idx_list += [inst_idx]
 

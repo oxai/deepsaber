@@ -9,7 +9,7 @@ class WaveNetModel(BaseModel):
     def __init__(self, opt):
         super().__init__(opt)
         self.opt = opt
-        self.loss_names = ['ce']
+        self.loss_names = ['ce', 'humaneness_reg', 'total']
         self.metric_names = ['accuracy']
         self.module_names = ['']  # changed from 'model_names'
         self.schedulers = []
@@ -32,6 +32,7 @@ class WaveNetModel(BaseModel):
              'lr': opt.learning_rate, 'weight_decay': opt.weight_decay}  # filter parameters have weight decay
         ])]
         self.loss_ce = None
+        self.humaneness_reg = None
 
     def name(self):
         return "WaveNet"
@@ -79,9 +80,18 @@ class WaveNetModel(BaseModel):
         self.loss_ce += self.opt.entropy_loss_coeff * S
         self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
 
+        #temperature, step_size = opt.temperature, opt.step_size
+        temperature, step_size = 1.00, 0.01
+        humaneness_delta = 0.125
+
+        humaneness_reg = F.conv1d(F.softmax(x*temperature)[:,1].unsqueeze(0).unsqueeze(0),torch.ones(1,1,int(humaneness_delta/step_size)+1).cuda(),padding=6)
+        self.loss_humaneness_reg = F.relu(humaneness_reg-1).mean()
+        self.loss_total = self.loss_ce + self.loss_humaneness_reg
+        # print(humaneness_reg)
+
     def backward(self):
         self.optimizers[0].zero_grad()
-        self.loss_ce.backward()
+        self.loss_total.backward()
         self.optimizers[0].step()
 
     def optimize_parameters(self):

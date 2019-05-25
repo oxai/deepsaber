@@ -22,8 +22,8 @@ $py train.py --data_dir=../AugDataTest --dataset_name=$dataset --model=$model --
     --using_sync_features \
     --src_vector_input \
     --d_src=$((100+2)) \
-    --continue_train \
-    --load_iter=246000 \
+    #--continue_train \
+    #--load_iter=246000 \
     # --tgt_vector_input \
     # --d_tgt=$((2003+2)) \
     # --d_src=$((100+0)) \

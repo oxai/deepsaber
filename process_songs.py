@@ -37,6 +37,7 @@ use_sync=True
 replace_present=True
 
 difficulties = sys.argv[2]
+# difficulties = "Expert"
 sampling_rate = 16000
 beat_subdivision = 16
 # n_mfcc = 20
@@ -67,9 +68,12 @@ for i in tasks:
 
         bpm = level['_beatsPerMinute']
         sr = sampling_rate
-        beat_duration = 60/bpm #beat duration in seconds
+        # beat_duration = 60/bpm #beat duration in seconds
         #
-        step_size = beat_duration/beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+        # step_size = beat_duration/beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+        step_size = 0.01
+        # bpm = 60
+        beat_subdivision = 1/(step_size*bpm/60)
         # hop = int(beat_duration * 1/beat_subdivision)
         # hop -= hop % 32
         # num_samples_per_feature = hop
@@ -86,6 +90,7 @@ for i in tasks:
         elif feature_name == "mel":
             # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
             features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
+            features = librosa.power_to_db(features, ref=np.max)
         np.save(features_file,features)
 
         ## get mfcc feature
@@ -113,7 +118,13 @@ for i in tasks:
 # y_wav, sr = librosa.load(song_file_path, sr=sampling_rate)
 # features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
 # features = np.load(features_file)
+# %matplotlib
 # import librosa.display
+# features.shape[1]
+# plt.matshow(features[:,:1000])
+# plt.matshow(librosa.power_to_db(features, ref=np.max)[:,:100000])
+# librosa.display.specshow(features,x_axis='time')
+# librosa.display.specshow(librosa.power_to_db(features, ref=np.max), y_axis='mel', fmax=8000, x_axis='time')
 # librosa.display.specshow(features[:12,:],x_axis='time')
 # librosa.display.specshow(features[12:,:],x_axis='time')
 # sample_index

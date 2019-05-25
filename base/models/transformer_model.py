@@ -8,7 +8,7 @@ import Constants
 from stateSpaceFunctions import get_block_sequence_with_deltas
 from transformer.Translator import Translator
 
-def cal_performance(pred, gold, smoothing=False):
+def cal_performance(pred, gold, smoothing=False, temperature=1.00, step_size=0.01):
     ''' Apply label smoothing if needed '''
 
     loss = cal_loss(pred, gold, smoothing)
@@ -168,7 +168,7 @@ class TransformerModel(BaseModel):
 
         ## BLOCKS TENSORS ##
         one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
-        if generate_full_song:
+        if not generate_full_song:
             truncated_sequence_length = min(len(states),opt.max_token_seq_len)
         else:
             truncated_sequence_length = len(states)
@@ -199,7 +199,7 @@ class TransformerModel(BaseModel):
             raise NotImplementedError("Need to implement beam search for Transformer target vector inputs (when we attach deltas to target sequence)")
         else:
             all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
-        return all_hyp[0] # we are for now only supporting single batch generation..
+        return state_times, all_hyp[0] # we are for now only supporting single batch generation..
 
 
     def backward(self):

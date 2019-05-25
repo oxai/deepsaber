@@ -44,7 +44,7 @@ class Translator(object):
         self.model = model.net.module
         self.model.eval()
 
-    def translate_batch(self, src_seq, src_pos, src_mask):
+    def translate_batch(self, src_seq, src_pos, src_mask, sequence_length):
         ''' Translation work in one batch '''
 
         def get_inst_idx_to_tensor_position_map(inst_idx_list):
@@ -86,7 +86,7 @@ class Translator(object):
             def prepare_beam_dec_seq(inst_dec_beams, len_dec_seq):
                 dec_partial_seq = [b.get_current_state() for b in inst_dec_beams if not b.done]
                 dec_partial_seq = torch.stack(dec_partial_seq).to(self.device)
-                dec_partial_seq = dec_partial_seq.view(-1, len_dec_seq)
+                dec_partial_seq = dec_partial_seq.view(-1, len_dec_seq) # (n_inst, n_beams,len_dec_seq) -> (n_inst * n_beams, len_dec_seq)
                 return dec_partial_seq
 
             def prepare_beam_dec_pos(len_dec_seq, n_active_inst, n_bm):
@@ -101,7 +101,7 @@ class Translator(object):
                 # else:
                 #     dec_output, *_ = self.decoder(tgt_seq, tgt_seq, tgt_pos, src_mask, tgt_mask, enc_output)
                 dec_output = dec_output[:, -1, :]  # Pick the last step: (bh * bm) * d_h
-                word_prob = F.log_softmax(self.model.tgt_word_prj(dec_output), dim=1)
+                word_prob = F.log_softmax(self.model.tgt_word_prj(dec_output)*self.model.x_logit_scale, dim=1)
                 word_prob = word_prob.view(n_active_inst, n_bm, -1)
 
                 return word_prob
@@ -109,7 +109,7 @@ class Translator(object):
             def collect_active_inst_idx_list(inst_beams, word_prob, inst_idx_to_position_map):
                 active_inst_idx_list = []
                 for inst_idx, inst_position in inst_idx_to_position_map.items():
-                    is_inst_complete = inst_beams[inst_idx].advance(word_prob[inst_position])
+                    is_inst_complete = inst_beams[inst_idx].advance(word_prob[inst_position],sequence_length)
                     if not is_inst_complete:
                         active_inst_idx_list += [inst_idx]
 
@@ -145,7 +145,7 @@ class Translator(object):
 
             #-- Repeat data for beam search
             n_bm = self.opt.beam_size
-            n_inst, len_s, d_h = src_enc.size()
+            n_inst, len_s, d_h = src_enc.size() #n_inst is the number of instances in the batch
             # print(src_enc.size())
             # src_seq = src_seq.repeat(1, n_bm).view(n_inst * n_bm, len_s)
             src_seq = src_seq.repeat(1, n_bm, 1).view(n_inst * n_bm, len_s, self.opt.d_src)
@@ -157,6 +157,9 @@ class Translator(object):
 
             #-- Bookkeeping for active or not
             active_inst_idx_list = list(range(n_inst))
+            # inst_idx_to_position_map is used because the number of active instances is being reduced,
+            # so that the tensors of src_seq, dec_seq, etc become smaller in the dimension corresponding to instance number
+            # but we want to keep track what index in the tensor corresponds to which of the original n_inst instances!
             inst_idx_to_position_map = get_inst_idx_to_tensor_position_map(active_inst_idx_list)
 
             #-- Decode

@@ -13,7 +13,7 @@ To generate this folder, run identifyStateSpace.py
 NUM_DISTINCT_STATES = 4672 # This is the number of distinct states in our dataset
 EMPTY_STATE_INDEX = 0 # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
 SAMPLING_RATE = 16000
-import Constants
+import base.Constants as Constants
 NUM_SPECIAL_STATES=3 # also padding
 
 def compute_state_sequence_representation_from_json(json_file, states=None, top_k=2000):
@@ -37,17 +37,18 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
     return state_sequence
 
 
-def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16,states=None,one_hot=False):
+def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16,states=None,one_hot=False,return_state_times=False):
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
-    state_sequence[0] = Constants.START_STATE
-    state_sequence[song_length*bpm/60] = Constants.END_STATE
-    times_beats = np.array([time for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
+    # state_sequence[-1] = Constants.START_STATE
+    # state_sequence[song_length*bpm/60+1] = Constants.END_STATE
+    times_beats = np.array([0] + [time for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length] + [song_length*bpm/60])
     # print(json_file)
     # print(times_beats)
     max_index = int((song_length*60/bpm)/beat_discretization)
     feature_indices = np.array([min(max_index,int((time/beat_discretization)+0.5)) for time in times_beats])  # + 0.5 is for rounding
     times_real = times_beats * (60/bpm)
-    states = np.array([state for time, state in state_sequence.items() if (time*60/bpm) <= song_length])
+    states = np.array([Constants.START_STATE]+[state for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length]+[Constants.END_STATE])
+    # print(states)
     pos_enc = np.arange(len(states))
     if one_hot:
         one_hot_states = np.zeros((top_k + NUM_SPECIAL_STATES, states.shape[0]))
@@ -56,7 +57,10 @@ def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat
     delta_backward = np.expand_dims(np.insert(time_diffs, 0, times_real[0]), axis=0)
     delta_forward = np.expand_dims(np.append(time_diffs, song_length - times_real[-1]), axis=0)
     if one_hot:
-        return one_hot_states, states, delta_forward, delta_backward, feature_indices
+        if return_state_times:
+            return one_hot_states, states, times_beats, delta_forward, delta_backward, feature_indices
+        else:
+            return one_hot_states, states, delta_forward, delta_backward, feature_indices
     else:
         return states, delta_forward, delta_backward, feature_indices
 
@@ -232,3 +236,37 @@ def mfcc_feature_extraction(y,sr,state_times):
     state_frames = librosa.core.time_to_frames(state_times,sr=sr)
     beat_mfcc = librosa.util.sync(mfcc, state_frames, aggregate=np.median, pad=True, axis=-1)
     return beat_mfcc
+
+def stage_two_states_to_json_notes(state_sequence, state_times, bpm, hop, sr, state_rank=None):
+    if state_rank is None:  # Only load if state is not passed
+        # GUILLERMO: Provide the states rank yourself, otherwise let me know and we can change the
+        # load script (i.e., feed ../stateSpace)
+        state_rank = IOFunctions.loadFile("sorted_states.pkl", "stateSpace")   # Load the state representation
+        # Add three all zero states for the sake of simplicity
+    state_rank[0:0] = [tuple(12 * [0])] * 3  # Eliminate the need for conditionals
+    states_grid = [state_rank[state] for state in state_sequence]
+    if len(state_times) > len(states_grid):
+        time_new = state_times[0:len(states_grid)]
+    else:
+        time_new = state_times
+    notes = [grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr)
+            for grid_state, time in zip(states_grid, time_new) for grid_index, grid_value in enumerate(grid_state)
+            if grid_value > 0]
+
+    return notes
+
+def grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr):
+    if grid_value > 0:  # Non-EMPTY grid cell
+        # json_object = {"_time": (time * bpm * hop) / (sr * 60),
+        # this is receiving bpm time actually :P
+        json_object = {"_time": time,
+                        "_lineIndex": int(grid_index % 4),
+                       "_lineLayer": int(grid_index // 4)}
+        if grid_value == 19:  # Bomb
+            json_object["_type"] = 3
+        else:  # Standard Block
+            json_object["_type"] = int((grid_value - 1) // 9)
+            json_object["_cutDirection"] = int((grid_value - 1) % 9)
+        return json_object
+    else:
+        return None

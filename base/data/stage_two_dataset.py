@@ -155,9 +155,12 @@ class StageTwoDataset(BaseDataset):
         # indices=np.array([0])
         # input_length = sequence_length
         sequence_length = y.shape[1]*sample_duration
+        # beat_subdivision = self.opt.beat_subdivision
+        step_size = 0.01
+        beat_subdivision = 1/(step_size*bpm/60)
 
         ## BLOCKS TENSORS ##
-        one_hot_states, states, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,top_k=2000,beat_discretization=1/self.opt.beat_subdivision,states=unique_states,one_hot=True)
+        one_hot_states, states, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,top_k=2000,beat_discretization=1/beat_subdivision,states=unique_states,one_hot=True)
         # print(indices.shape,states.shape,one_hot_states.shape,delta_forward.shape,delta_backward.shape)
         truncated_sequence_length = min(len(states),self.opt.max_token_seq_len)
         states = states[:truncated_sequence_length]

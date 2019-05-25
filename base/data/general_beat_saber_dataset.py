@@ -128,9 +128,11 @@ class GeneralBeatSaberDataset(BaseDataset):
 
         #useful quantities, to sync notes to song features
         sr = self.opt.sampling_rate
-        beat_duration = int(60*sr/bpm) #beat duration in samples
+        # beat_duration = int(60*sr/bpm) #beat duration in samples
         # duration of one time step in samples:
-        hop = int(beat_duration * 1/self.opt.beat_subdivision)
+        # hop = int(beat_duration * 1/self.opt.beat_subdivision)
+        step_size = 0.01
+        hop = int(step_size*sr)
         if not self.opt.using_sync_features:
             hop -= hop % 32
         num_samples_per_feature = hop

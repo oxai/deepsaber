@@ -10,7 +10,7 @@ blocks=3
 exp=block_placement
 num_windows=10
 
-$py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=5 --output_length=128 --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 --layers=$layers --blocks=$blocks \
+$py train.py --data_dir=../AugDataTest --dataset_name=$dataset --model=$model --batch_size=5 --output_length=128 --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 --layers=$layers --blocks=$blocks \
     --print_freq=1 --experiment_name=$exp --save_by_iter --save_latest_freq=1000 \
     --val_epoch_freq=0 \
     --time_shifts=16 \
@@ -31,7 +31,7 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --residual_channels=256 \
     --skip_channels=256 \
     --end_channels=512 \
-    --continue_train \
-    --load \
-    --load_iter=58000 \
+    #--continue_train \
+    #--load_iter=68000 \
+    #--load \
     # --gpu_ids=0,1,2,3,4,5,6,7 \

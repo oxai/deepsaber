@@ -32,6 +32,6 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --skip_channels=256 \
     --end_channels=512 \
     --continue_train \
-    --load \
-    --load_iter=58000 \
+    #--load \
+    #--load_iter=58000 \
     # --gpu_ids=0,1,2,3,4,5,6,7 \

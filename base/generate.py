@@ -15,35 +15,40 @@ from level_generation_utils import make_level_from_notes
 
 from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction_mel,feature_extraction_hybrid
 
-parser = argparse.ArgumentParser(description='Generate Beat Saber level from song')
-parser.add_argument('--experiment_name', type=str)
-parser.add_argument('--experiment_name2', type=str, default=None)
-parser.add_argument('--checkpoint', type=str, default="latest")
-parser.add_argument('--checkpoint2', type=str, default="latest")
-parser.add_argument('--temperature', type=float, default=1.00)
-parser.add_argument('--bpm', type=float, default=None)
-parser.add_argument('--two_stage', action="store_true")
+# parser = argparse.ArgumentParser(description='Generate Beat Saber level from song')
+# parser.add_argument('--experiment_name', type=str)
+# parser.add_argument('--experiment_name2', type=str, default=None)
+# parser.add_argument('--checkpoint', type=str, default="latest")
+# parser.add_argument('--checkpoint2', type=str, default="latest")
+# parser.add_argument('--temperature', type=float, default=1.00)
+# parser.add_argument('--bpm', type=float, default=None)
+# parser.add_argument('--two_stage', action="store_true")
+#
+# args = parser.parse_args()
 
-args = parser.parse_args()
+
+# experiment_name = args.experiment_name+"/"
+# checkpoint = args.checkpoint
+# temperature=args.temperature
+# debugging helpers
+
+# checkpoint = "64000"
+checkpoint = "330000"
+checkpoint2 = "68000"
+temperature = 1.00
+experiment_name = "block_placement/"
+experiment_name2 = "block_selection/"
+two_stage = True
+args = {"experiment_name": experiment_name, "temperature": temperature, "checkpoint": checkpoint}
+class Struct:
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
+args = Struct(**args)
 
 if args.two_stage:
     assert args.experiment_name2 is not None
     assert args.checkpoint2 is not None
 
-experiment_name = args.experiment_name+"/"
-checkpoint = args.checkpoint
-temperature=args.temperature
-## debugging helpers
-# checkpoint = "64000"
-# checkpoint = "246000"
-# temperature = 1.00
-# experiment_name = "block_placement/"
-# experiment_name = "block_selection/"
-# args = {"experiment_name": experiment_name, "temperature": temperature, "checkpoint": checkpoint}
-# class Struct:
-#     def __init__(self, **entries):
-#         self.__dict__.update(entries)
-# args = Struct(**args)
 song_name = "43_fixed"
 song_name = "test_song"+song_name+".wav"
 song_path = "../../"+song_name
@@ -88,7 +93,7 @@ from test_song_bpms import bpms
 if args.bpm is not None:
     bpm = args.bpm
 else:
-    bpm = bpms[song_number]
+    bpm = bpms[song_name]
 feature_name = opt.feature_name
 feature_size = opt.feature_size
 use_sync=opt.using_sync_features
@@ -177,9 +182,6 @@ if args.two_stage:
             self.__dict__.update(entries)
     opt = Struct(**opt)
 
-    if args.two_stage:
-        assert opt.binarized
-
     model = create_model(opt)
     model.setup()
     if opt.model=='wavenet' or opt.model=='adv_wavenet':
@@ -190,8 +192,8 @@ if args.two_stage:
     else:
         receptive_field = 1
 
-    checkpoint = "iter_"+checkpoint2
-    model.load_networks(checkpoint2)
+    checkpoint = "iter_"+checkpoint
+    model.load_networks(checkpoint)
 
     # generated_folder = "generated/"
     # signature_string = song_name+"_"+opt.model+"_"+opt.dataset_name+"_"+opt.experiment_name+"_"+str(temperature)+"_"+checkpoint
@@ -210,4 +212,4 @@ if args.two_stage:
     from stateSpaceFunctions import stage_two_states_to_json_notes
     notes = stage_two_states_to_json_notes(generated_sequences[0], state_times, bpm, hop, sr, state_rank=unique_states)
     # remake level with actual notes from stage 2 now
-    make_level_from_notes(notes, bpm, song_name, opt, args)
+    make_level_from_notes(notes, bpm, song_name, opt, args, open_in_browser=True)

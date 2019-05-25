@@ -33,7 +33,7 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
     explicit_states = compute_explicit_states_from_json(json_file)
     # Now map the states to their ranks (subject to rank being below top_k)
     state_sequence = {time: states_rank[exp_state] for time, exp_state in explicit_states.items()
-                      if states_rank[exp_state] <= top_k}
+                      if (exp_state in states_rank and states_rank[exp_state] <= top_k-1+NUM_SPECIAL_STATES)}
     return state_sequence
 
 

@@ -1,3 +1,4 @@
+#%%
 import sys
 sys.path.append("/home/guillefix/code/beatsaber/base")
 sys.path.append("/home/guillefix/code/beatsaber/base/models")
@@ -25,7 +26,8 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction
 # experiment_name = "zeropad_entropy_regularization/"
 # experiment_name = "chroma_features_likelihood_exp1/"
 # experiment_name = "chroma_features_likelihood_syncc/"
-experiment_name = "block_placement/"
+# experiment_name = "block_placement/"
+experiment_name = "block_selection/"
 # experiment_name = "transformer_testing/"
 # experiment_name = "lstm_testing/"
 # experiment_name = "chroma_features_likelihood_exp2/"
@@ -36,7 +38,7 @@ opt["gpu_ids"] = [0]
 opt["cuda"] = True
 opt["batch_size"] = 1
 opt["beam_size"] = 5
-opt["n_best"] = 1
+opt["n_best"] = 5
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)
@@ -54,16 +56,18 @@ else:
 
 #%%
 
-# checkpoint = "58000"
-checkpoint = "64000"
+# checkpoint = "64000"
+checkpoint = "246000"
 checkpoint = "iter_"+checkpoint
 # checkpoint = "latest"
 model.load_networks(checkpoint)
+temperature=1.00
+
 
 #%%
 
 # from pathlib import Path
-song_number = "35_fixed"
+song_number = "43_fixed"
 print("Song number: ",song_number)
 song_name = "test_song"+song_number+".wav"
 song_path = "../../"+song_name
@@ -110,21 +114,20 @@ bpms = {
 
 bpm = bpms[song_number]
 
-# get mfcc feature
-feature_name = "mel"
-feature_size = 100
-# feature_size = 24
-use_sync=True
+# get feature
+feature_name = opt.feature_name
+feature_size = opt.feature_size
+use_sync=opt.using_sync_features
 
-sampling_rate = 16000
+sampling_rate = opt.sampling_rate
 beat_subdivision = opt.beat_subdivision
 sr = sampling_rate
 beat_duration = 60/bpm #beat duration in seconds
 
 beat_duration_samples = int(60*sr/bpm) #beat duration in samples
 # duration of one time step in samples:
-hop = int(beat_duration_samples * 1/opt.beat_subdivision)
-if not opt.using_sync_features:
+hop = int(beat_duration_samples * 1/beat_subdivision)
+if not use_sync:
     hop -= hop % 32
 # num_samples_per_feature = hop
 
@@ -139,6 +142,7 @@ if opt.feature_name == "chroma":
     else:
         features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
 elif opt.feature_name == "mel":
+    assert use_sync
     # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
     features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
 
@@ -159,7 +163,6 @@ song = torch.tensor(features).unsqueeze(0)
 
 #%%
 
-temperature=1.00
 # output = model.net.module.generate(song)
 # states_list = output[:,0,:]
 
@@ -199,6 +202,8 @@ notes = sum(notes,[])
 # i*bpm*hop/(sr*60)
 # y_wav.shape[0]/hop
 
+#%%
+# temperature=1.00
 
 print("Number of generated notes: ", len(notes))
 
@@ -265,16 +270,10 @@ run_bash_command("google-chrome "+demo_link)
 # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
 # sox -t wav -b 16 ~/code/test_song11.wav -t ogg song.ogg
 
-
 #%%
 
 ### STAGE TWO! ###
 
-import imp; import transformer.Translator; imp.reload(transformer.Translator)
-import transformer.Beam; imp.reload(transformer.Beam)
-from transformer.Translator import Translator
-
-translator = Translator(opt,model)
 
 y = features
 y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
@@ -283,12 +282,18 @@ beat_duration = 60/bpm #beat duration in seconds
 sample_duration = beat_duration * 1/opt.beat_subdivision #sample_duration in seconds
 sequence_length = y.shape[1]*sample_duration
 
-json_file = "/home/guillefix/code/beatsaber/base/generated/test_song24_fixed_wavenet_general_beat_saber_block_placement_1.0_iter_58000.json"
-# json_file = level_folder +"/Expert.json"
+# json_file = "/home/guillefix/code/beatsaber/base/generated/test_song24_fixed_wavenet_general_beat_saber_block_placement_1.0_iter_58000.json"
+generated_folder = "generated/"
+# signature_string = song_number+"_"+opt.model+"_"+opt.dataset_name+"_"+opt.experiment_name+"_"+str(temperature)+"_"+checkpoint
+level_folder = generated_folder+song_name
+# level_folder="/home/guillefix/code/beatsaber/AugDataTest/4)Believer - Imagine Dragons/Believer"
+json_file = level_folder +"/Expert.json"
+# json_file = generated_folder+"test_song"+signature_string+".json"
 ## BLOCKS TENSORS ##
+import imp; import stateSpaceFunctions; imp.reload(stateSpaceFunctions)
 from stateSpaceFunctions import get_block_sequence_with_deltas
 unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
-one_hot_states, states, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True)
+one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
 truncated_sequence_length = min(len(states),opt.max_token_seq_len)
 # truncated_sequence_length = min(len(states),512)
 indices = indices[:truncated_sequence_length]
@@ -296,7 +301,7 @@ delta_forward = delta_forward[:,:truncated_sequence_length]
 delta_backward = delta_backward[:,:truncated_sequence_length]
 # pos_enc = pos_enc[:truncated_sequence_length]
 
-input_block_sequence = torch.tensor(one_hot_states).unsqueeze(0).long()
+# input_block_sequence = torch.tensor(one_hot_states).unsqueeze(0).long()
 input_forward_deltas = torch.tensor(delta_forward).unsqueeze(0).long()
 input_backward_deltas = torch.tensor(delta_backward).unsqueeze(0).long()
 
@@ -318,12 +323,29 @@ src_mask.shape
 
 # model.net.module.encoder(song_sequence.permute(0,2,1).float().cuda(),src_mask.cuda(),src_pos.cuda())
 
-all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask)
+import imp; import transformer.Translator; imp.reload(transformer.Translator)
+import transformer.Beam; imp.reload(transformer.Beam)
+from transformer.Translator import Translator
+
+translator = Translator(opt,model)
+all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
 
 # need to pass to beam .advance, the length of sequence :P ... I think it makes sense
+
+len(all_hyp[0])
+all_hyp[0]
 all_hyp[0][0]
 len(all_hyp[0][0])
 all_scores
+
+#%%
+
+# unique_states[60-3]
+
+from stateSpaceFunctions import stage_two_states_to_json_notes
+
+notes = stage_two_states_to_json_notes(all_hyp[0][1], state_times, bpm, hop, sr, state_rank=unique_states)
+notes
 
 # opt.max_token_seq_len
 

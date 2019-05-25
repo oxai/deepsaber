@@ -221,5 +221,9 @@ class Transformer(nn.Module):
         else:
             dec_output, *_ = self.decoder(tgt_seq, tgt_seq, tgt_pos, src_mask, tgt_mask, enc_output)
         seq_logit = self.tgt_word_prj(dec_output) * self.x_logit_scale
+        # print(seq_logit.shape)
+        # print(seq_logit[0,-1,50:61])
+        #print(src_seq.shape)
+        #print(seq_logit.max(2)[1])
 
         return seq_logit.view(-1, seq_logit.size(2))

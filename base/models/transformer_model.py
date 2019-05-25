@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import torch.nn.functional as F
 import torch.nn as nn
 from .base_model import BaseModel
@@ -154,23 +155,23 @@ class TransformerModel(BaseModel):
         self.loss_ce, n_correct = cal_performance(self.output, self.target_block_sequence[:,1:], smoothing=self.opt.label_smoothing)
         self.metric_accuracy = n_correct/len(self.output)
 
-    def generate(features, json_file, bpm, unique_states, generate_full_song=False):
-        receptive_field = self.opt.receptive_field
+    def generate(self, features, json_file, bpm, unique_states, generate_full_song=False):
         opt = self.opt
 
         y = features
-        y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
+        y = np.concatenate((np.zeros((y.shape[0],1)),y),1)
         y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
         beat_duration = 60/bpm #beat duration in seconds
         sample_duration = beat_duration * 1/opt.beat_subdivision #sample_duration in seconds
-        sequence_length = y.shape[1]*sample_duration
+        sequence_length_samples = y.shape[1]
+        sequence_length = sequence_length_samples*sample_duration
 
         ## BLOCKS TENSORS ##
         one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
         if generate_full_song:
             truncated_sequence_length = min(len(states),opt.max_token_seq_len)
         else:
-            truncated_sequence_length = sequence_length
+            truncated_sequence_length = len(states)
         indices = indices[:truncated_sequence_length]
         delta_forward = delta_forward[:,:truncated_sequence_length]
         delta_backward = delta_backward[:,:truncated_sequence_length]
@@ -192,7 +193,7 @@ class TransformerModel(BaseModel):
         src_mask = torch.tensor(Constants.NUM_SPECIAL_STATES*np.ones(len(indices))).unsqueeze(0)
 
         ## actually generate level ##
-        translator = Translator(opt,model)
+        translator = Translator(opt,self)
         # need to pass to beam .advance, the length of sequence :P ... I think it makes sense
         if opt.tgt_vector_input:
             raise NotImplementedError("Need to implement beam search for Transformer target vector inputs (when we attach deltas to target sequence)")

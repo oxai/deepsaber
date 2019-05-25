@@ -37,3 +37,5 @@ bpms = {
 "43_fixed": 118.5,
 "believer": 125,
 }
+
+bpms = {"test_song"+song_number+".wav": bpm for song_number, bpm in bpms.items()}

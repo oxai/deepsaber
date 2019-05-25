@@ -1,12 +1,12 @@
-
+import os
 import json
 generated_folder = "generated/"
 logo_path = "logo.jpg"
 
-def make_level_from_notes(notes, bpm, song_name, opt, args):
+def make_level_from_notes(notes, bpm, song_name, opt, args, open_in_browser=False):
     temperature = args.temperature
     checkpoint = args.checkpoint
-
+    song_path = "../../"+song_name
 
     #make song and info jsons
     song_json = {u'_beatsPerBar': 4,
@@ -43,28 +43,28 @@ def make_level_from_notes(notes, bpm, song_name, opt, args):
     #import soundfile as sf
     # y, sr = librosa.load(song_path, sr=48000)
     # sf.write(level_folder+"/song.ogg", y, sr, format='ogg', subtype='vorbis')
+    if open_in_browser:
+        import subprocess
+        def run_bash_command(bashCommand):
+            print(bashCommand)
+            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+            output, error = process.communicate()
+            return output
 
-    import subprocess
-    def run_bash_command(bashCommand):
-        print(bashCommand)
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-        output, error = process.communicate()
-        return output
+        bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
+        run_bash_command(bashCommand)
 
-    bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
-    run_bash_command(bashCommand)
+        bashCommand = "zip -r "+generated_folder+song_name+"_"+signature_string+".zip "+level_folder
+        run_bash_command(bashCommand)
 
-    bashCommand = "zip -r "+generated_folder+song_name+"_"+signature_string+".zip "+level_folder
-    run_bash_command(bashCommand)
+        bashCommand = "./dropbox_uploader.sh upload "+generated_folder+song_name+"_"+signature_string+".zip /deepsaber_generated/"
+        run_bash_command(bashCommand)
 
-    bashCommand = "./dropbox_uploader.sh upload "+generated_folder+song_name+"_"+signature_string+".zip /deepsaber_generated/"
-    run_bash_command(bashCommand)
-
-    bashCommand = "./dropbox_uploader.sh share /deepsaber_generated/"+song_name+"_"+signature_string+".zip"
-    link = run_bash_command(bashCommand)
-    demo_link = "https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/"+link[15:-2].decode("utf-8") +'1'
-    print(demo_link)
-    run_bash_command("google-chrome "+demo_link)
+        bashCommand = "./dropbox_uploader.sh share /deepsaber_generated/"+song_name+"_"+signature_string+".zip"
+        link = run_bash_command(bashCommand)
+        demo_link = "https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/"+link[15:-2].decode("utf-8") +'1'
+        print(demo_link)
+        run_bash_command("google-chrome "+demo_link)
     # zip -r test_song11 test_song11.wav
     # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
     # sox -t wav -b 16 ~/code/test_song11.wav -t ogg song.ogg

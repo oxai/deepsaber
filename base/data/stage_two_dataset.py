@@ -167,7 +167,6 @@ class StageTwoDataset(BaseDataset):
         delta_backward = delta_backward[:,:truncated_sequence_length]
 
         target_block_sequence = torch.tensor(states).unsqueeze(0).unsqueeze(1).long()
-        input_block_sequence = torch.tensor(one_hot_states).unsqueeze(0).long()
         input_forward_deltas = torch.tensor(delta_forward).unsqueeze(0).long()
         input_backward_deltas = torch.tensor(delta_backward).unsqueeze(0).long()
 
@@ -180,6 +179,7 @@ class StageTwoDataset(BaseDataset):
 
         ## vv if we fed deltas as decoder transformer input :P
         if self.opt.tgt_vector_input:
+            input_block_sequence = torch.tensor(one_hot_states).unsqueeze(0).long()
             input_block_deltas = torch.cat([input_block_sequence,input_forward_deltas,input_backward_deltas],1)
             return {'input': song_sequence, 'target': torch.cat([target_block_sequence,input_block_deltas],1)}
         else:

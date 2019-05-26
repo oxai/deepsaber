@@ -20,9 +20,8 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --input_channels=$((100+1+4)) \
     --num_classes=$((1+4)) \
     --extra_output \
-    --workers=0 \
+    --workers=4 \
     --level_diff=Expert \
-    --read_features \
     --reduced_state \
     --binarized \
     --gpu_ids=0 \

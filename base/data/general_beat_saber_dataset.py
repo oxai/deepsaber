@@ -29,8 +29,6 @@ class GeneralBeatSaberDataset(BaseDataset):
         self.level_jsons = []
         self.audio_files = []
         self.feature_files = {}
-        if self.opt.load_features:
-            self.features = {}
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
@@ -46,24 +44,7 @@ class GeneralBeatSaberDataset(BaseDataset):
             receptive_field = self.receptive_field
             output_length = self.opt.output_length
             input_length = receptive_field + output_length -1
-            if self.opt.load_features:
-                try:
-                    features = np.load(features_file)
-
-                    if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
-                        print("Smol song; ignoring..")
-                        continue
-
-                    self.features[path.__str__()] = features
-                except FileNotFoundError:
-                    raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
-
-            if not self.opt.load_features:
-                # y_wav, sr = librosa.load(path.__str__(), sr=self.opt.sampling_rate)
-
-                # if ((y_wav.shape[0]/sr)/self.opt.step_size) -(input_length+self.opt.time_shifts-1) < 1:
-                #     print("Smol song; ignoring..")
-                #     continue
+            try:
                 features = np.load(features_file)
 
                 if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
@@ -71,10 +52,10 @@ class GeneralBeatSaberDataset(BaseDataset):
                     continue
 
                 self.feature_files[path.__str__()] = features_file
+            except FileNotFoundError:
+                raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
-            #for diff in ["Hard","hard","Expert"]:
             for diff in self.opt.level_diff.split(","):
-                #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                 try:
                     level = list(path.parent.glob('./'+diff+'.json'))[0]
                     self.level_jsons.append(level)
@@ -86,7 +67,6 @@ class GeneralBeatSaberDataset(BaseDataset):
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"
         assert len(self.audio_files) == len(self.level_jsons)
-        self.eps = 0.1
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -104,7 +84,6 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
         parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
         parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
-        parser.add_argument('--load_features', action='store_true', help='set true to predict')
         parser.add_argument('--max_token_seq_len', type=int, default=1000)
         parser.set_defaults(output_length=1)
         parser.set_defaults(output_channels=1)
@@ -140,10 +119,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         # duration of one time step in samples:
         num_samples_per_feature = hop
         #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
-        if self.opt.load_features:
-                features = self.features[song_file_path]
-        else:
-            features = np.load(self.feature_files[song_file_path])
+        features = np.load(self.feature_files[song_file_path])
 
 
         # for short
@@ -189,6 +165,7 @@ class GeneralBeatSaberDataset(BaseDataset):
             blocks_windows, blocks_targets = get_full_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,self.opt.output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length)
 
         # print(blocks_targets.shape)
+        # print(blocks_windows)
 
         if self.opt.concat_outputs:
             # concatenate the song and block input features before returning

@@ -61,7 +61,7 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
     #     block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
     # else:
     #     block_reduced_classes_windows = [blocks_reduced_classes[i:i+input_length,:] for i in indices]
-    block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field//2+1:i+receptive_field//2+2,:] for i in indices]
+    block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field//2:i+receptive_field//2+1,:] for i in indices]
     block_reduced_classes_windows = torch.tensor(block_reduced_classes_windows,dtype=torch.long)
 
     blocks_reduced_windows = [blocks_reduced[i:i+receptive_field//2,:] for i in indices]

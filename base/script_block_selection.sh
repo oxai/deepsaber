@@ -2,7 +2,8 @@
 
 # export PYTHONPATH="/home_directory/.local/lib/python3.5/site-packages/"
 
-py=python3
+#py=python3
+py=/usr/bin/python3
 dataset=stage_two
 model=transformer
 exp=block_selection

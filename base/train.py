@@ -1,9 +1,14 @@
 import sys
 #sys.path.append("/users/guillefix/beatsaber/base")
 #sys.path.append("/users/guillefix/beatsaber")
-sys.path.append("/home/guillefix/code/beatsaber/base")
-sys.path.append("/home/guillefix/code/beatsaber")
-sys.path.append("/home/guillefix/code/beatsaber/base/models")
+
+#sys.path.append("/home/guillefix/code/beatsaber/base")
+#sys.path.append("/home/guillefix/code/beatsaber")
+#sys.path.append("/home/guillefix/code/beatsaber/base/models")
+sys.path.append("/media/home/guillefix/code/beatsaber/base")
+sys.path.append("/media/home/guillefix/code/beatsaber")
+sys.path.append("/media/home/guillefix/code/beatsaber/base/models")
+
 # sys.path.append("/home/mackenzie/PycharmProjects/beatsaber/base")
 # sys.path.append("/home/mackenzie/PycharmProjects/beatsaber")
 import time

@@ -28,13 +28,13 @@ class GeneralBeatSaberDataset(BaseDataset):
         candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
         self.audio_files = []
-        if self.opt.read_features:
+        self.feature_files = {}
+        if self.opt.load_features:
             self.features = {}
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
-            if self.opt.read_features:
-                features_file = path.__str__()+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
+            features_file = path.__str__()+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
             level_file_found = False
             for diff in self.opt.level_diff.split(","):
                 if Path(path.parent.__str__()+"/"+diff+".json").is_file():
@@ -46,7 +46,7 @@ class GeneralBeatSaberDataset(BaseDataset):
             receptive_field = self.receptive_field
             output_length = self.opt.output_length
             input_length = receptive_field + output_length -1
-            if self.opt.read_features:
+            if self.opt.load_features:
                 try:
                     features = np.load(features_file)
 
@@ -58,12 +58,20 @@ class GeneralBeatSaberDataset(BaseDataset):
                 except FileNotFoundError:
                     raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
-            if not self.opt.read_features:
-                y_wav, sr = librosa.load(path.__str__(), sr=self.opt.sampling_rate)
+            if not self.opt.load_features:
+                # y_wav, sr = librosa.load(path.__str__(), sr=self.opt.sampling_rate)
 
-                if ((y_wav.shape[0]/sr)/self.opt.step_size) -(input_length+self.opt.time_shifts-1) < 1:
+                # if ((y_wav.shape[0]/sr)/self.opt.step_size) -(input_length+self.opt.time_shifts-1) < 1:
+                #     print("Smol song; ignoring..")
+                #     continue
+                features = np.load(features_file)
+
+                if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
                     print("Smol song; ignoring..")
                     continue
+
+                self.feature_files[path.__str__()] = features_file
+
             #for diff in ["Hard","hard","Expert"]:
             for diff in self.opt.level_diff.split(","):
                 #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
@@ -96,7 +104,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
         parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
         parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
-        parser.add_argument('--read_features', action='store_true', help='set true to predict')
+        parser.add_argument('--load_features', action='store_true', help='set true to predict')
         parser.add_argument('--max_token_seq_len', type=int, default=1000)
         parser.set_defaults(output_length=1)
         ## IF REDUCED STATE
@@ -125,14 +133,6 @@ class GeneralBeatSaberDataset(BaseDataset):
         # print(song_file_path)
         features = song_file_path+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
 
-        # get features
-        if self.opt.read_features:
-            try:
-                features = self.features[song_file_path]
-            except:
-                raise Exception("features not found for song "+song_file_path)
-
-
         level = json.load(open(self.level_jsons[item].__str__(), 'r'))
 
         bpm = level['_beatsPerMinute']
@@ -154,17 +154,20 @@ class GeneralBeatSaberDataset(BaseDataset):
         # duration of one time step in samples:
         num_samples_per_feature = hop
         #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
-        if not self.opt.read_features:
-            feature_name = self.opt.feature_name
-            feature_size = self.opt.feature_size
-            y_wav, sr = librosa.load(song_file_path, sr=self.opt.sampling_rate)
-            state_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
-            if feature_name == "chroma":
-                features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
-            elif feature_name == "mel":
-                # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
-                features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
-                features = librosa.power_to_db(features, ref=np.max)
+        if self.opt.load_features:
+                features = self.features[song_file_path]
+        else:
+            # feature_name = self.opt.feature_name
+            # feature_size = self.opt.feature_size
+            # y_wav, sr = librosa.load(song_file_path, sr=self.opt.sampling_rate)
+            # state_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
+            # if feature_name == "chroma":
+            #     features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+            # elif feature_name == "mel":
+            #     # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
+            #     features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
+            #     features = librosa.power_to_db(features, ref=np.max)
+            features = np.load(self.feature_files[song_file_path])
 
 
         # for short

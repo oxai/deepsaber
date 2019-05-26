@@ -29,8 +29,6 @@ class StageTwoDataset(BaseDataset):
         self.level_jsons = []
         self.audio_files = []
         self.feature_files = {}
-        if self.opt.load_features:
-            self.features = {}
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
@@ -46,24 +44,7 @@ class StageTwoDataset(BaseDataset):
             receptive_field = self.receptive_field
             output_length = self.opt.output_length
             input_length = receptive_field + output_length -1
-            if self.opt.load_features:
-                try:
-                    features = np.load(features_file)
-
-                    if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
-                        print("Smol song; ignoring..")
-                        continue
-
-                    self.features[path.__str__()] = features
-                except FileNotFoundError:
-                    raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
-
-            if not self.opt.load_features:
-                # y_wav, sr = librosa.load(path.__str__(), sr=self.opt.sampling_rate)
-
-                # if ((y_wav.shape[0]/sr)/self.opt.step_size) -(input_length+self.opt.time_shifts-1) < 1:
-                #     print("Smol song; ignoring..")
-                #     continue
+            try:
                 features = np.load(features_file)
 
                 if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
@@ -71,10 +52,10 @@ class StageTwoDataset(BaseDataset):
                     continue
 
                 self.feature_files[path.__str__()] = features_file
+            except FileNotFoundError:
+                raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
-            #for diff in ["Hard","hard","Expert"]:
             for diff in self.opt.level_diff.split(","):
-                #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                 try:
                     level = list(path.parent.glob('./'+diff+'.json'))[0]
                     self.level_jsons.append(level)
@@ -86,7 +67,6 @@ class StageTwoDataset(BaseDataset):
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"
         assert len(self.audio_files) == len(self.level_jsons)
-        self.eps = 0.1
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -98,14 +78,12 @@ class StageTwoDataset(BaseDataset):
         parser.add_argument('--chunk_length', type=int, default=9000)
         parser.add_argument('--feature_name', default='chroma')
         parser.add_argument('--feature_size', type=int, default=24)
-        # the input features at each time step consiste of the features at the time steps from now to time_shifts in the future
         parser.add_argument('--time_shifts', type=int, default=1, help='number of shifted sequences to include as input')
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
         parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
         parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
         parser.add_argument('--max_token_seq_len', type=int, default=1000)
-        parser.add_argument('--load_features', action='store_true', help='set true to predict')
         parser.set_defaults(output_length=1)
 
         return parser
@@ -129,20 +107,12 @@ class StageTwoDataset(BaseDataset):
         if self.opt.using_bpm_time_division:
             # beat_duration_samples = int(60*sr/bpm) #beat duration in samples
             beat_subdivision = self.opt.beat_subdivision
-            # hop = int(beat_duration_samples * 1/beat_subdivision)
             beat_duration = 60/bpm #beat duration in seconds
             sample_duration = step_size = beat_duration/beat_subdivision #in seconds
         else:
             sample_duration = step_size = self.opt.step_size # in seconds
-            # hop = int(step_size*sr)
             beat_subdivision = 1/(step_size*bpm/60)
-        # duration of one time step in samples:
-        # num_samples_per_feature = hop
-        #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
-        if self.opt.load_features:
-                features = self.features[song_file_path]
-        else:
-            features = np.load(self.feature_files[song_file_path])
+        features = np.load(self.feature_files[song_file_path])
 
 
         # for short

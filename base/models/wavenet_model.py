@@ -3,7 +3,7 @@ from .networks import WaveNetModel as WaveNet
 import torch.nn.functional as F
 import torch
 import Constants
-
+import numpy as np
 
 class WaveNetModel(BaseModel):
 
@@ -68,7 +68,6 @@ class WaveNetModel(BaseModel):
         #we collapse all the dimensions of target_ because that is the same way the output of the network is being processed for the cross entropy calculation (see self.forward)
         # here, 0 is the batch dimension, 1 is the window index, 2 is the time dimension, 3 is the output channel dimension
         self.target = target_.reshape((target_shape[0]*target_shape[1]*target_shape[2]*target_shape[3])).to(self.device)
-        # print(self.target)
 
     def forward(self):
         self.output = self.net.forward(self.input)
@@ -86,8 +85,21 @@ class WaveNetModel(BaseModel):
 
         temperature, step_size = self.opt.humaneness_temp, self.opt.step_size
         humaneness_delta = Constants.HUMAN_DELTA
-        humaneness_reg = F.conv1d(F.softmax(x*temperature,1)[:,1].unsqueeze(0).unsqueeze(0),torch.ones(1,1,int(humaneness_delta/step_size)+1).cuda(),padding=6)
-        self.loss_humaneness_reg = F.relu(humaneness_reg-1).mean()
+        window_size = int(humaneness_delta/step_size)
+        # humaneness_reg = F.conv1d(F.softmax(x*temperature,1)[:,1].unsqueeze(0).unsqueeze(0),torch.ones(1,1,window_size-1).cuda(),padding=window_size-1)
+        # print(humaneness_reg.shape)
+        receptive_field = self.net.module.receptive_field
+        # weights = torch.sum(torch.argmax(self.input[:,-5:,receptive_field//2-(window_size-1):receptive_field//2],1)==4,1).float()
+        notes = (torch.argmax(self.input[:,-5:,receptive_field//2-(window_size):receptive_field//2],1)==4).float()
+        distance_factor = torch.tensor(np.exp(-2*np.arange(window_size,0,-1)/window_size)).float().cuda()
+        # print(notes.shape, distance_factor.shape)
+        weights = torch.tensordot(notes,distance_factor,dims=1)
+        # print()
+        # print(self.input[:,-5:,receptive_field//2-(window_size-1):receptive_field//2].shape)
+        # self.loss_humaneness_reg = F.relu(humaneness_reg-1).mean()
+        humaneness_reg = -F.cross_entropy(x,torch.ones(weights.shape).long().cuda(), reduction='none')
+        humaneness_reg = torch.dot(humaneness_reg, weights)
+        self.loss_humaneness_reg = humaneness_reg
         self.loss_total = self.loss_ce + self.opt.humaneness_reg_coeff * self.loss_humaneness_reg
 
     def backward(self):

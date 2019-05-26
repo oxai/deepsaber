@@ -84,7 +84,6 @@ class StageTwoDataset(BaseDataset):
         # the input features at each time step consiste of the features at the time steps from now to time_shifts in the future
         parser.add_argument('--time_shifts', type=int, default=1, help='number of shifted sequences to include as input')
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
-        parser.add_argument('--using_sync_features', action='store_true', help='if true, use synced features')
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
         parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
         parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
@@ -127,18 +126,6 @@ class StageTwoDataset(BaseDataset):
         features_rate = bpm*self.opt.beat_subdivision
         notes = level['_notes']
 
-        #useful quantities, to sync notes to song features
-        # sr = self.opt.sampling_rate
-        # beat_duration = int(60*sr/bpm) #beat duration in samples
-        beat_duration = 60/bpm #beat duration in seconds
-        sample_duration = beat_duration * 1/self.opt.beat_subdivision #sample_duration in seconds
-        # duration of one time step in samples:
-        # hop = int(beat_duration * 1/self.opt.beat_subdivision)
-        # if not self.opt.using_sync_features:
-        #     hop -= hop % 32
-        # num_samples_per_feature = hop
-        #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
-
         # for short
         y = features
 
@@ -149,15 +136,14 @@ class StageTwoDataset(BaseDataset):
         # we also pad one more state at the end, to accommodate an "end" symbol for the blocks
         y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
 
-        ## WINDOWS ##
-        # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
-        # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
-        # indices=np.array([0])
-        # input_length = sequence_length
+        if self.opt.using_bpm_time_division:
+            beat_duration = 60/bpm #beat duration in seconds
+            sample_duration = beat_duration * 1/self.opt.beat_subdivision #sample_duration in seconds
+            beat_subdivision = self.opt.beat_subdivision
+        else:
+            sample_duration = step_size = self.opt.step_size
+            beat_subdivision = 1/(step_size*bpm/60)
         sequence_length = y.shape[1]*sample_duration
-        # beat_subdivision = self.opt.beat_subdivision
-        step_size = 0.01
-        beat_subdivision = 1/(step_size*bpm/60)
 
         ## BLOCKS TENSORS ##
         one_hot_states, states, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,top_k=2000,beat_discretization=1/beat_subdivision,states=unique_states,one_hot=True)

@@ -2,6 +2,7 @@ from .base_model import BaseModel
 from .networks import WaveNetModel as WaveNet
 import torch.nn.functional as F
 import torch
+import Constants
 
 
 class WaveNetModel(BaseModel):
@@ -51,7 +52,9 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--output_channels', type=int, default=(4*3))
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
-        parser.add_argument('--entropy_loss_coeff', type=float, default=0.1)
+        parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
+        parser.add_argument('--humaneness_reg_coeff', type=float, default=1.0)
+        parser.add_argument('--humaneness_temp', type=float, default=2.0)
         return parser
 
     def set_input(self, data):
@@ -75,19 +78,17 @@ class WaveNetModel(BaseModel):
         x = x.view(n * l * channels, classes)
 
         self.loss_ce = F.cross_entropy(x, self.target)
-        S = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
-        S = -1.0 * S.mean()
-        self.loss_ce += self.opt.entropy_loss_coeff * S
+        if self.opt.entropy_loss_coeff > 0:
+            S = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
+            S = -1.0 * S.mean()
+            self.loss_ce += self.opt.entropy_loss_coeff * S
         self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
 
-        #temperature, step_size = opt.temperature, opt.step_size
-        temperature, step_size = 1.00, 0.01
-        humaneness_delta = 0.125
-
+        temperature, step_size = self.opt.humaneness_temp, self.opt.step_size
+        humaneness_delta = Constants.HUMAN_DELTA
         humaneness_reg = F.conv1d(F.softmax(x*temperature)[:,1].unsqueeze(0).unsqueeze(0),torch.ones(1,1,int(humaneness_delta/step_size)+1).cuda(),padding=6)
         self.loss_humaneness_reg = F.relu(humaneness_reg-1).mean()
-        self.loss_total = self.loss_ce + self.loss_humaneness_reg
-        # print(humaneness_reg)
+        self.loss_total = self.loss_ce + self.opt.humaneness_reg_coeff * self.loss_humaneness_reg
 
     def backward(self):
         self.optimizers[0].zero_grad()

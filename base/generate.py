@@ -103,7 +103,6 @@ else:
     bpm = bpms[song_name]
 feature_name = opt.feature_name
 feature_size = opt.feature_size
-use_sync=opt.using_sync_features
 sampling_rate = opt.sampling_rate
 beat_subdivision = opt.beat_subdivision
 sr = sampling_rate
@@ -112,8 +111,6 @@ beat_duration = 60/bpm #beat duration in seconds
 beat_duration_samples = int(60*sr/bpm) #beat duration in samples
 # duration of one time step in samples:
 hop = int(beat_duration_samples * 1/beat_subdivision)
-if not use_sync:
-    hop -= hop % 32
 # num_samples_per_feature = hop
 
 step_size = beat_duration/beat_subdivision
@@ -121,13 +118,8 @@ step_size = beat_duration/beat_subdivision
 # get feature
 sample_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
 if opt.feature_name == "chroma":
-    if use_sync:
-        features = feature_extraction_hybrid(y_wav,sr,sample_times,bpm,beat_discretization=1/beat_subdivision,mel_dim=12)
-    else:
-        features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+    features = feature_extraction_hybrid(y_wav,sr,sample_times,bpm,beat_discretization=1/beat_subdivision,mel_dim=12)
 elif opt.feature_name == "mel":
-    assert use_sync
-    # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
     features = feature_extraction_mel(y_wav,sr,sample_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
 
 

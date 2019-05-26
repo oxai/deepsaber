@@ -54,7 +54,7 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--bias', action='store_false')
         parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
         parser.add_argument('--humaneness_reg_coeff', type=float, default=1.0)
-        parser.add_argument('--humaneness_temp', type=float, default=2.0)
+        parser.add_argument('--humaneness_temp', type=float, default=1.0)
         return parser
 
     def set_input(self, data):
@@ -86,7 +86,7 @@ class WaveNetModel(BaseModel):
 
         temperature, step_size = self.opt.humaneness_temp, self.opt.step_size
         humaneness_delta = Constants.HUMAN_DELTA
-        humaneness_reg = F.conv1d(F.softmax(x*temperature)[:,1].unsqueeze(0).unsqueeze(0),torch.ones(1,1,int(humaneness_delta/step_size)+1).cuda(),padding=6)
+        humaneness_reg = F.conv1d(F.softmax(x*temperature,1)[:,1].unsqueeze(0).unsqueeze(0),torch.ones(1,1,int(humaneness_delta/step_size)+1).cuda(),padding=6)
         self.loss_humaneness_reg = F.relu(humaneness_reg-1).mean()
         self.loss_total = self.loss_ce + self.opt.humaneness_reg_coeff * self.loss_humaneness_reg
 

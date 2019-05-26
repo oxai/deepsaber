@@ -37,9 +37,9 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction
 # experiment_name2 = "block_selection/"
 # two_stage = True
 args={}
-args["checkpoint"] = "68000"
-args["checkpoint2"] = "330000"
-args["experiment_name"] = "block_placement/"
+args["checkpoint"] = "500"
+args["checkpoint2"] = "1080000"
+args["experiment_name"] = "block_placement_test/"
 args["experiment_name2"] = "block_selection/"
 args["temperature"] = 1.00
 args["two_stage"] = True
@@ -56,7 +56,7 @@ if args.two_stage:
     assert args.experiment_name2 is not None
     assert args.checkpoint2 is not None
 
-song_name = "43_fixed"
+song_name = "18"
 song_name = "test_song"+song_name+".wav"
 song_path = "../../"+song_name
 # print(experiment_name)
@@ -105,15 +105,23 @@ feature_name = opt.feature_name
 feature_size = opt.feature_size
 sampling_rate = opt.sampling_rate
 beat_subdivision = opt.beat_subdivision
+try:
+    step_size = opt.step_size
+    using_bpm_time_division = opt.using_bpm_time_division
+except: # older model
+    using_bpm_time_division = True
+
 sr = sampling_rate
 beat_duration = 60/bpm #beat duration in seconds
-
 beat_duration_samples = int(60*sr/bpm) #beat duration in samples
-# duration of one time step in samples:
-hop = int(beat_duration_samples * 1/beat_subdivision)
-# num_samples_per_feature = hop
-
-step_size = beat_duration/beat_subdivision
+if using_bpm_time_division:
+    # duration of one time step in samples:
+    hop = int(beat_duration_samples * 1/beat_subdivision)
+    # num_samples_per_feature = hop
+    step_size = beat_duration/beat_subdivision # in seconds
+else:
+    beat_subdivision = 1/(step_size*bpm/60)
+    hop = step_size*sr
 
 # get feature
 sample_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
@@ -121,14 +129,17 @@ if opt.feature_name == "chroma":
     features = feature_extraction_hybrid(y_wav,sr,sample_times,bpm,beat_discretization=1/beat_subdivision,mel_dim=12)
 elif opt.feature_name == "mel":
     features = feature_extraction_mel(y_wav,sr,sample_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
+    features = librosa.power_to_db(features, ref=np.max)
 
 
 ''' GENERATE LEVEL '''
 #%%
 song = torch.tensor(features).unsqueeze(0)
+temperature = 1.00
 
 #generate level
-first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.START_STATE)
+first_samples = torch.full((1,opt.output_channels,receptive_field//2),Constants.START_STATE)
+# first_samples = torch.full((1,receptive_field//2),Constants.START_STATE)
 # stuff for older models (will remove at some point:)
 # first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
 # first_samples[0,0,0] = Constants.START_STATE
@@ -137,6 +148,8 @@ if opt.concat_outputs:
 else:
     output = model.net.module.generate_no_autoregressive(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
 states_list = output[0,:,:].permute(1,0)
+states_list.tolist()
+np.unique(states_list)
 
 #if using reduced_state representation convert from reduced_state_index to state tuple
 unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
@@ -145,22 +158,24 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 
 #convert from states to beatsaber notes
 if opt.binarized: # for experiments where the output is state/no state
-    notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0}] for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    notes = [{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
     # times_beat = [float((i+0.0)*bpm*hop/(sr*60)) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
     times_real = [float((i+0.0)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    notes = np.array(notes)[np.where(np.diff([-1]+times_real) > 0.1)[0]].tolist()
 else: # this is where the notes are generated for end-to-end models that actually output states
     states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
     notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
     notes += [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":3} for j,y in enumerate(x) if y==19] for i,x in enumerate(states_list)]
-notes = sum(notes,[])
+    notes = sum(notes,[])
 
 print("Number of generated notes: ", len(notes))
 
-json_file = make_level_from_notes(notes, bpm, song_name, opt, args)
+# json_file = make_level_from_notes(notes, bpm, song_name, opt, args)
 # notes
 # list(map(lambda x: ))
 # times = [note["_time"] for note in notes]
-# np.unique(times, return_counts=True)
+np.unique(np.diff(times_real), return_counts=True)
+np.diff(times_real) <= 0.125
 # np.diff(times) <= 0.125
 # len(times) = len()
 json_file = make_level_from_notes(notes, bpm, song_name, opt, args, open_in_browser=True)
@@ -184,6 +199,7 @@ if args.two_stage:
     opt["batch_size"] = 1
     opt["beam_size"] = 5
     opt["n_best"] = 5
+    opt["using_bpm_time_division"] = True
     class Struct:
         def __init__(self, **entries):
             self.__dict__.update(entries)
@@ -217,17 +233,19 @@ if args.two_stage:
     # import imp; import stateSpaceFunctions; imp.reload(stateSpaceFunctions)
     # import imp; import transformer.Translator; imp.reload(transformer.Translator)
     # import transformer.Beam; imp.reload(transformer.Beam)
+    # import models.transformer_model; imp.reload(models.transformer_model)
 
     ## results of Beam search
     # can we add some stochasticity to beam search maybe?
     state_times, generated_sequences = model.generate(features, json_file, bpm, unique_states, generate_full_song=False)
+    # state_times is the times of the nonemtpy states, in bpm units
 
     #%%
     from stateSpaceFunctions import stage_two_states_to_json_notes
-    # times_real = [t*60/bpm for t in state_times]
+    times_real = [t*60/bpm for t in state_times]
     # times_real[]
     # np.arange(len(times_real))[:-1][np.diff(times_real) <= 0.07]
-    # np.unique(np.diff(times_real), return_counts=True)
+    np.unique(np.diff(times_real), return_counts=True)
     # np.min(np.diff(times_real))
     # len(generated_sequences[0])
     # len(times_real)
@@ -246,6 +264,6 @@ if args.two_stage:
     #
     # np.diff(times) <= 0.125
     #
-    # len(notes2)
+    len(notes2)
     # remake level with actual notes from stage 2 now
     make_level_from_notes(notes2, bpm, song_name, opt, args, open_in_browser=True)

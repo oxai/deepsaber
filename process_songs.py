@@ -6,8 +6,8 @@ import os.path
 from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel,feature_extraction_hybrid
 
 import sys
-# sys.argv[1]="AugDataTest/"
-# sys.argv[2]="Expert"
+sys.argv[1]="AugData/"
+sys.argv[2]="Expert"
 data_path = Path(sys.argv[1])
 #data_path = Path("DataE/")
 
@@ -21,7 +21,6 @@ replace_present=True
 using_bpm_time_division = False
 
 difficulties = sys.argv[2]
-# difficulties = "Expert"
 sampling_rate = 16000
 beat_subdivision = 16
 # n_mfcc = 20
@@ -40,7 +39,7 @@ tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
 if rank < num_tasks%size:
     tasks.append(size*num_tasks_per_job+rank)
 
-# path = candidate_audio_files[0]
+path = candidate_audio_files[0]
 
 #%%
 
@@ -54,6 +53,7 @@ for i in tasks:
     for diff in difficulties.split(","):
         if Path(path.parent.__str__()+"/"+diff+".json").is_file():
             level = list(path.parent.glob('./'+diff+'.json'))[0]
+            # level = list(path.parent.glob('./'+"Expert"+'.json'))[0]
             level = level.__str__()
             level_file_found = True
     if not level_file_found:
@@ -84,6 +84,12 @@ for i in tasks:
             features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
             features = librosa.power_to_db(features, ref=np.max)
         np.save(features_file,features)
+        # features_file = song_file_path+"_"+feature_name+"_"+str(feature_size)+"2.npy"
+        # np.save(features_file,features)
+
+        features.shape
+        features = np.load(features_file)
+        features.dtype
 
         # uncomment to look for notes beyond the end of time
         # notes = level['_notes']
@@ -106,12 +112,12 @@ for i in tasks:
 # y_wav, sr = librosa.load(song_file_path, sr=sampling_rate)
 # features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
 # features = np.load(features_file)
-# %matplotlib
-# import librosa.display
+%matplotlib
+import librosa.display
 # features.shape[1]
 # plt.matshow(features[:,:1000])
 # plt.matshow(librosa.power_to_db(features, ref=np.max)[:,:100000])
-# librosa.display.specshow(features,x_axis='time')
+librosa.display.specshow(features,x_axis='time')
 # librosa.display.specshow(librosa.power_to_db(features, ref=np.max), y_axis='mel', fmax=8000, x_axis='time')
 # librosa.display.specshow(features[:12,:],x_axis='time')
 # librosa.display.specshow(features[12:,:],x_axis='time')

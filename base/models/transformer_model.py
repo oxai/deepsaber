@@ -163,7 +163,8 @@ class TransformerModel(BaseModel):
         y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
         if opt.using_bpm_time_division:
             beat_duration = 60/bpm #beat duration in seconds
-            sample_duration = beat_duration * 1/opt.beat_subdivision #sample_duration in seconds
+            beat_subdivision = opt.beat_subdivision
+            sample_duration = beat_duration * 1/beat_subdivision #sample_duration in seconds
         else:
             sample_duration = opt.step_size
             beat_subdivision = 1/(step_size*bpm/60)

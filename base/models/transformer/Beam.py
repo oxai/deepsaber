@@ -73,7 +73,7 @@ class Beam():
         # if self.next_ys[-1][0].item() == Constants.EOS:
         # if self.next_ys[-1][0].item() == Constants.EOS:
         #     self.next_ys[-1][0] = Constants.UNK
-        if len(self.next_ys) == sequence_length + 1:
+        if len(self.next_ys) == sequence_length - 1:
             self._done = True
             self.all_scores.append(self.scores)
 

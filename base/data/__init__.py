@@ -80,12 +80,18 @@ def collate_fn(insts,dim=-1): #dim is time dim
 
     return batch_seq, batch_pos
 
+def transformer_paired_collate_fn(insts):
+    return paired_collate_fn(insts,tgt_dim=2)
+
+def wavenet_paired_collate_fn(insts):
+    return paired_collate_fn(insts,tgt_dim=1)
+
 def meta_collate_fn(pad_batches, model):
     if pad_batches:
         if model == "transformer":
-            return lambda insts: paired_collate_fn(insts,tgt_dim=2)
+            return transformer_paired_collate_fn
         else:
-            return lambda insts: paired_collate_fn(insts,tgt_dim=1)
+            return wavenet_paired_collate_fn
     else:
         return default_collate
 

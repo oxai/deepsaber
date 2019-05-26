@@ -28,32 +28,49 @@ class StageTwoDataset(BaseDataset):
         candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
         self.audio_files = []
-        self.features = {}
+        self.feature_files = {}
+        if self.opt.load_features:
+            self.features = {}
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
-            features_file = path.__str__()+"_"+opt.feature_name+"_"+str(opt.feature_size)+".npy"
+            features_file = path.__str__()+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
             level_file_found = False
             for diff in self.opt.level_diff.split(","):
                 if Path(path.parent.__str__()+"/"+diff+".json").is_file():
                     level_file_found = True
             if not level_file_found:
                 continue
-            try:
+
+            # we need to find out what the input length of the model is, to remove songs which are too short to get input windows from them for this model
+            receptive_field = self.receptive_field
+            output_length = self.opt.output_length
+            input_length = receptive_field + output_length -1
+            if self.opt.load_features:
+                try:
+                    features = np.load(features_file)
+
+                    if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
+                        print("Smol song; ignoring..")
+                        continue
+
+                    self.features[path.__str__()] = features
+                except FileNotFoundError:
+                    raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
+
+            if not self.opt.load_features:
+                # y_wav, sr = librosa.load(path.__str__(), sr=self.opt.sampling_rate)
+
+                # if ((y_wav.shape[0]/sr)/self.opt.step_size) -(input_length+self.opt.time_shifts-1) < 1:
+                #     print("Smol song; ignoring..")
+                #     continue
                 features = np.load(features_file)
 
-                # we need to find out what the input length of the model is, to remove songs which are too short to get input windows from them for this model
-                receptive_field = self.receptive_field
-                output_length = self.opt.output_length
-                input_length = receptive_field + output_length -1
-
-                if features.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
+                if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
                     print("Smol song; ignoring..")
                     continue
 
-                self.features[path.__str__()] = features
-            except FileNotFoundError:
-                raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
+                self.feature_files[path.__str__()] = features_file
 
             #for diff in ["Hard","hard","Expert"]:
             for diff in self.opt.level_diff.split(","):
@@ -88,21 +105,8 @@ class StageTwoDataset(BaseDataset):
         parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
         parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
         parser.add_argument('--max_token_seq_len', type=int, default=1000)
+        parser.add_argument('--load_features', action='store_true', help='set true to predict')
         parser.set_defaults(output_length=1)
-        ## IF REDUCED STATE
-        # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
-        # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
-        # parser.set_defaults(input_channels=(feature_size*16+2001))
-        # parser.set_defaults(d_src=24) # 3 more for PAD, START, END
-        # the number of output classes is one per state in the set of reduced states
-        # parser.set_defaults(tgt_vocab_size=number_reduced_states+1+2)
-        # channels is just one, just prediting one output, one of the 2001 classes
-        # parser.set_defaults(output_channels=1)
-        ### IF FULL STATE
-        # parser.set_defaults(input_channels=(20*16+12*20))
-        # # there are 12 outputs, one per grid point, with 20 possible classes each.
-        # parser.set_defaults(output_channels=12)
-        # parser.set_defaults(num_classes=20)
 
         return parser
 
@@ -112,19 +116,34 @@ class StageTwoDataset(BaseDataset):
     def __getitem__(self, item):
         #NOTE: there is a lot of code repeat between this and the non-reduced version, perhaps we could fix that
         song_file_path = self.audio_files[item].__str__()
-        features = song_file_path+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
-
-        # get features
-        try:
-            features = self.features[song_file_path]
-        except:
-            raise Exception("features not found for song "+song_file_path)
+        # print(song_file_path)
 
         level = json.load(open(self.level_jsons[item].__str__(), 'r'))
 
         bpm = level['_beatsPerMinute']
         features_rate = bpm*self.opt.beat_subdivision
         notes = level['_notes']
+
+        #useful quantities, to sync notes to song features
+        sr = self.opt.sampling_rate
+        if self.opt.using_bpm_time_division:
+            # beat_duration_samples = int(60*sr/bpm) #beat duration in samples
+            beat_subdivision = self.opt.beat_subdivision
+            # hop = int(beat_duration_samples * 1/beat_subdivision)
+            beat_duration = 60/bpm #beat duration in seconds
+            sample_duration = step_size = beat_duration/beat_subdivision #in seconds
+        else:
+            sample_duration = step_size = self.opt.step_size # in seconds
+            # hop = int(step_size*sr)
+            beat_subdivision = 1/(step_size*bpm/60)
+        # duration of one time step in samples:
+        # num_samples_per_feature = hop
+        #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
+        if self.opt.load_features:
+                features = self.features[song_file_path]
+        else:
+            features = np.load(self.feature_files[song_file_path])
+
 
         # for short
         y = features
@@ -136,13 +155,6 @@ class StageTwoDataset(BaseDataset):
         # we also pad one more state at the end, to accommodate an "end" symbol for the blocks
         y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
 
-        if self.opt.using_bpm_time_division:
-            beat_duration = 60/bpm #beat duration in seconds
-            sample_duration = beat_duration * 1/self.opt.beat_subdivision #sample_duration in seconds
-            beat_subdivision = self.opt.beat_subdivision
-        else:
-            sample_duration = step_size = self.opt.step_size
-            beat_subdivision = 1/(step_size*bpm/60)
         sequence_length = y.shape[1]*sample_duration
 
         ## BLOCKS TENSORS ##

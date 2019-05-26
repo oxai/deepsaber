@@ -23,7 +23,6 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --reduced_state \
     --src_vector_input \
     --d_src=$((100+2)) \
-    --using_sync_features \
     #--continue_train \
     #--load_iter=50000 \
     # --tgt_vector_input \

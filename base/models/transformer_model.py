@@ -8,7 +8,7 @@ import Constants
 from stateSpaceFunctions import get_block_sequence_with_deltas
 from transformer.Translator import Translator
 
-def cal_performance(pred, gold, smoothing=False, temperature=1.00, step_size=0.01):
+def cal_performance(pred, gold, smoothing=False):
     ''' Apply label smoothing if needed '''
 
     loss = cal_loss(pred, gold, smoothing)
@@ -161,13 +161,17 @@ class TransformerModel(BaseModel):
         y = features
         y = np.concatenate((np.zeros((y.shape[0],1)),y),1)
         y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
-        beat_duration = 60/bpm #beat duration in seconds
-        sample_duration = beat_duration * 1/opt.beat_subdivision #sample_duration in seconds
+        if opt.using_bpm_time_division:
+            beat_duration = 60/bpm #beat duration in seconds
+            sample_duration = beat_duration * 1/opt.beat_subdivision #sample_duration in seconds
+        else:
+            sample_duration = opt.step_size
+            beat_subdivision = 1/(step_size*bpm/60)
         sequence_length_samples = y.shape[1]
         sequence_length = sequence_length_samples*sample_duration
 
         ## BLOCKS TENSORS ##
-        one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
+        one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
         if not generate_full_song:
             truncated_sequence_length = min(len(states),opt.max_token_seq_len)
         else:

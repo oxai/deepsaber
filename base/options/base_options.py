@@ -20,7 +20,6 @@ class BaseOptions:
         parser.add_argument('--batch_size', default=1, type=int)
         parser.add_argument('--num_windows', default=16, type=int)
         parser.add_argument('--pad_batches', action='store_true', help='whether to pad batches sequences to the length of the longest in the minibatch')
-        parser.add_argument('--beat_subdivision', default=16, type=int)
         parser.add_argument('--augment', type=int, default=0)
         parser.add_argument('--model', type=str, default="wavenet", help="The network model used for beatsaberification")
         parser.add_argument('--init_type', type=str, default="normal")
@@ -42,6 +41,11 @@ class BaseOptions:
         parser.add_argument('-ad', '--augment_dir', type=str, default='')
         parser.add_argument('--verbose', action='store_true', help='if specified, print more debugging information')
         parser.add_argument('--fork_processes', action='store_true', help="Set method to create dataloader child processes to fork instead of spawn (could take up more memory)")
+
+        parser.add_argument('--using_bpm_time_division', action='store_true', help="Whether to use the time divisions which are divisors of the beats")
+
+        parser.add_argument('--beat_subdivision', default=16, type=int)
+        parser.add_argument('--step_size', default=0.01, type=float)
 
         self.parser = parser
         self.is_train = None

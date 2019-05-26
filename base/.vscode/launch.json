@@ -9,7 +9,14 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "args": [
+                "--experiment_name=block_placement",
+                "--checkpoint=68000",
+                "--experiment_name2=block_selection",
+                "--checkpoint2=330000",
+                "--two_stage"
+            ]
         },
         {
             "name": "Python: Remote Attach",
@@ -22,7 +29,7 @@
                     "localRoot": "${workspaceFolder}",
                     "remoteRoot": "."
                 }
-            ]
+            ],
         },
         {
             "name": "Python: Module",

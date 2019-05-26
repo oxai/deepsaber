@@ -1,11 +1,14 @@
 import torch
+import numpy as np
 import torch.nn.functional as F
 import torch.nn as nn
 from .base_model import BaseModel
 from .transformer.Models import Transformer
 import Constants
+from stateSpaceFunctions import get_block_sequence_with_deltas
+from transformer.Translator import Translator
 
-def cal_performance(pred, gold, smoothing=False):
+def cal_performance(pred, gold, smoothing=False, temperature=1.00, step_size=0.01):
     ''' Apply label smoothing if needed '''
 
     loss = cal_loss(pred, gold, smoothing)
@@ -151,6 +154,53 @@ class TransformerModel(BaseModel):
         # using the smoothened loss function from the pytorch Transformer implementation, which also calculates masked accuracy (ignoring the PAD symbol)
         self.loss_ce, n_correct = cal_performance(self.output, self.target_block_sequence[:,1:], smoothing=self.opt.label_smoothing)
         self.metric_accuracy = n_correct/len(self.output)
+
+    def generate(self, features, json_file, bpm, unique_states, generate_full_song=False):
+        opt = self.opt
+
+        y = features
+        y = np.concatenate((np.zeros((y.shape[0],1)),y),1)
+        y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
+        beat_duration = 60/bpm #beat duration in seconds
+        sample_duration = beat_duration * 1/opt.beat_subdivision #sample_duration in seconds
+        sequence_length_samples = y.shape[1]
+        sequence_length = sequence_length_samples*sample_duration
+
+        ## BLOCKS TENSORS ##
+        one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
+        if not generate_full_song:
+            truncated_sequence_length = min(len(states),opt.max_token_seq_len)
+        else:
+            truncated_sequence_length = len(states)
+        indices = indices[:truncated_sequence_length]
+        delta_forward = delta_forward[:,:truncated_sequence_length]
+        delta_backward = delta_backward[:,:truncated_sequence_length]
+
+        input_forward_deltas = torch.tensor(delta_forward).unsqueeze(0).long()
+        input_backward_deltas = torch.tensor(delta_backward).unsqueeze(0).long()
+        if opt.tgt_vector_input:
+            input_block_sequence = torch.tensor(one_hot_states).unsqueeze(0).long()
+            input_block_deltas = torch.cat([input_block_sequence,input_forward_deltas,input_backward_deltas],1)
+
+        y = y[:,indices]
+        input_windows = [y]
+        song_sequence = torch.tensor(input_windows)
+        song_sequence = (song_sequence - song_sequence.mean())/torch.abs(song_sequence).max().float()
+        if not opt.tgt_vector_input:
+            song_sequence = torch.cat([song_sequence,input_forward_deltas.double(),input_backward_deltas.double()],1)
+
+        src_pos = torch.tensor(np.arange(len(indices))).unsqueeze(0)
+        src_mask = torch.tensor(Constants.NUM_SPECIAL_STATES*np.ones(len(indices))).unsqueeze(0)
+
+        ## actually generate level ##
+        translator = Translator(opt,self)
+        # need to pass to beam .advance, the length of sequence :P ... I think it makes sense
+        if opt.tgt_vector_input:
+            raise NotImplementedError("Need to implement beam search for Transformer target vector inputs (when we attach deltas to target sequence)")
+        else:
+            all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
+        return state_times, all_hyp[0] # we are for now only supporting single batch generation..
+
 
     def backward(self):
         self.optimizers[0].zero_grad()

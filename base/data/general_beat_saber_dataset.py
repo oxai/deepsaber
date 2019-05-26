@@ -107,20 +107,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--load_features', action='store_true', help='set true to predict')
         parser.add_argument('--max_token_seq_len', type=int, default=1000)
         parser.set_defaults(output_length=1)
-        ## IF REDUCED STATE
-        # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
-        # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
-        # parser.set_defaults(input_channels=(feature_size*16+2001))
-        # parser.set_defaults(input_channels=(feature_size*1+number_reduced_states+Constants.NUM_SPECIAL_STATES)) # 3 more for PAD, START, END
-        # the number of output classes is one per state in the set of reduced states
-        # parser.set_defaults(num_classes=number_reduced_states+Constants.NUM_SPECIAL_STATES)
-        # channels is just one, just prediting one output, one of the 2001 classes
         parser.set_defaults(output_channels=1)
-        ### IF FULL STATE
-        # parser.set_defaults(input_channels=(20*16+12*20))
-        # # there are 12 outputs, one per grid point, with 20 possible classes each.
-        # parser.set_defaults(output_channels=12)
-        # parser.set_defaults(num_classes=20)
 
         return parser
 
@@ -131,7 +118,6 @@ class GeneralBeatSaberDataset(BaseDataset):
         #NOTE: there is a lot of code repeat between this and the non-reduced version, perhaps we could fix that
         song_file_path = self.audio_files[item].__str__()
         # print(song_file_path)
-        features = song_file_path+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
 
         level = json.load(open(self.level_jsons[item].__str__(), 'r'))
 
@@ -157,16 +143,6 @@ class GeneralBeatSaberDataset(BaseDataset):
         if self.opt.load_features:
                 features = self.features[song_file_path]
         else:
-            # feature_name = self.opt.feature_name
-            # feature_size = self.opt.feature_size
-            # y_wav, sr = librosa.load(song_file_path, sr=self.opt.sampling_rate)
-            # state_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
-            # if feature_name == "chroma":
-            #     features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
-            # elif feature_name == "mel":
-            #     # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
-            #     features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
-            #     features = librosa.power_to_db(features, ref=np.max)
             features = np.load(self.feature_files[song_file_path])
 
 

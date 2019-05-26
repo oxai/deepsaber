@@ -6,7 +6,7 @@
 py=/usr/bin/python3
 dataset=stage_two
 model=transformer
-exp=block_selection
+exp=block_selection_test
 
 $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=1 --num_windows=0 --nepoch=500 --nepoch_decay=500 \
     --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=6000 \

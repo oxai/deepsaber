@@ -8,11 +8,11 @@ dataset=general_beat_saber
 model=wavenet
 layers=5
 blocks=3
-exp=block_placement_test
+exp=block_placement_new
 num_windows=10
 
-$py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=1 --output_length=1 --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 --layers=$layers --blocks=$blocks \
-    --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=100 \
+$py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=2 --output_length=1 --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 --layers=$layers --blocks=$blocks \
+    --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=5000 \
     --val_epoch_freq=0 \
     --feature_name=mel \
     --feature_size=100 \
@@ -20,7 +20,7 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --input_channels=$((100+1+4)) \
     --num_classes=$((1+4)) \
     --extra_output \
-    --workers=4 \
+    --workers=8 \
     --level_diff=Expert \
     --reduced_state \
     --binarized \

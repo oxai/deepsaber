@@ -20,7 +20,7 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
         #sample_index = floor((time of note in seconds)*sampling_rate/(num_samples_per_feature))
         #sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
         # we add receptive_field because we padded the y with 0s, to imitate generation
-        sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
+        sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/num_samples_per_feature - 0.5)
         # does librosa add some padding too?
         # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
         if sample_index >= l:
@@ -57,14 +57,18 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
                 blocks_reduced_classes[i,0] = Constants.EMPTY_STATE
 
     # get the block features corresponding to the windows
-    if extra_output:
-        block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
-    else:
-        block_reduced_classes_windows = [blocks_reduced_classes[i:i+input_length,:] for i in indices]
+    # if extra_output:
+    #     block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
+    # else:
+    #     block_reduced_classes_windows = [blocks_reduced_classes[i:i+input_length,:] for i in indices]
+    block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field//2:i+receptive_field//2+1,:] for i in indices]
     block_reduced_classes_windows = torch.tensor(block_reduced_classes_windows,dtype=torch.long)
 
-    blocks_reduced_windows = [blocks_reduced[i:i+input_length,:] for i in indices]
+    blocks_reduced_windows = [blocks_reduced[i:i+receptive_field//2,:] for i in indices]
     blocks_reduced_windows = torch.tensor(blocks_reduced_windows)
+    blocks_reduced_windows_pad = torch.zeros(blocks_reduced_windows.shape)
+    blocks_reduced_windows_pad[:,:,Constants.PAD_STATE] = 1.0
+    blocks_reduced_windows = torch.cat([blocks_reduced_windows,blocks_reduced_windows_pad.double()],1)
     # this is because the input features have dimensions (num_windows,time_steps,num_features)
     blocks_reduced_windows = blocks_reduced_windows.permute(0,2,1)
 

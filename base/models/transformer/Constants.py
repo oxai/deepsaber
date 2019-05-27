@@ -1,8 +1,9 @@
+import Constants
 
-PAD = 0
-UNK = 1
-BOS = 2
-EOS = 3
+PAD = Constants.PAD_STATE
+UNK = Constants.EMPTY_STATE
+BOS = Constants.START_STATE
+EOS = Constants.END_STATE
 
 PAD_WORD = '<blank>'
 UNK_WORD = '<unk>'

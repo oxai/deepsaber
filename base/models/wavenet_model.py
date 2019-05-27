@@ -2,14 +2,15 @@ from .base_model import BaseModel
 from .networks import WaveNetModel as WaveNet
 import torch.nn.functional as F
 import torch
-
+import Constants
+import numpy as np
 
 class WaveNetModel(BaseModel):
 
     def __init__(self, opt):
         super().__init__(opt)
         self.opt = opt
-        self.loss_names = ['ce']
+        self.loss_names = ['ce', 'humaneness_reg', 'total']
         self.metric_names = ['accuracy']
         self.module_names = ['']  # changed from 'model_names'
         self.schedulers = []
@@ -32,6 +33,7 @@ class WaveNetModel(BaseModel):
              'lr': opt.learning_rate, 'weight_decay': opt.weight_decay}  # filter parameters have weight decay
         ])]
         self.loss_ce = None
+        self.humaneness_reg = None
 
     def name(self):
         return "WaveNet"
@@ -50,7 +52,9 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--output_channels', type=int, default=(4*3))
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
-        parser.add_argument('--entropy_loss_coeff', type=float, default=0.1)
+        parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
+        parser.add_argument('--humaneness_reg_coeff', type=float, default=1.0)
+        parser.add_argument('--humaneness_temp', type=float, default=1.0)
         return parser
 
     def set_input(self, data):
@@ -64,7 +68,6 @@ class WaveNetModel(BaseModel):
         #we collapse all the dimensions of target_ because that is the same way the output of the network is being processed for the cross entropy calculation (see self.forward)
         # here, 0 is the batch dimension, 1 is the window index, 2 is the time dimension, 3 is the output channel dimension
         self.target = target_.reshape((target_shape[0]*target_shape[1]*target_shape[2]*target_shape[3])).to(self.device)
-        # print(self.target)
 
     def forward(self):
         self.output = self.net.forward(self.input)
@@ -74,14 +77,34 @@ class WaveNetModel(BaseModel):
         x = x.view(n * l * channels, classes)
 
         self.loss_ce = F.cross_entropy(x, self.target)
-        S = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
-        S = -1.0 * S.mean()
-        self.loss_ce += self.opt.entropy_loss_coeff * S
+        if self.opt.entropy_loss_coeff > 0:
+            S = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
+            S = -1.0 * S.mean()
+            self.loss_ce += self.opt.entropy_loss_coeff * S
         self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
+
+        temperature, step_size = self.opt.humaneness_temp, self.opt.step_size
+        humaneness_delta = Constants.HUMAN_DELTA
+        window_size = int(humaneness_delta/step_size)
+        # humaneness_reg = F.conv1d(F.softmax(x*temperature,1)[:,1].unsqueeze(0).unsqueeze(0),torch.ones(1,1,window_size-1).cuda(),padding=window_size-1)
+        # print(humaneness_reg.shape)
+        receptive_field = self.net.module.receptive_field
+        # weights = torch.sum(torch.argmax(self.input[:,-5:,receptive_field//2-(window_size-1):receptive_field//2],1)==4,1).float()
+        notes = (torch.argmax(self.input[:,-5:,receptive_field//2-(window_size):receptive_field//2],1)==4).float()
+        distance_factor = torch.tensor(np.exp(-2*np.arange(window_size,0,-1)/window_size)).float().cuda()
+        # print(notes.shape, distance_factor.shape)
+        weights = torch.tensordot(notes,distance_factor,dims=1)
+        # print()
+        # print(self.input[:,-5:,receptive_field//2-(window_size-1):receptive_field//2].shape)
+        # self.loss_humaneness_reg = F.relu(humaneness_reg-1).mean()
+        humaneness_reg = -F.cross_entropy(x,torch.ones(weights.shape).long().cuda(), reduction='none')
+        humaneness_reg = torch.dot(humaneness_reg, weights)
+        self.loss_humaneness_reg = humaneness_reg
+        self.loss_total = self.loss_ce + self.opt.humaneness_reg_coeff * self.loss_humaneness_reg
 
     def backward(self):
         self.optimizers[0].zero_grad()
-        self.loss_ce.backward()
+        self.loss_total.backward()
         self.optimizers[0].step()
 
     def optimize_parameters(self):

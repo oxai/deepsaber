@@ -26,7 +26,8 @@ class Beam():
 
         # The outputs at each time-step.
         self.next_ys = [torch.full((size,), Constants.PAD, dtype=torch.long, device=device)]
-        self.next_ys[0][0] = Constants.BOS
+        self.next_ys[0][:] = Constants.BOS
+        # self.next_ys[0][:] = np.random.randint(3,30)
 
     def get_current_state(self):
         "Get the outputs for the current timestep."
@@ -40,16 +41,20 @@ class Beam():
     def done(self):
         return self._done
 
-    def advance(self, word_prob):
+    def advance(self, word_prob,sequence_length):
         "Update beam status and check if finished or not."
-        num_words = word_prob.size(1)
+        num_words = word_prob.size(1) #vocab size. Dimension 0 is number of beams
 
         # Sum the previous scores.
         if len(self.prev_ks) > 0:
+            # remember word_prob has shape (n_beams, n_words)
+            # the second term is just a tensor with the previous log likelihoods expanded to the same shape by repeating on second dimension
             beam_lk = word_prob + self.scores.unsqueeze(1).expand_as(word_prob)
         else:
+            # log likelihood of words if it's the first word
             beam_lk = word_prob[0]
 
+        # to perform beam search, we flatten to find the toppest of the keks (leaves)
         flat_beam_lk = beam_lk.view(-1)
 
         best_scores, best_scores_id = flat_beam_lk.topk(self.size, 0, True, True) # 1st sort
@@ -65,7 +70,10 @@ class Beam():
         self.next_ys.append(best_scores_id - prev_k * num_words)
 
         # End condition is when top-of-beam is EOS.
-        if self.next_ys[-1][0].item() == Constants.EOS:
+        # if self.next_ys[-1][0].item() == Constants.EOS:
+        # if self.next_ys[-1][0].item() == Constants.EOS:
+        #     self.next_ys[-1][0] = Constants.UNK
+        if len(self.next_ys) == sequence_length - 1:
             self._done = True
             self.all_scores.append(self.scores)
 
@@ -87,8 +95,9 @@ class Beam():
             dec_seq = self.next_ys[0].unsqueeze(1)
         else:
             _, keys = self.sort_scores()
-            hyps = [self.get_hypothesis(k) for k in keys]
-            hyps = [[Constants.BOS] + h for h in hyps]
+            # hyps = [[self.next_ys[0][k]] + self.get_hypothesis(k) for k in keys]
+            hyps = [[Constants.BOS] + self.get_hypothesis(k) for k in keys]
+            # hyps = [[Constants.BOS] + h for h in hyps]
             dec_seq = torch.LongTensor(hyps)
 
         return dec_seq

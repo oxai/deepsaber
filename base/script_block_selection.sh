@@ -6,10 +6,10 @@
 py=/usr/bin/python3
 dataset=stage_two
 model=transformer
-exp=block_selection_test
+exp=block_selection_new
 
-$py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=1 --num_windows=0 --nepoch=500 --nepoch_decay=500 \
-    --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=6000 \
+$py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=2 --num_windows=0 --nepoch=500 --nepoch_decay=500 \
+    --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=5000 \
     --val_epoch_freq=0 \
     --pad_batches \
     --feature_name=mel \
@@ -17,14 +17,14 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --tgt_vocab_size=2003 \
     --label_smoothing \
     --max_token_seq_len=512 \
-    --gpu_ids=0 \
+    --gpu_ids=1 \
     --level_diff=Expert \
-    --workers=0 \
+    --workers=8 \
     --reduced_state \
     --src_vector_input \
     --d_src=$((100+2)) \
-    #--continue_train \
-    #--load_iter=50000 \
+    --continue_train \
+    --load_iter=60000 \
     # --tgt_vector_input \
     # --d_tgt=$((2003+2)) \
     # --d_src=$((100+0)) \

@@ -25,6 +25,7 @@ class WaveNetModel(BaseModel):
                            output_channels=opt.output_channels,
                            num_classes=opt.num_classes,
                            kernel_size=opt.kernel_size,
+                           dropout_p=opt.dropout,
                            bias=opt.bias)
         self.optimizers = [torch.optim.Adam([
             {'params': [param for name, param in self.net.named_parameters() if name[-4:] == 'bias'],
@@ -54,7 +55,7 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--bias', action='store_false')
         parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
         parser.add_argument('--humaneness_reg_coeff', type=float, default=1.0)
-        parser.add_argument('--humaneness_temp', type=float, default=1.0)
+        parser.add_argument('--dropout', type=float, default=0.0)
         return parser
 
     def set_input(self, data):
@@ -97,7 +98,8 @@ class WaveNetModel(BaseModel):
         # print()
         # print(self.input[:,-5:,receptive_field//2-(window_size-1):receptive_field//2].shape)
         # self.loss_humaneness_reg = F.relu(humaneness_reg-1).mean()
-        humaneness_reg = -F.cross_entropy(x,torch.ones(weights.shape).long().cuda(), reduction='none')
+        # humaneness_reg = -F.cross_entropy(x,torch.ones(weights.shape).long().cuda(), reduction='none')
+        humaneness_reg = F.cross_entropy(x,torch.zeros(weights.shape).long().cuda(), reduction='none')
         humaneness_reg = torch.dot(humaneness_reg, weights)
         self.loss_humaneness_reg = humaneness_reg
         self.loss_total = self.loss_ce + self.opt.humaneness_reg_coeff * self.loss_humaneness_reg

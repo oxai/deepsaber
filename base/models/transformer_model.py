@@ -155,7 +155,7 @@ class TransformerModel(BaseModel):
         self.loss_ce, n_correct = cal_performance(self.output, self.target_block_sequence[:,1:], smoothing=self.opt.label_smoothing)
         self.metric_accuracy = n_correct/len(self.output)
 
-    def generate(self, features, json_file, bpm, unique_states, generate_full_song=False):
+    def generate(self, features, json_file, bpm, unique_states, use_beam_search=False, generate_full_song=False):
         opt = self.opt
 
         y = features
@@ -203,8 +203,13 @@ class TransformerModel(BaseModel):
         if opt.tgt_vector_input:
             raise NotImplementedError("Need to implement beam search for Transformer target vector inputs (when we attach deltas to target sequence)")
         else:
-            all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
-        return state_times, all_hyp[0] # we are for now only supporting single batch generation..
+            if use_beam_search:
+                # all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
+                generated_sequence = all_hyp[0][0]
+            else:
+                generated_sequence = translator.sample_translation(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
+        # return state_times, all_hyp[0] # we are for now only supporting single batch generation..
+        return state_times, generated_sequence
 
 
     def backward(self):

@@ -1,8 +1,10 @@
 ''' This module will handle the text generation with beam search. '''
+import Constants
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 from transformer.Models import Transformer
 from transformer.Beam import Beam
@@ -177,3 +179,46 @@ class Translator(object):
         batch_hyp, batch_scores = collect_hypothesis_and_scores(inst_dec_beams, self.opt.n_best)
 
         return batch_hyp, batch_scores
+
+    def sample_translation(self, src_seq, src_pos, src_mask, sequence_length):
+        ''' Translation work in one batch '''
+
+        def take_step(dec_seq, src_mask, enc_output):
+            ''' Decode and update beam status, and then return active beam idx '''
+
+            def predict_word(dec_seq, dec_pos, src_mask, enc_output):
+                dec_seq = torch.tensor([dec_seq]).to(self.device)
+                dec_output, *_ = self.model.decoder(dec_seq, dec_seq, dec_pos, src_mask, dec_seq, enc_output)
+                # if self.tgt_vector_input:
+                #     dec_output, *_ = self.decoder(tgt_seq, tgt_input_seq, tgt_pos, src_mask, tgt_mask, enc_output)
+                # else:
+                #     dec_output, *_ = self.decoder(tgt_seq, tgt_seq, tgt_pos, src_mask, tgt_mask, enc_output)
+                dec_output = dec_output[:, -1, :]  # Pick the last step: (bh * bm) * d_h
+                # inverse temperature of sampling
+                prob = F.softmax(1.5*self.model.tgt_word_prj(dec_output)*self.model.x_logit_scale, dim=1).squeeze()
+                prob = prob.cpu()
+                np_prob = prob.data.numpy()
+                word = np.random.choice(self.opt.tgt_vocab_size, p=np_prob)
+
+                return word
+
+            len_dec_seq = len(dec_seq)
+            dec_pos = torch.arange(1, len_dec_seq + 1, dtype=torch.long, device=self.device)
+            word = predict_word(dec_seq, dec_pos, src_mask, enc_output)
+
+            return dec_seq+[word]
+
+        with torch.no_grad():
+            #-- Encode
+            src_seq, src_mask, src_pos = src_seq.to(self.device), src_mask.to(self.device), src_pos.to(self.device)
+            src_enc, *_ = self.model.encoder(src_seq, src_mask, src_pos)
+
+            dec_seq = [Constants.START_STATE]
+
+            #-- Decode
+            # for len_dec_seq in range(1, self.model_opt.max_token_seq_len + 1):
+            for i in range(1, sequence_length + 1):
+
+                dec_seq = take_step(dec_seq, src_mask, src_enc)
+
+        return dec_seq

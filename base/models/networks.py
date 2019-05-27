@@ -281,6 +281,7 @@ class WaveNetModel(nn.Module):
                     prob = prob.cpu()
                     np_prob = prob.data.numpy()
                     x1 = np.random.choice(self.num_classes, p=np_prob)
+                    # print(np_prob)
                     xs.append(x1)
                 x = Variable(torch.LongTensor([xs]))#np.array([x])
             else:

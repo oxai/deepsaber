@@ -37,9 +37,10 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction
 # experiment_name2 = "block_selection/"
 # two_stage = True
 args={}
-args["checkpoint"] = "60000"
-args["checkpoint2"] = "15000"
-args["experiment_name"] = "block_placement_new/"
+args["checkpoint"] = "130000"
+args["checkpoint2"] = "625000"
+args["experiment_name"] = "block_placement_new_nohumreg/"
+# args["experiment_name"] = "block_placement_new_nohumreg_large/"
 args["experiment_name2"] = "block_selection_new/"
 args["temperature"] = 1.00
 args["two_stage"] = True
@@ -158,10 +159,12 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 
 #convert from states to beatsaber notes
 if opt.binarized: # for experiments where the output is state/no state
-    notes = [{"_time":float((i-1)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    # notes = [{"_time":float((i-1)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    notes = [{"_time":float((i)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
     # times_beat = [float((i+0.0)*bpm*hop/(sr*60)) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
-    times_real = [float((i-1)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
-    notes = np.array(notes)[np.where(np.diff([-1]+times_real) > 0.1)[0]].tolist()
+    # times_real = [float((i-1)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    times_real = [float((i)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    notes = np.array(notes)[np.where(np.diff([-1]+times_real) > 0.12)[0]].tolist()
 else: # this is where the notes are generated for end-to-end models that actually output states
     states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
     notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
@@ -189,7 +192,10 @@ if args.two_stage:
     #%%
     ''' LOAD MODEL, OPTS, AND WEIGHTS (for stage2 if two_stage) '''
     experiment_name = args.experiment_name2+"/"
+    # experiment_name = "block_selection_new/"
     checkpoint = args.checkpoint2
+    # checkpoint = "100000"
+    # checkpoint = "1080000"
 
     #loading opt object from experiment
     opt = json.loads(open(experiment_name+"opt.json","r").read())
@@ -229,6 +235,8 @@ if args.two_stage:
     # one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
 
     unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
+    # json_file = 'generated/test_songtest_song35_fixed.wav_wavenet_general_beat_saber_block_placement_new_1.0_60000.json'
+    json_file = 'generated/test_songtest_song35_fixed.wav_wavenet_general_beat_saber_block_placement_new_nohumreg_1.0_65000.json'
 
     #%%
     # import imp; import stateSpaceFunctions; imp.reload(stateSpaceFunctions)
@@ -238,25 +246,29 @@ if args.two_stage:
 
     ## results of Beam search
     # can we add some stochasticity to beam search maybe?
-    state_times, generated_sequences = model.generate(features, json_file, bpm, unique_states, generate_full_song=False)
+    # state_times, generated_sequences = model.generate(features, json_file, bpm, unique_states, generate_full_song=False)
+    # len(state_times)
+    # state_times, generated_sequence = model.generate(features, json_file, bpm, unique_states, generate_full_song=False)
+    state_times, generated_sequence = model.generate(features, json_file, bpm, unique_states, use_beam_search=False, generate_full_song=False)
     # state_times is the times of the nonemtpy states, in bpm units
 
     #%%
     from stateSpaceFunctions import stage_two_states_to_json_notes
-    # times_real = [t*60/bpm for t in state_times]
+    times_real = [t*60/bpm for t in state_times]
     # times_real[]
     # np.arange(len(times_real))[:-1][np.diff(times_real) <= 0.07]
     # np.unique(np.diff(times_real), return_counts=True)
     # np.min(np.diff(times_real))
     # len(generated_sequences[0])
     # len(times_real)
-    notes2 = stage_two_states_to_json_notes(generated_sequences[0], state_times, bpm, hop, sr, state_rank=unique_states)
+    notes2 = stage_two_states_to_json_notes(generated_sequence, state_times, bpm, hop, sr, state_rank=unique_states)
+    # notes2 = stage_two_states_to_json_notes(generated_sequences[0], state_times, bpm, hop, sr, state_rank=unique_states)
     # notes2 = stage_two_states_to_json_notes(np.array(generated_sequences[0][:-2])[diff_mask].tolist(), times_filtered, bpm, hop, sr, state_rank=unique_states)
 
-    # np.array(np.diff(times_real)) <= 0.1
+    np.array(np.diff(times_real)) <= 0.1
     # np.diff(times_real)
     # np.all(np.isclose([t*bpm/60 for t in times_real], times))
-    # np.unique(times_real, return_counts=True)
+    np.unique(np.diff(times_real), return_counts=True)
     # diff = np.diff(times_real)
     # diff1 = np.append(diff,10) <= 0.1
     # diff2 = np.insert(diff,0,10) <= 0.1
@@ -265,6 +277,6 @@ if args.two_stage:
     #
     # np.diff(times) <= 0.125
     #
-    len(notes2)
+    print(len(notes2))
     # remake level with actual notes from stage 2 now
     make_level_from_notes(notes2, bpm, song_name, opt, args, open_in_browser=True)

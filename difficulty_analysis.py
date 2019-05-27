@@ -1,3 +1,5 @@
+import getpass
+import time
 from urllib.request import Request, urlopen
 import os
 import re
@@ -41,23 +43,55 @@ def extract_features_from_all_levels():
     features = []
     targets = []
     downloaded_songs_full, downloaded_songs = get_list_of_downloaded_songs()
-    for song_dir in downloaded_songs_full:
-        meta_data_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'meta_data.txt'))
-        if not os.path.exists(meta_data_filename):
-            pass
-        else:
-            meta_data = read_meta_data_file(meta_data_filename)
-            difficulty_rating = meta_data['scoresaberDifficulty'].replace(' ', '').split(',')
-            if difficulty_rating != ['']:
-                json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
-                for i in range(len(json_files)):
-                    bs_level = IOFunctions.parse_json(json_files[i])
-                    features.append(np.array(extract_features_from_beatsaber_level(bs_level)))
-                    targets.append(np.array([float(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']), float(meta_data['rating']), \
-                                   float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
-                                   float(meta_data['patternQuality']), float(meta_data['readability']), float(meta_data['levelQuality'])]))
 
-    return np.array(features), np.array(targets)
+    from multiprocessing import Pool
+    num_tasks = len(downloaded_songs_full)
+    num_tasks_per_job = num_tasks // 16
+    #songs_list = np.array_split(downloaded_songs_full, num_tasks_per_job)
+    p = Pool(16)
+    p.map(extract_features_targets_from_dir, downloaded_songs_full)
+    #for song_dir in downloaded_songs_full:
+    #    extract_features_targets_from_dir(song_dir)
+
+    features_and_targets = []
+    print('Reading features_and_targets from song dirs')
+    for song_dir in downloaded_songs_full:
+        features_and_targets.append(read_features_targets_from_song_dir(song_dir))
+    IOFunctions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, 'features_and_targets_' + getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H:%M:%S') + '.pkl'))
+
+    return features_and_targets
+
+
+def extract_features_targets_from_dir(song_dir):
+    print('Extracting Features from '+str(song_dir))
+    meta_data_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'meta_data.txt'))
+    if not os.path.exists(meta_data_filename):
+        pass
+    else:
+        features = []
+        targets = []
+        meta_data = read_meta_data_file(meta_data_filename)
+        difficulty_rating = meta_data['scoresaberDifficulty'].replace(' ', '').split(',')
+        if difficulty_rating != ['']:
+            json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
+            for i in range(len(json_files)):
+                bs_level = IOFunctions.parse_json(json_files[i])
+                features.append(np.array(extract_features_from_beatsaber_level(bs_level)))
+                targets.append(np.array(
+                    [float(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']),
+                     float(meta_data['rating']), \
+                     float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
+                     float(meta_data['patternQuality']), float(meta_data['readability']),
+                     float(meta_data['levelQuality'])]))
+        IOFunctions.saveFile([features, targets], os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl')))
+
+def read_features_targets_from_song_dir(song_dir):
+    features_targets_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl'))
+    if not os.path.exists(features_targets_filename):
+        features_and_targets = np.array([])
+    else:
+        features_and_targets = np.array(IOFunctions.loadFile(features_targets_filename))
+    return features_and_targets
 
 def extract_features_from_beatsaber_level(bs_level):
     #feature_1 = distance travelled

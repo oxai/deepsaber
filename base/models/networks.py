@@ -242,6 +242,8 @@ class WaveNetModel(nn.Module):
         conditioning_seq = constant_pad_1d(conditioning_seq.permute(2,1,0),conditioning_seq.size(2)+self.receptive_field//2,pad_start=True).permute(2,1,0)
         conditioning_seq = constant_pad_1d(conditioning_seq.permute(2,1,0),conditioning_seq.size(2)+self.receptive_field,pad_start=False).permute(2,1,0)
 
+        peak_probs = []
+
         for i in range(num_samples):
             input = Variable(torch.FloatTensor(1, self.output_channels, self.num_classes, self.receptive_field//2).zero_())
             # input = Variable(torch.FloatTensor(1, self.num_classes, self.receptive_field).zero_())
@@ -284,6 +286,7 @@ class WaveNetModel(nn.Module):
                     # print(np_prob)
                     xs.append(x1)
                 x = Variable(torch.LongTensor([xs]))#np.array([x])
+                peak_probs.append(np_prob[-1]) # last class is class of peak
             else:
                 x = torch.max(x, 1)[1].float()
 
@@ -294,7 +297,7 @@ class WaveNetModel(nn.Module):
         # mu_gen = mu_law_expansion(generated, self.input_channels)
 
         self.train()
-        return generated[:,:,self.receptive_field//2:]
+        return generated[:,:,self.receptive_field//2:], peak_probs
 
     #TODO: this should be parallelized.... but I'm not doing it yet :PP
     def generate_no_autoregressive(self,

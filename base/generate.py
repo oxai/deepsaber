@@ -37,9 +37,10 @@ from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction
 # experiment_name2 = "block_selection/"
 # two_stage = True
 args={}
-args["checkpoint"] = "130000"
+args["checkpoint"] = "135000"
 args["checkpoint2"] = "625000"
-args["experiment_name"] = "block_placement_new_nohumreg/"
+# args["experiment_name"] = "block_placement_new_nohumreg/"
+args["experiment_name"] = "block_placement_new_nohumreg_small/"
 # args["experiment_name"] = "block_placement_new_nohumreg_large/"
 args["experiment_name2"] = "block_selection_new/"
 args["temperature"] = 1.00
@@ -57,7 +58,7 @@ if args.two_stage:
     assert args.experiment_name2 is not None
     assert args.checkpoint2 is not None
 
-song_name = "35_fixed"
+song_name = "18"
 song_name = "test_song"+song_name+".wav"
 song_path = "../../"+song_name
 # print(experiment_name)
@@ -69,6 +70,8 @@ song_path = "../../"+song_name
 opt = json.loads(open(experiment_name+"opt.json","r").read())
 opt["gpu_ids"] = [0]
 opt["cuda"] = True
+if "dropout" not in opt:
+    opt["dropout"] = 0.0
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)
@@ -145,27 +148,49 @@ first_samples = torch.full((1,opt.output_channels,receptive_field//2),Constants.
 # first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
 # first_samples[0,0,0] = Constants.START_STATE
 if opt.concat_outputs:
-    output = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
+    output,peak_probs = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
 else:
     output = model.net.module.generate_no_autoregressive(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
 states_list = output[0,:,:].permute(1,0)
 states_list.tolist()
 np.unique(states_list)
 
+peak_probs = np.array(peak_probs)
+
+import matplotlib.pyplot as plt
+plt.plot(peak_probs[0:300])
+
+from scipy import signal
+window = signal.hamming(10)
+
+smoothed_peaks = np.convolve(peak_probs,window,mode='same')
+plt.plot(smoothed_peaks[0:1000])
+
+thresholded_peaks = smoothed_peaks[smoothed_peaks>0.17]
+
+plt.plot(thresholded_peaks[0:100])
+
+peaks = signal.find_peaks(thresholded_peaks)[0]
+
+len(peaks)
+
+#%%
+
 #if using reduced_state representation convert from reduced_state_index to state tuple
-unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 #old (before transformer)
 # states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
 
 #convert from states to beatsaber notes
 if opt.binarized: # for experiments where the output is state/no state
     # notes = [{"_time":float((i-1)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
-    notes = [{"_time":float((i)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    notes = [{"_time":float((i)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for i in peaks]
+    # notes = [{"_time":float((i)*bpm*hop/(sr*60)), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
     # times_beat = [float((i+0.0)*bpm*hop/(sr*60)) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
     # times_real = [float((i-1)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
-    times_real = [float((i)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
+    times_real = [float((i)*hop/sr) for i in peaks]
     notes = np.array(notes)[np.where(np.diff([-1]+times_real) > 0.1)[0]].tolist()
 else: # this is where the notes are generated for end-to-end models that actually output states
+    unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
     states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
     notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]
     notes += [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":3} for j,y in enumerate(x) if y==19] for i,x in enumerate(states_list)]

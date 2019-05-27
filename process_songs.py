@@ -84,12 +84,6 @@ for i in tasks:
             features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
             features = librosa.power_to_db(features, ref=np.max)
         np.save(features_file,features)
-        # features_file = song_file_path+"_"+feature_name+"_"+str(feature_size)+"2.npy"
-        # np.save(features_file,features)
-        #
-        # features.shape
-        # features = np.load(features_file)
-        # features.dtype
 
         # uncomment to look for notes beyond the end of time
         # notes = level['_notes']
@@ -101,60 +95,3 @@ for i in tasks:
         #         print("note beyond the end of time")
         #         print((note['_time']*60/bpm)-(y_wav.shape[0]/sr))
         #         continue
-
-# import matplotlib.pyplot as plt
-# %matplotlib
-# import IPython.display as ipd
-#
-# plt.matshow(features)
-#
-# sampling_rate = 22050
-# y_wav, sr = librosa.load(song_file_path, sr=sampling_rate)
-# features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
-# features = np.load(features_file)
-# %matplotlib
-# import librosa.display
-# # features.shape[1]
-# # plt.matshow(features[:,:1000])
-# # plt.matshow(librosa.power_to_db(features, ref=np.max)[:,:100000])
-# librosa.display.specshow(features,x_axis='time')
-# librosa.display.specshow(librosa.power_to_db(features, ref=np.max), y_axis='mel', fmax=8000, x_axis='time')
-# librosa.display.specshow(features[:12,:],x_axis='time')
-# librosa.display.specshow(features[12:,:],x_axis='time')
-# sample_index
-# note['_time']
-# sr*note['_time']*60/bpm
-# sr*note['_time']*60/bpm/num_samples_per_feature
-# print((note['_time']*60/bpm)-(y_wav.shape[0]/sr))
-# y_wav.shape[0]
-# y_wav.shape[0]/sr
-#
-# y_wav.shape[0]//mel_hop
-#
-# y.shape
-
-# plt.plot(y)
-# mfcc.shape
-# plt.matshow(mfcc[:,-60:-1])
-#
-# sampling_rate = 16000
-# y_harm, y_perc = librosa.effects.hpss(y_wav)
-# ipd.Audio(y_perc, rate=sampling_rate)
-# ipd.Audio(y_wav, rate=sampling_rate)
-#
-#
-# ipd.Audio(y_harm, rate=sampling_rate)
-
-# import pit
-
-# ipd.Audio(pitch_shift(y,sampling_rate,n_steps=5), rate=sampling_rate)
-
-# from process_beat_saber_data import pitch_shift
-
-#if mfcc.shape[1]-(input_length+time_shifts-1) < 1:
-#    print("Smol song, probably trolling; blacklisting...")
-#    with open(data_path.__str__()+"blacklist","a") as f:
-#        f.write(song_file_path+"\n")
-
-##pickle.dump(mfcc,open(mfcc_file,"wb"))
-#np.save(mfcc_file,mfcc)

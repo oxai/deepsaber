@@ -25,6 +25,7 @@ class WaveNetModel(BaseModel):
                            output_channels=opt.output_channels,
                            num_classes=opt.num_classes,
                            kernel_size=opt.kernel_size,
+                           dropout_p=opt.dropout,
                            bias=opt.bias)
         self.optimizers = [torch.optim.Adam([
             {'params': [param for name, param in self.net.named_parameters() if name[-4:] == 'bias'],
@@ -54,7 +55,7 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--bias', action='store_false')
         parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
         parser.add_argument('--humaneness_reg_coeff', type=float, default=1.0)
-        parser.add_argument('--humaneness_temp', type=float, default=1.0)
+        parser.add_argument('--dropout_p', type=float, default=0.0)
         return parser
 
     def set_input(self, data):

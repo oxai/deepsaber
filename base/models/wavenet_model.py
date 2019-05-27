@@ -98,7 +98,8 @@ class WaveNetModel(BaseModel):
         # print()
         # print(self.input[:,-5:,receptive_field//2-(window_size-1):receptive_field//2].shape)
         # self.loss_humaneness_reg = F.relu(humaneness_reg-1).mean()
-        humaneness_reg = -F.cross_entropy(x,torch.ones(weights.shape).long().cuda(), reduction='none')
+        # humaneness_reg = -F.cross_entropy(x,torch.ones(weights.shape).long().cuda(), reduction='none')
+        humaneness_reg = F.cross_entropy(x,torch.zeros(weights.shape).long().cuda(), reduction='none')
         humaneness_reg = torch.dot(humaneness_reg, weights)
         self.loss_humaneness_reg = humaneness_reg
         self.loss_total = self.loss_ce + self.opt.humaneness_reg_coeff * self.loss_humaneness_reg

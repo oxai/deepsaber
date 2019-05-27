@@ -164,7 +164,7 @@ if opt.binarized: # for experiments where the output is state/no state
     # times_beat = [float((i+0.0)*bpm*hop/(sr*60)) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
     # times_real = [float((i-1)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
     times_real = [float((i)*hop/sr) for i,x in enumerate(states_list) if x[0].int().item() not in [0,1,2,3]]
-    notes = np.array(notes)[np.where(np.diff([-1]+times_real) > 0.12)[0]].tolist()
+    notes = np.array(notes)[np.where(np.diff([-1]+times_real) > 0.1)[0]].tolist()
 else: # this is where the notes are generated for end-to-end models that actually output states
     states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
     notes = [[{"_time":float((i+0.0)*bpm*hop/(sr*60)), "_cutDirection":int((y-1)%9), "_lineIndex":int(j%4), "_lineLayer":int(j//4), "_type":int((y-1)//9)} for j,y in enumerate(x) if (y!=0 and y != 19)] for i,x in enumerate(states_list)]

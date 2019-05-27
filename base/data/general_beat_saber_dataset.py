@@ -12,6 +12,7 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 # feature_size = 24
 # number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
+from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel,feature_extraction_hybrid
 import Constants
 
 class GeneralBeatSaberDataset(BaseDataset):
@@ -27,7 +28,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
         self.audio_files = []
-        self.features = {}
+        self.feature_files = {}
 
         for i, path in enumerate(candidate_audio_files):
             #print(path)
@@ -38,25 +39,23 @@ class GeneralBeatSaberDataset(BaseDataset):
                     level_file_found = True
             if not level_file_found:
                 continue
+
+            # we need to find out what the input length of the model is, to remove songs which are too short to get input windows from them for this model
+            receptive_field = self.receptive_field
+            output_length = self.opt.output_length
+            input_length = receptive_field + output_length -1
             try:
                 features = np.load(features_file)
 
-                # we need to find out what the input length of the model is, to remove songs which are too short to get input windows from them for this model
-                receptive_field = self.receptive_field
-                output_length = self.opt.output_length
-                input_length = receptive_field + output_length -1
-
-                if features.shape[1]-(input_length+self.opt.time_shifts-1) < 1:
+                if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
                     print("Smol song; ignoring..")
                     continue
 
-                self.features[path.__str__()] = features
+                self.feature_files[path.__str__()] = features_file
             except FileNotFoundError:
                 raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
-            #for diff in ["Hard","hard","Expert"]:
             for diff in self.opt.level_diff.split(","):
-                #level = list(path.parent.glob('./'+self.opt.level_diff+'.json'))[0]
                 try:
                     level = list(path.parent.glob('./'+diff+'.json'))[0]
                     self.level_jsons.append(level)
@@ -68,41 +67,26 @@ class GeneralBeatSaberDataset(BaseDataset):
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"
         assert len(self.audio_files) == len(self.level_jsons)
-        self.eps = 0.1
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
         parser.add_argument('--sampling_rate', default=16000, type=float)
         parser.add_argument('--level_diff', default='Expert', help='Difficulty level for beatsaber level')
         parser.add_argument('--feature_name', default='chroma')
+        parser.add_argument('--feature_size', type=int, default=24)
         parser.add_argument('--hop_length', default=256, type=int)  # Set the hop length; at 22050 Hz, 512 samples ~= 23ms
         parser.add_argument('--compute_feats', action='store_true', help="Whether to extract musical features from the song")
         parser.add_argument('--padded_length', type=int, default=3000000)
-        parser.add_argument('--feature_size', type=int, default=24)
         parser.add_argument('--chunk_length', type=int, default=9000)
         # the input features at each time step consiste of the features at the time steps from now to time_shifts in the future
         parser.add_argument('--time_shifts', type=int, default=1, help='number of shifted sequences to include as input')
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
-        parser.add_argument('--using_sync_features', action='store_true', help='if true, use synced features')
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
         parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
         parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
         parser.add_argument('--max_token_seq_len', type=int, default=1000)
         parser.set_defaults(output_length=1)
-        ## IF REDUCED STATE
-        # the total number of input_channels is constructed by the the nfcc features (20 of them), 16 times one for each time_shift as explained above
-        # plus the 2001 classes in the reduced state representation corresponding to the block at that time step
-        # parser.set_defaults(input_channels=(feature_size*16+2001))
-        # parser.set_defaults(input_channels=(feature_size*1+number_reduced_states+Constants.NUM_SPECIAL_STATES)) # 3 more for PAD, START, END
-        # the number of output classes is one per state in the set of reduced states
-        # parser.set_defaults(num_classes=number_reduced_states+Constants.NUM_SPECIAL_STATES)
-        # channels is just one, just prediting one output, one of the 2001 classes
         parser.set_defaults(output_channels=1)
-        ### IF FULL STATE
-        # parser.set_defaults(input_channels=(20*16+12*20))
-        # # there are 12 outputs, one per grid point, with 20 possible classes each.
-        # parser.set_defaults(output_channels=12)
-        # parser.set_defaults(num_classes=20)
 
         return parser
 
@@ -112,13 +96,7 @@ class GeneralBeatSaberDataset(BaseDataset):
     def __getitem__(self, item):
         #NOTE: there is a lot of code repeat between this and the non-reduced version, perhaps we could fix that
         song_file_path = self.audio_files[item].__str__()
-        features = song_file_path+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
-
-        # get features
-        try:
-            features = self.features[song_file_path]
-        except:
-            raise Exception("features not found for song "+song_file_path)
+        # print(song_file_path)
 
         level = json.load(open(self.level_jsons[item].__str__(), 'r'))
 
@@ -128,13 +106,21 @@ class GeneralBeatSaberDataset(BaseDataset):
 
         #useful quantities, to sync notes to song features
         sr = self.opt.sampling_rate
-        beat_duration = int(60*sr/bpm) #beat duration in samples
+        if self.opt.using_bpm_time_division:
+            beat_duration_samples = int(60*sr/bpm) #beat duration in samples
+            beat_subdivision = self.opt.beat_subdivision
+            hop = int(beat_duration_samples * 1/beat_subdivision)
+            beat_duration = 60/bpm #beat duration in seconds
+            step_size = beat_duration/beat_subdivision #in seconds
+        else:
+            step_size = self.opt.step_size # in seconds
+            hop = int(step_size*sr)
+            beat_subdivision = 1/(step_size*bpm/60)
         # duration of one time step in samples:
-        hop = int(beat_duration * 1/self.opt.beat_subdivision)
-        if not self.opt.using_sync_features:
-            hop -= hop % 32
         num_samples_per_feature = hop
         #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
+        features = np.load(self.feature_files[song_file_path])
+
 
         # for short
         y = features
@@ -143,8 +129,8 @@ class GeneralBeatSaberDataset(BaseDataset):
         # we pad the song features with zeros to imitate during training what happens during generation
         # this is helpful for models that have a big receptive field like wavent, but we also use it with a receptive_field=1 for LSTM and Transformer
         y = np.concatenate((np.zeros((y.shape[0],receptive_field)),y),1)
-        # we also pad one more state at the end, to accommodate an "end" symbol for the blocks
-        y = np.concatenate((y,np.zeros((y.shape[0],1))),1)
+        # we also pad at the end to allow generation to be of the same length of song, by padding an amount corresponding to time_shifts
+        y = np.concatenate((y,np.zeros((y.shape[0],self.opt.time_shifts))),1)
 
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
@@ -161,12 +147,14 @@ class GeneralBeatSaberDataset(BaseDataset):
 
         ## CONSTRUCT TENSOR OF INPUT SOUND FEATURES (MFCC) ##
         # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
-        input_windowss = []
-        for ii in range(self.opt.time_shifts):
-            input_windows = [y[:,i+ii:i+ii+input_length] for i in indices]
-            input_windows = torch.tensor(input_windows)
-            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
-            input_windowss.append(input_windows.float())
+        input_windows = [y[:,i:i+input_length] for i in indices]
+        input_windows = torch.tensor(input_windows)
+        input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
+        input_windowss = [input_windows]
+        # input_windowss = []
+        # for ii in range(self.opt.time_shifts):
+            # input_windows = [y[:,i+ii:i+ii+input_length] for i in indices]
+        #     input_windowss.append(input_windows.float())
 
         ## BLOCKS TENSORS ##
         if self.opt.reduced_state:
@@ -177,10 +165,11 @@ class GeneralBeatSaberDataset(BaseDataset):
             blocks_windows, blocks_targets = get_full_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,self.opt.output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length)
 
         # print(blocks_targets.shape)
+        # print(blocks_windows)
 
         if self.opt.concat_outputs:
             # concatenate the song and block input features before returning
-            return {'input': torch.cat(input_windowss + [blocks_windows.float()],1), 'target': blocks_targets}
+            return {'input': torch.cat(input_windowss + [blocks_windows],1).float(), 'target': blocks_targets}
         else:
             # concatenate the song and block input features before returning
             return {'input': torch.cat(input_windowss,1), 'target': blocks_targets}

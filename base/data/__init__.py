@@ -53,11 +53,11 @@ def create_dataset(opt, validation_phase=False,*args,**kwargs):
     print('dataset [{}] was created {}'.format(instance.name(), "(val)" if validation_phase else ''))
     return instance
 
-def paired_collate_fn(insts):
+def paired_collate_fn(insts,tgt_dim=2):
     src_insts= list(map(lambda x: x['input'],insts))
     tgt_insts = list(map(lambda x: x['target'],insts))
     src_insts = collate_fn(src_insts,dim=2)
-    tgt_insts = collate_fn(tgt_insts,dim=1)
+    tgt_insts = collate_fn(tgt_insts,dim=tgt_dim)
     return {'input':src_insts, 'target':tgt_insts}
 
 from Constants import PAD_STATE
@@ -80,11 +80,26 @@ def collate_fn(insts,dim=-1): #dim is time dim
 
     return batch_seq, batch_pos
 
+def transformer_paired_collate_fn(insts):
+    return paired_collate_fn(insts,tgt_dim=2)
+
+def wavenet_paired_collate_fn(insts):
+    return paired_collate_fn(insts,tgt_dim=1)
+
+def meta_collate_fn(pad_batches, model):
+    if pad_batches:
+        if model == "transformer":
+            return transformer_paired_collate_fn
+        else:
+            return wavenet_paired_collate_fn
+    else:
+        return default_collate
+
 from torch.utils.data.dataloader import default_collate
 def create_dataloader(dataset):
     is_val = dataset.opt.phase == "val"
     return DataLoader(dataset,
                       batch_size=dataset.opt.batch_size if not is_val else dataset.opt.val_batch_size,
                       shuffle=not is_val,
-                      collate_fn=paired_collate_fn if dataset.opt.pad_batches else default_collate,
+                      collate_fn=meta_collate_fn(dataset.opt.pad_batches,dataset.opt.model),
                       num_workers=dataset.opt.workers)

@@ -2,6 +2,10 @@
 
 # these are the settings for the computers I'm using at the moment
 
+exp=$2
+iter=$3
+mkdir base/${exp}
+
 if [ $1 = bria ] #briareos
 then
     port=16384
@@ -17,9 +21,11 @@ then
     port=22
     url=$hydra
     path=/users/guillefix/
+elif [ $1 = gcloud ] #google cloud
+then
+    gcloud compute scp --project skillful-eon-241416 --zone us-central1-a --recurse tensorflow-1-vm:~/code/beatsaber/base/${exp}/opt.json base/${exp}
+    gcloud compute scp --project skillful-eon-241416 --zone us-central1-a --recurse tensorflow-1-vm:~/code/beatsaber/base/${exp}/iter_${iter}_net_.pth base/${exp}
+    exit 0
 fi
-exp=$2
-iter=$3
-mkdir base/${exp}
 scp -P $port ${url}:${path}beatsaber/base/${exp}/opt.json base/${exp}
 scp -P $port ${url}:${path}beatsaber/base/${exp}/iter_${iter}_net_.pth base/${exp}

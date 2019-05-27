@@ -1,4 +1,3 @@
-
 import numpy as np
 import librosa
 from pathlib import Path
@@ -6,42 +5,41 @@ import json
 import os.path
 from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel,feature_extraction_hybrid
 
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-print(rank)
-
 import sys
-# sys.argv[1]="AugDataTest/"
+# sys.argv[1]="AugData/"
 # sys.argv[2]="Expert"
 data_path = Path(sys.argv[1])
 #data_path = Path("DataE/")
-
-candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
-
-num_tasks = len(candidate_audio_files)
-# num_tasks = 10
-
-num_tasks_per_job = num_tasks//size
-tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
-
-if rank < num_tasks%size:
-    tasks.append(size*num_tasks_per_job+rank)
 
 # feature_name = "chroma"
 feature_name = "mel"
 feature_size = 100
 # feature_size = 24
-use_sync=True
+step_size = 0.01
+
 replace_present=True
+using_bpm_time_division = False
 
 difficulties = sys.argv[2]
 sampling_rate = 16000
 beat_subdivision = 16
 # n_mfcc = 20
 
-path = candidate_audio_files[0]
+## distributing tasks accross nodes ##
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+print(rank)
+
+candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
+num_tasks = len(candidate_audio_files)
+num_tasks_per_job = num_tasks//size
+tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
+if rank < num_tasks%size:
+    tasks.append(size*num_tasks_per_job+rank)
+
+# path = candidate_audio_files[0]
 
 #%%
 
@@ -50,14 +48,17 @@ for i in tasks:
     #print(path)
     song_file_path = path.__str__()
     features_file = song_file_path+"_"+feature_name+"_"+str(feature_size)+".npy"
+
     level_file_found = False
     for diff in difficulties.split(","):
         if Path(path.parent.__str__()+"/"+diff+".json").is_file():
             level = list(path.parent.glob('./'+diff+'.json'))[0]
+            # level = list(path.parent.glob('./'+"Expert"+'.json'))[0]
             level = level.__str__()
             level_file_found = True
     if not level_file_found:
         continue
+
     if replace_present or not os.path.isfile(features_file):
         print("creating feature file",i)
         level = json.load(open(level, 'r'))
@@ -67,30 +68,28 @@ for i in tasks:
 
         bpm = level['_beatsPerMinute']
         sr = sampling_rate
-        beat_duration = 60/bpm #beat duration in seconds
-        #
-        step_size = beat_duration/beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-        # hop = int(beat_duration * 1/beat_subdivision)
-        # hop -= hop % 32
-        # num_samples_per_feature = hop
-        # mel_window = hop
+        if using_bpm_time_division:
+            beat_duration = 60/bpm #beat duration in seconds
+            step_size = beat_duration/beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
+        else:
+            beat_subdivision = 1/(step_size*bpm/60)
 
         #get feature
         #features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
         state_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
         if feature_name == "chroma":
-            if use_sync:
-                features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_discretization=1/beat_subdivision,mel_dim=12)
-            else:
-                features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+            features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
         elif feature_name == "mel":
             # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
             features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
+            features = librosa.power_to_db(features, ref=np.max)
         np.save(features_file,features)
-
-        ## get mfcc feature
-        # mfcc = librosa.feature.mfcc(y_wav, sr=sr, hop_length=mel_hop, n_fft=mel_window, n_mfcc=n_mfcc)
-        # y = mfcc
+        # features_file = song_file_path+"_"+feature_name+"_"+str(feature_size)+"2.npy"
+        # np.save(features_file,features)
+        #
+        # features.shape
+        # features = np.load(features_file)
+        # features.dtype
 
         # uncomment to look for notes beyond the end of time
         # notes = level['_notes']
@@ -113,7 +112,13 @@ for i in tasks:
 # y_wav, sr = librosa.load(song_file_path, sr=sampling_rate)
 # features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
 # features = np.load(features_file)
+# %matplotlib
 # import librosa.display
+# # features.shape[1]
+# # plt.matshow(features[:,:1000])
+# # plt.matshow(librosa.power_to_db(features, ref=np.max)[:,:100000])
+# librosa.display.specshow(features,x_axis='time')
+# librosa.display.specshow(librosa.power_to_db(features, ref=np.max), y_axis='mel', fmax=8000, x_axis='time')
 # librosa.display.specshow(features[:12,:],x_axis='time')
 # librosa.display.specshow(features[12:,:],x_axis='time')
 # sample_index

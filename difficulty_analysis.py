@@ -47,17 +47,19 @@ def extract_features_from_all_levels():
     features_and_targets = []
     features_needed = []
     for song_dir in downloaded_songs_full:
-        feature_target = read_features_targets_from_song_dir(song_dir)
-        if len(feature_target) is 0:
-            features_needed.append(song_dir)
-        else:
-            features_and_targets.append(feature_target)
+        features_needed.append(song_dir)
+        # feature_target = read_features_targets_from_song_dir(song_dir)
+        # if len(feature_target) is 0:
+        #     features_needed.append(song_dir)
+        # else:
+        #     pass
+        # features_and_targets.append(feature_target)
 
     from multiprocessing import Pool
     num_tasks = len(features_needed)
     # num_tasks_per_job = num_tasks // 16
     # songs_list = np.array_split(downloaded_songs_full, num_tasks_per_job)
-    p = Pool(16)
+    p = Pool(8)
     p.map(extract_features_targets_from_dir, features_needed)
     # for song_dir in downloaded_songs_full:
     #    extract_features_targets_from_dir(song_dir)
@@ -65,7 +67,7 @@ def extract_features_from_all_levels():
     print('Reading features_and_targets from song dirs')
     for song_dir in features_needed:
         features_and_targets.append(read_features_targets_from_song_dir(song_dir))
-    IOFunctions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, 'features_and_targets_' + getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H:%M:%S') + '.pkl'))
+    IOFunctions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, 'features_and_targets_' + getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H-%M-%S') + '.pkl'))
 
     return features_and_targets
 
@@ -73,25 +75,32 @@ def extract_features_from_all_levels():
 def extract_features_targets_from_dir(song_dir):
     print('Extracting Features from '+str(song_dir))
     meta_data_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'meta_data.txt'))
+    features = []
+    targets = []
     if not os.path.exists(meta_data_filename):
         pass
     else:
-        features = []
-        targets = []
         meta_data = read_meta_data_file(meta_data_filename)
         difficulty_rating = meta_data['scoresaberDifficulty'].replace(' ', '').split(',')
         if difficulty_rating != ['']:
             json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
-            for i in range(len(json_files)):
-                bs_level = IOFunctions.parse_json(json_files[i])
-                features.append(np.array(extract_features_from_beatsaber_level(bs_level)))
-                targets.append(np.array(
-                    [float(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']),
-                     float(meta_data['rating']), \
-                     float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
-                     float(meta_data['patternQuality']), float(meta_data['readability']),
-                     float(meta_data['levelQuality'])]))
+            if(len(json_files) == len(difficulty_rating)):
+                for i in range(len(json_files)):
+                    bs_level = IOFunctions.parse_json(json_files[i])
+                    features.append(np.array(extract_features_from_beatsaber_level(bs_level)))
+                    try:
+                        targets.append(np.array(
+                            [float(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']),
+                             float(meta_data['rating']), \
+                             float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
+                             float(meta_data['patternQuality']), float(meta_data['readability']),
+                             float(meta_data['levelQuality'])]))
+                    except IndexError:
+                        print(difficulty_rating)
+                        print(i)
+                        print(meta_data)
         IOFunctions.saveFile([features, targets], os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl')))
+    return [features, targets]
 
 def read_features_targets_from_song_dir(song_dir):
     features_targets_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl'))
@@ -366,12 +375,20 @@ def get_linear_regression_model_for_all_targets(features, targets):
         models.append(linear_regression_model(features[:], targets[:, i]))
     return models
 
+def measure_regression_prediction_error(model, x_test, y_test):
+    errors = []
+    for i in range(len(x_test)):
+        y_pred = np.multiply(x_test[i][:], model[1, :]).append(model[0])
+        errors.append(y_pred - y_test)
+    error_mean = np.mean(errors)
+    error_std_dev = np.sqrt(np.mean(np.power(np.subtract(errors, error_mean), 2)))
+    return errors, error_mean, error_std_dev
 
 
 if __name__ == '__main__':
-    # feature_targets = extract_features_targets_from_dir('84)We Will Rock You - Queen')
-    features, targets = extract_features_from_all_levels()
-    IOFunctions.saveFile([features, targets], 'dataset_features_and_target_metrics.pkl')
+    # feature_targets = extract_features_targets_from_dir('994)Made In Love - Chart by Mystikmol')
+    features_and_targets = extract_features_from_all_levels()
+    IOFunctions.saveFile(features_and_targets, 'dataset_features_and_target_metrics.pkl')
     features_and_targets = IOFunctions.loadFile('dataset_features_and_target_metrics.pkl')
     models = get_linear_regression_model_for_all_targets(features_and_targets[0], features_and_targets[1])
     IOFunctions.saveFile(models, 'dataset_targets_linear_model.pkl')

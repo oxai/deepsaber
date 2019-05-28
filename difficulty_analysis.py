@@ -44,18 +44,26 @@ def extract_features_from_all_levels():
     targets = []
     downloaded_songs_full, downloaded_songs = get_list_of_downloaded_songs()
 
+    features_and_targets = []
+    features_needed = []
+    for song_dir in downloaded_songs_full:
+        feature_target = read_features_targets_from_song_dir(song_dir)
+        if len(feature_target) is 0:
+            features_needed.append(song_dir)
+        else:
+            features_and_targets.append(feature_target)
+
     from multiprocessing import Pool
-    num_tasks = len(downloaded_songs_full)
-    num_tasks_per_job = num_tasks // 16
-    #songs_list = np.array_split(downloaded_songs_full, num_tasks_per_job)
+    num_tasks = len(features_needed)
+    # num_tasks_per_job = num_tasks // 16
+    # songs_list = np.array_split(downloaded_songs_full, num_tasks_per_job)
     p = Pool(16)
-    p.map(extract_features_targets_from_dir, downloaded_songs_full)
-    #for song_dir in downloaded_songs_full:
+    p.map(extract_features_targets_from_dir, features_needed)
+    # for song_dir in downloaded_songs_full:
     #    extract_features_targets_from_dir(song_dir)
 
-    features_and_targets = []
     print('Reading features_and_targets from song dirs')
-    for song_dir in downloaded_songs_full:
+    for song_dir in features_needed:
         features_and_targets.append(read_features_targets_from_song_dir(song_dir))
     IOFunctions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, 'features_and_targets_' + getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H:%M:%S') + '.pkl'))
 
@@ -244,9 +252,9 @@ def extract_notes_from_bs_level(bs_level):
 def calc_angles_travelled(df):
     angles_travelled = 0
     i = 0
-    while df.iloc[i]['_time'] == df.iloc[i+1]['_time']:
-        pass
-        #i+=1
+    # while df.iloc[i]['_time'] == df.iloc[i+1]['_time']:
+    #     pass
+    #  i+=1
 
     cut_direction_delta_switcher = [
         [[0., -0.5], [0., 0.5]], #up cut
@@ -356,9 +364,12 @@ def get_linear_regression_model_for_all_targets(features, targets):
     models = []
     for i in range(num_targets):
         models.append(linear_regression_model(features[:], targets[:, i]))
+    return models
+
 
 
 if __name__ == '__main__':
+    # feature_targets = extract_features_targets_from_dir('84)We Will Rock You - Queen')
     features, targets = extract_features_from_all_levels()
     IOFunctions.saveFile([features, targets], 'dataset_features_and_target_metrics.pkl')
     features_and_targets = IOFunctions.loadFile('dataset_features_and_target_metrics.pkl')

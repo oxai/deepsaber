@@ -40,33 +40,25 @@ Linear model: y = a0 + a1*x1 + a2*x2 + a3*x3 + a4*x4 + a5*x5
 '''
 
 def extract_features_from_all_levels():
-    features = []
-    targets = []
     downloaded_songs_full, downloaded_songs = get_list_of_downloaded_songs()
 
-    features_and_targets = []
+    features = np.array([])
+    targets = np.array([])
     features_needed = []
     for song_dir in downloaded_songs_full:
         features_needed.append(song_dir)
-        # feature_target = read_features_targets_from_song_dir(song_dir)
-        # if len(feature_target) is 0:
-        #     features_needed.append(song_dir)
-        # else:
-        #     pass
-        # features_and_targets.append(feature_target)
-
     from multiprocessing import Pool
-    num_tasks = len(features_needed)
-    # num_tasks_per_job = num_tasks // 16
-    # songs_list = np.array_split(downloaded_songs_full, num_tasks_per_job)
     p = Pool(8)
     p.map(extract_features_targets_from_dir, features_needed)
-    # for song_dir in downloaded_songs_full:
-    #    extract_features_targets_from_dir(song_dir)
 
     print('Reading features_and_targets from song dirs')
-    for song_dir in features_needed:
-        features_and_targets.append(read_features_targets_from_song_dir(song_dir))
+    for song_dir in downloaded_songs_full:
+        feature_target = read_features_targets_from_song_dir(song_dir)
+        if feature_target is not None and len(feature_target) == 2:
+            if len(feature_target[0]) != 0 and len(feature_target[1]) != 0:
+                features = np.append(features, feature_target[0])
+                targets = np.append(targets, feature_target[1])
+    features_and_targets = np.stack([features, targets], axis=1)
     IOFunctions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, 'features_and_targets_' + getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H-%M-%S') + '.pkl'))
 
     return features_and_targets
@@ -75,37 +67,42 @@ def extract_features_from_all_levels():
 def extract_features_targets_from_dir(song_dir):
     print('Extracting Features from '+str(song_dir))
     meta_data_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'meta_data.txt'))
-    features = []
-    targets = []
+    features = np.array([])
+    targets = np.array([])
     if not os.path.exists(meta_data_filename):
         pass
     else:
         meta_data = read_meta_data_file(meta_data_filename)
         difficulty_rating = meta_data['scoresaberDifficulty'].replace(' ', '').split(',')
-        if difficulty_rating != ['']:
-            json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
-            if(len(json_files) == len(difficulty_rating)):
-                for i in range(len(json_files)):
-                    bs_level = IOFunctions.parse_json(json_files[i])
-                    features.append(np.array(extract_features_from_beatsaber_level(bs_level)))
-                    try:
-                        targets.append(np.array(
-                            [float(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']),
-                             float(meta_data['rating']), \
-                             float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
-                             float(meta_data['patternQuality']), float(meta_data['readability']),
-                             float(meta_data['levelQuality'])]))
-                    except IndexError:
-                        print(difficulty_rating)
-                        print(i)
-                        print(meta_data)
-        IOFunctions.saveFile([features, targets], os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl')))
+        try:
+            if difficulty_rating != ['']:
+                json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
+                if(len(json_files) == len(difficulty_rating)):
+                    for i in range(len(json_files)):
+                        bs_level = IOFunctions.parse_json(json_files[i])
+                        features = np.append(features, np.array(extract_features_from_beatsaber_level(bs_level)))
+                        try:
+                            targets = np.append(targets, np.array(
+                                [float(difficulty_rating[i]), int(meta_data['thumbsUp']), int(meta_data['thumbsDown']),
+                                 float(meta_data['rating']), \
+                                 float(meta_data['funFactor']), float(meta_data['rhythm']), float(meta_data['flow']), \
+                                 float(meta_data['patternQuality']), float(meta_data['readability']),
+                                 float(meta_data['levelQuality'])]))
+                        except IndexError:
+                            print(difficulty_rating)
+                            print(i)
+                            print(meta_data)
+            if len(features) is not 0 and len(targets) is not 0:
+                features_and_targets = np.stack([features, targets], axis=1)
+                IOFunctions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl')))
+        except Exception:
+            print(Exception)
     return [features, targets]
 
 def read_features_targets_from_song_dir(song_dir):
     features_targets_filename = os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl'))
     if not os.path.exists(features_targets_filename):
-        features_and_targets = np.array([])
+        features_and_targets = None
     else:
         features_and_targets = np.array(IOFunctions.loadFile(features_targets_filename))
     return features_and_targets
@@ -198,6 +195,7 @@ def return_distance_velocity(df):
     columnMinus1 = 0
     distance_acc = 0
     counter = 0
+    t = 0
     for index, element in df.iterrows():
         counter += 1
         t = element['_time']
@@ -214,7 +212,10 @@ def return_distance_velocity(df):
         tMinus1 = t
         distance_acc += distance
 
-    velocity_avg = distance_acc/t
+    if t != 0:
+        velocity_avg = distance_acc/t
+    else:
+        velocity_avg = 0
 
     return distance_acc, velocity_avg
 
@@ -277,44 +278,45 @@ def calc_angles_travelled(df):
         [[0., 0.], [0., 0.]],  #no direction
     ]
 
-    last_angle = None
-    #pt1 and pt2 are created from the first note position plus start and end points, based on the cut direction
-    pt1 = [df.iloc[i]['_lineIndex'], df.iloc[i]['_lineLayer']]
-    ptc1 = np.add(pt1, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][0])
-    ptc2 = np.add(pt1, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][1])
-    for i in range(1, len(df) - 1, 1):
-        # pt3 and pt4 are created from subsequent note positions plus start and end points
-        pt2 = [df.iloc[i]['_lineIndex'], df.iloc[i]['_lineLayer']]
-        ptc3 = np.add(pt2, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][0])
-        ptc4 = np.add(pt2, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][1])
-        #calc angle between beginning of note[i-1] and end of note[i-1]
-        vec = calc_vector_of_points(ptc1, ptc2)
-        angle = calc_angle_of_vector(vec)
-        #If the two points are in the same location then the angle between them is none
-        if angle is not None:
-            if last_angle is None:
-                last_angle = angle # first angle that != none
-            else:
-                angle_diff = np.abs(angle - last_angle)
-                angles_travelled += angle_diff
-                last_angle = angle
+    if len(df) > 0:
+        last_angle = None
+        #pt1 and pt2 are created from the first note position plus start and end points, based on the cut direction
+        pt1 = [df.iloc[i]['_lineIndex'], df.iloc[i]['_lineLayer']]
+        ptc1 = np.add(pt1, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][0])
+        ptc2 = np.add(pt1, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][1])
+        for i in range(1, len(df) - 1, 1):
+            # pt3 and pt4 are created from subsequent note positions plus start and end points
+            pt2 = [df.iloc[i]['_lineIndex'], df.iloc[i]['_lineLayer']]
+            ptc3 = np.add(pt2, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][0])
+            ptc4 = np.add(pt2, cut_direction_delta_switcher[int(df.iloc[i]['_cutDirection'])][1])
+            #calc angle between beginning of note[i-1] and end of note[i-1]
+            vec = calc_vector_of_points(ptc1, ptc2)
+            angle = calc_angle_of_vector(vec)
+            #If the two points are in the same location then the angle between them is none
+            if angle is not None:
+                if last_angle is None:
+                    last_angle = angle # first angle that != none
+                else:
+                    angle_diff = np.abs(angle - last_angle)
+                    angles_travelled += angle_diff
+                    last_angle = angle
 
-        # calc angle between end of note[i-1] and beginning of note[i]
-        vec = calc_vector_of_points(ptc2, ptc3)
-        angle = calc_angle_of_vector(vec)
-        if angle is not None:
-            if last_angle is None:
-                last_angle = angle
+            # calc angle between end of note[i-1] and beginning of note[i]
+            vec = calc_vector_of_points(ptc2, ptc3)
+            angle = calc_angle_of_vector(vec)
+            if angle is not None:
+                if last_angle is None:
+                    last_angle = angle
+                else:
+                    angle_diff = np.abs(angle - last_angle)
+                    angles_travelled += angle_diff
+                    last_angle = angle
             else:
-                angle_diff = np.abs(angle - last_angle)
-                angles_travelled += angle_diff
-                last_angle = angle
-        else:
-            angles_travelled += np.pi #  start and end point in same position, reversal of direction is necessary
-        #update notes[i-1] while 0 < i < len(df)
-        pt1 = pt2
-        ptc1 = ptc3
-        ptc2 = ptc4
+                angles_travelled += np.pi #  start and end point in same position, reversal of direction is necessary
+            #update notes[i-1] while 0 < i < len(df)
+            pt1 = pt2
+            ptc1 = ptc3
+            ptc2 = ptc4
     return angles_travelled
 
 
@@ -368,9 +370,8 @@ def linear_regression_model(features, target):
     return [alpha, beta]
 
 def get_linear_regression_model_for_all_targets(features, targets):
-    num_samples, num_features = features.shape
-    _, num_targets = targets.shape
     models = []
+    num_targets = len(targets[0])
     for i in range(num_targets):
         models.append(linear_regression_model(features[:], targets[:, i]))
     return models
@@ -382,7 +383,8 @@ def measure_regression_prediction_error(model, x_test, y_test):
         errors.append(y_pred - y_test)
     error_mean = np.mean(errors)
     error_std_dev = np.sqrt(np.mean(np.power(np.subtract(errors, error_mean), 2)))
-    return errors, error_mean, error_std_dev
+    return errors, error_mean, error_std_dev, y_test, y_pred
+
 
 
 if __name__ == '__main__':
@@ -390,8 +392,49 @@ if __name__ == '__main__':
     features_and_targets = extract_features_from_all_levels()
     IOFunctions.saveFile(features_and_targets, 'dataset_features_and_target_metrics.pkl')
     features_and_targets = IOFunctions.loadFile('dataset_features_and_target_metrics.pkl')
-    models = get_linear_regression_model_for_all_targets(features_and_targets[0], features_and_targets[1])
-    IOFunctions.saveFile(models, 'dataset_targets_linear_model.pkl')
-    features_and_targets = IOFunctions.loadFile('dataset_targets_linear_model.pkl')
+    # models = get_linear_regression_model_for_all_targets(features_and_targets[0], features_and_targets[1])
+    # IOFunctions.saveFile(models, 'dataset_targets_linear_model.pkl')
+    # models = IOFunctions.loadFile('dataset_targets_linear_model.pkl')
+
+    errors = []
+    error_mean = []
+    error_std_dev = []
+    y_test = []
+    y_pred = []
+    ax = None
+    new_features_and_targets = features_and_targets.copy()
+    for i in range(20):
+        np.random.shuffle(new_features_and_targets)
+        num_samples = len(features_and_targets)
+        num_train = int(np.floor(0.6*num_samples))
+        num_test = num_samples - num_train
+        test_models = get_linear_regression_model_for_all_targets(features_and_targets[:num_train,0], features_and_targets[:num_train,1])
+        for j in range(len(test_models)):
+            if j == 0 and i > 0:
+                errors.append([])
+                error_mean.append([])
+                error_std_dev.append([])
+                y_test.append([])
+                y_pred.append([])
+            this_errors, this_error_mean, this_error_std_dev, this_y_test, this_y_pred = measure_regression_prediction_error(test_models[j], features_and_targets[num_train:,0], features_and_targets[num_train:,1])
+            errors[-1].append(this_errors)
+            error_mean[-1].append(this_error_mean)
+            error_std_dev[-1].append(this_error_std_dev)
+            y_test[-1].append(this_y_test)
+            y_pred[-1].append(this_y_pred)
+            if j == 0:
+                sort_idx = np.argsort(this_y_test)
+                ax = IOFunctions.add_data_to_plot(x=y_test[-1][sort_idx], y=errors[-1][sort_idx], title='test_model_' + str(j),
+                                                  ax=ax, style='r-', label=str(j), legend=True, realtime=True)
+
+    difficulty_error = []
+    difficulty_error_mean = []
+    difficulty_error_std_dev = []
+    for i in range(20):
+        difficulty_error.append(errors[i][0])
+        difficulty_error_mean.append(error_mean[i][0])
+        difficulty_error_std_dev.append(error_std_dev[i][0])
+        print(np.mean(difficulty_error_mean))
+        print(np.mean(difficulty_error_std_dev))
 
 

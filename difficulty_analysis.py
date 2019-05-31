@@ -373,6 +373,7 @@ def get_linear_regression_model_for_all_targets(features, targets):
     models = []
     num_targets = len(targets[0])
     for i in range(num_targets):
+        # targets indexing not compatible with slicing - ndarrayitemscontainer
         models.append(linear_regression_model(features[:], targets[:, i]))
     return models
 

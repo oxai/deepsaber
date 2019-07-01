@@ -165,7 +165,8 @@ class Translator(object):
             inst_idx_to_position_map = get_inst_idx_to_tensor_position_map(active_inst_idx_list)
 
             #-- Decode
-            for len_dec_seq in range(1, self.model_opt.max_token_seq_len + 1):
+            # for len_dec_seq in range(1, self.model_opt.max_token_seq_len + 1):
+            for len_dec_seq in range(1, sequence_length + 1):
 
                 active_inst_idx_list = beam_decode_step(
                     inst_dec_beams, len_dec_seq, src_mask, src_enc, inst_idx_to_position_map, n_bm)
@@ -180,7 +181,7 @@ class Translator(object):
 
         return batch_hyp, batch_scores
 
-    def sample_translation(self, src_seq, src_pos, src_mask, sequence_length):
+    def sample_translation(self, src_seq, src_pos, src_mask, sequence_length, temperature):
         ''' Translation work in one batch '''
 
         def take_step(dec_seq, src_mask, enc_output):
@@ -195,7 +196,7 @@ class Translator(object):
                 #     dec_output, *_ = self.decoder(tgt_seq, tgt_seq, tgt_pos, src_mask, tgt_mask, enc_output)
                 dec_output = dec_output[:, -1, :]  # Pick the last step: (bh * bm) * d_h
                 # inverse temperature of sampling
-                prob = F.softmax(1.5*self.model.tgt_word_prj(dec_output)*self.model.x_logit_scale, dim=1).squeeze()
+                prob = F.softmax(1/(temperature)*self.model.tgt_word_prj(dec_output)*self.model.x_logit_scale, dim=1).squeeze()
                 prob = prob.cpu()
                 np_prob = prob.data.numpy()
                 word = np.random.choice(self.opt.tgt_vocab_size, p=np_prob)

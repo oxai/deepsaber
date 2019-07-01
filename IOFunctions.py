@@ -7,6 +7,8 @@ import pickle
 from glob import glob
 import html
 
+from matplotlib import pyplot
+
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 # THIS_DIR = "../"
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
@@ -285,3 +287,18 @@ def write_meta_data_file(filename, meta_data):
     f.close()
     return meta_data
 
+
+def add_data_to_plot(x, y, title=None, ax=None, style='b-', label=None, legend=None, realtime=False):
+    if(ax is None):
+        fig, ax = pyplot.subplots()
+    ax.plot(x, y, style, label=label)
+    if(title is not None):
+        ax.set_title(title)
+    if(legend is not None):
+        if legend is True:
+            ax.legend()
+        else:
+            ax.legend(legend)
+    if (realtime == True):
+        pyplot.pause(0.05)
+    return ax

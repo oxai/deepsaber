@@ -18,7 +18,6 @@ NUM_SPECIAL_STATES=3 # also padding
 
 def compute_state_sequence_representation_from_json(json_file, states=None, top_k=2000):
     '''
-
     :param json_file: The input JSON level file
     :param top_k: the top K states to keep (discard the rest)
     :return: The sequence of state ranks (of those in the top K) appearing in the level
@@ -37,25 +36,37 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
     return state_sequence
 
 
-def get_block_sequence_with_deltas(json_file, song_length, bpm, top_k=2000, beat_discretization = 1/16,states=None,one_hot=False,return_state_times=False):
+def get_block_sequence_with_deltas(json_file, song_length, bpm, step_size, top_k=2000,states=None,one_hot=False,return_state_times=False):
+    '''
+    :param json_file: The input JSON level file
+    :param song_length: The length of input song (in seconds). Used to filter out states occurring after end of song, which can appear in levels
+    :param bpm: The input song's beats per minute, to convert state times (which are in beats) to real-time
+    :param top_k: the top K states to keep (discard the rest)
+    :param step_size: The duration you aim to use to discretize state appearance time
+    :param states: ???????
+    :param one_hot: Returns states as one-hot (True) or numerical (False)
+    :return_state_times: Returns the original beat occurrences of states, used for level variation within 2-stage model
+    :return: 
+    '''
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
-    times_beats = np.array([0] + [time for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length] + [song_length*bpm/60])
-    times_beats_actual = np.array([time for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length])
-    max_index = int((song_length*60/bpm)/beat_discretization)
-    feature_indices = np.array([min(max_index,int((time/beat_discretization)+0.5)) for time in times_beats])  # + 0.5 is for rounding
-    times_real = times_beats * (60/bpm)
-    states = np.array([Constants.START_STATE]+[state for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length]+[Constants.END_STATE])
-    # print(states)
-    pos_enc = np.arange(len(states))
+    states_sequence_beat = [(time, state) for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length]
+    states_sequence_real = [(time*60/bpm, state) for time, state in states_sequence_beat]
+    times_real_extended = np.array([0] + [time for time, state in states_sequence_real] + [song_length])
+    times_beats = np.array([time for time, state in states_sequence_beat])
+    max_index = int(song_length/step_size)-1  # Ascertain that rounding at the last step doesn't create a state after end of song
+    feature_indices = np.array([min(max_index,int((time/step_size)+0.5)) for time in times_real_extended])  # + 0.5 is for rounding
+    # States in a level file are not necessarily in time order, so sorting is done here, while also 
+    states = np.array([Constants.START_STATE]+[state for time, state in states_sequence_beat]+[Constants.END_STATE])
     if one_hot:
+        adv_indexing_col = np.arange(len(states))  # Column used for advanced indexing to produce one-hot matrix
         one_hot_states = np.zeros((top_k + NUM_SPECIAL_STATES, states.shape[0]))
-        one_hot_states[states.astype(int), pos_enc.astype(int)] = 1
-    time_diffs = np.diff(times_real)
-    delta_backward = np.expand_dims(np.insert(time_diffs, 0, times_real[0]), axis=0)
-    delta_forward = np.expand_dims(np.append(time_diffs, song_length - times_real[-1]), axis=0)
+        one_hot_states[states.astype(int), adv_indexing_col.astype(int)] = 1  # Advanced Indexing to fill one hot
+    time_diffs = np.diff(times_real_extended)  # Compute differences between times 
+    delta_backward = np.expand_dims(np.insert(time_diffs, 0, times_real_extended[0]), axis=0)
+    delta_forward = np.expand_dims(np.append(time_diffs, song_length - times_real_extended[-1]), axis=0)
     if one_hot:
-        if return_state_times:
-            return one_hot_states, states, times_beats_actual, delta_forward, delta_backward, feature_indices
+        if return_state_times: # Return state beat times if requested
+            return one_hot_states, states, times_beats, delta_forward, delta_backward, feature_indices
         else:
             return one_hot_states, states, delta_forward, delta_backward, feature_indices
     else:
@@ -143,11 +154,11 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
         # print(len(level_states)) # Sanity Checks
         feature_extraction_times = [(i*beat_discretization)*(60/bpm) for i in range(len(level_states))]
         if audio_feature_select == "Chroma":  # for chroma
-            audio_features = chroma_feature_extraction(y, sr, feature_extraction_times)
+            audio_features = extract_features_chroma(y, sr, feature_extraction_times)
         elif audio_feature_select == "MFCC":  # for mfccs
-            audio_features = mfcc_feature_extraction(y, sr, feature_extraction_times)
+            audio_features = extract_features_mfcc(y, sr, feature_extraction_times)
         elif audio_feature_select == "Hybrid":
-            audio_features = feature_extraction_hybrid(y, sr, feature_extraction_times,bpm,beat_discretization)
+            audio_features = extract_features_hybrid_beat_synced(y, sr, feature_extraction_times,bpm,beat_discretization)
         # chroma_features = chroma_feature_extraction(y,sr, feature_extraction_frames, bpm, beat_discretization)
         level_state_feature_maps[os.path.basename(JSON_file)] = (level_states, audio_features)
 
@@ -159,80 +170,6 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
         # WE SHOULD ALSO USE THE PERCUSSIVE FREQUENCIES IN OUR DATA, Otherwise the ML is losing valuable information
     return level_state_feature_maps
 
-
-def feature_extraction_hybrid_raw(y,sr,bpm,beat_discretization=1/16,mel_dim=12,window_mult=1):
-    beat_duration = int(60 * sr / bpm)  # beat duration in samples
-    hop = int(beat_duration * beat_discretization) # one vec of mfcc features per 16th of a beat (hop is in num of samples)
-    hop -= hop % 32
-    window = window_mult * hop
-    y_harm, y_perc = librosa.effects.hpss(y)
-    mels = librosa.feature.melspectrogram(y=y_perc, sr=sr,n_fft=window,hop_length=hop,n_mels=mel_dim, fmax=65.4)  # C2 is 65.4 Hz
-    cqts = librosa.feature.chroma_cqt(y=y_harm, sr=sr,hop_length= hop,
-                                      norm=np.inf, threshold=0, n_chroma=12,
-                                      n_octaves=6, fmin=65.4, cqt_mode='full')
-    joint = np.concatenate((mels, cqts), axis=0)
-    return joint
-
-
-def feature_extraction_hybrid(y, sr, state_times,bpm,beat_discretization=1/16,mel_dim=12):
-    y_harm, y_perc = librosa.effects.hpss(y)
-    hop = 256 # Tnis is the default hop length
-    SANITY_RATIO = 0.25 # HAS TO BE AT MOST  0.5 to produce different samples per beat
-    if hop > SANITY_RATIO * beat_discretization * sr * (60 / bpm):
-        hop = int(SANITY_RATIO * beat_discretization * sr * 60 / bpm) # Make small enough to do the job. NOTE: FIX ME
-        hop -= hop % 32 # Has to be a multiple of 32 for CQT to work
-        if hop <= 0:
-            hop = 32 # Just in Case
-        # print(hop) # Sanity Check
-    mels = librosa.feature.melspectrogram(y=y_perc, sr=sr, n_mels=mel_dim, fmax=65.4, hop_length=hop)  # C2 is 65.4 Hz
-    cqts = librosa.feature.chroma_cqt(y=y_harm, sr=sr, C=None, hop_length=hop,
-                                      norm=np.inf, threshold=0, tuning=None, n_chroma=12,
-                                      n_octaves=6, fmin=65.4, window=None, cqt_mode='full')
-    # Problem: Sync is returning shorter sequences than the state times
-    state_frames = librosa.core.time_to_frames(state_times,hop_length=hop,sr=sr) # Hop-Aware Synchronisation
-    # print(state_frames)
-    beat_chroma = librosa.util.sync(cqts, state_frames, aggregate=np.median, pad=True, axis=-1)
-    beat_mel = librosa.util.sync(mels, state_frames, aggregate=np.median,pad=True,axis=-1)
-    output = np.concatenate((beat_mel,beat_chroma), axis=0)
-    return output
-
-def feature_extraction_mel(y, sr, state_times,bpm,beat_discretization=1/16,mel_dim=100):
-    # y_harm, y_perc = librosa.effects.hpss(y)
-    hop = 256 # Tnis is the default hop length
-    SANITY_RATIO = 0.25 # HAS TO BE AT MOST  0.5 to produce different samples per beat
-    if hop > SANITY_RATIO * beat_discretization * sr * (60 / bpm):
-        hop = int(SANITY_RATIO * beat_discretization * sr * 60 / bpm) # Make small enough to do the job. NOTE: FIX ME
-        hop -= hop % 32 # Has to be a multiple of 32 for CQT to work
-        if hop <= 0:
-            hop = 32 # Just in Case
-        # print(hop) # Sanity Check
-    mels = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=mel_dim, hop_length=hop)  # C2 is 65.4 Hz
-    # Problem: Sync is returning shorter sequences than the state times
-    state_frames = librosa.core.time_to_frames(state_times,hop_length=hop,sr=sr) # Hop-Aware Synchronisation
-    # print(state_frames)
-    # beat_chroma = librosa.util.sync(cqts, state_frames, aggregate=np.median, pad=True, axis=-1)
-    mel = librosa.util.sync(mels, state_frames, aggregate=np.median,pad=True,axis=-1)
-    # output = np.concatenate((beat_mel,beat_chroma), axis=0)
-    return mel
-
-def chroma_feature_extraction(y,sr, state_times):
-    #hop = #int((44100 * 60 * beat_discretization) / bpm) Hop length must be a multiple of 2^6
-    chromagram = librosa.feature.chroma_cqt(y=y, sr=sr, C=None, fmin=None,
-                                            norm=np.inf, threshold=0.0, tuning=None, n_chroma=12,
-                                            n_octaves=7, window=None, bins_per_octave=None, cqt_mode='full')
-    # Aggregate chroma features between beat events
-    # We'll use the median value of each feature between beat frames
-    state_frames = librosa.core.time_to_frames(state_times,sr=sr) # Default hop length of 512
-    #TODO: CHANGE THIS TO BECOME LIKE HYBRID IF WE ARE TO EVER USE THIS
-    beat_chroma = librosa.util.sync(chromagram, state_frames, aggregate=np.median, pad=True, axis=-1)
-    return beat_chroma
-
-
-def mfcc_feature_extraction(y,sr,state_times):
-    mfcc = librosa.feature.mfcc(y=y, sr=sr) # we can add other specified parameters
-    state_frames = librosa.core.time_to_frames(state_times,sr=sr)
-    beat_mfcc = librosa.util.sync(mfcc, state_frames, aggregate=np.median, pad=True, axis=-1)
-    return beat_mfcc
 
 def stage_two_states_to_json_notes(state_sequence, state_times, bpm, hop, sr, state_rank=None):
     if state_rank is None:  # Only load if state is not passed

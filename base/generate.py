@@ -14,7 +14,7 @@ import Constants
 from level_generation_utils import make_level_from_notes
 from math import ceil
 
-from stateSpaceFunctions import feature_extraction_hybrid_raw,feature_extraction_mel,feature_extraction_hybrid
+from featureExtration import extract_features_hybrid,extract_features_mel,extract_features_hybrid_beat_synced
 
 parser = argparse.ArgumentParser(description='Generate Beat Saber level from song')
 parser.add_argument('--song_path', type=str)
@@ -155,9 +155,9 @@ else:
 # get feature
 sample_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
 if opt.feature_name == "chroma":
-    features = feature_extraction_hybrid(y_wav,sr,sample_times,bpm,beat_discretization=1/beat_subdivision,mel_dim=12)
+    features = extract_features_hybrid_beat_synced(y_wav,sr,sample_times,bpm,beat_discretization=1/beat_subdivision,mel_dim=12)
 elif opt.feature_name == "mel":
-    features = feature_extraction_mel(y_wav,sr,sample_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
+    features = extract_features_mel(y_wav,sr,sample_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
     features = librosa.power_to_db(features, ref=np.max)
 
 
@@ -326,8 +326,6 @@ if args.two_stage:
     # json_file = generated_folder+"test_song"+signature_string+".json"
     # json_file = "/home/guillefix/code/beatsaber/DataE/156)Rap God (Explicit) - /Rap God/ExpertPlus.json"
     # sequence_length = 366
-    # from stateSpaceFunctions import get_block_sequence_with_deltas
-    # one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/opt.beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
 
     unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
     # json_file = 'generated/test_songtest_song35_fixed.wav_wavenet_general_beat_saber_block_placement_new_1.0_60000.json'

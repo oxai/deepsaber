@@ -3,27 +3,29 @@ import librosa
 from pathlib import Path
 import json
 import os.path
-from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel
+from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
 
 import sys
-# sys.argv[1]="AugData/"
-# sys.argv[2]="Expert"
-data_path = Path(sys.argv[1])
-#data_path = Path("DataE/")
 
-# feature_name = "chroma"
-feature_name = "mel"
-feature_size = 100
-# feature_size = 24
-step_size = 0.01
+import argparse
 
-replace_present=True
-using_bpm_time_division = False
+parser = argparse.ArgumentParser(description="Preprocess songs data")
 
-difficulties = sys.argv[2]
-sampling_rate = 16000
-beat_subdivision = 16
-# n_mfcc = 20
+parser.add_argument("data_path",type=str, help="Directory contining Beat Saber level folders")
+parser.add_argument("difficulties",type=str, help="Comma-separated list of difficulties to process (e.g. \"Expert,Hard\"")
+parser.add_argument("--feature_name",metavar='',type=str, default="mel")
+parser.add_argument("--feature_size",metavar='',type=int, default=100)
+parser.add_argument("--sampling_rate",metavar='',type=int, default=16000)
+parser.add_argument("--beat_subdivision",metavar='',type=int, default=16)
+parser.add_argument("--step_size",metavar='',type=float, default=0.01)
+parser.add_argument("--replace_existing",action="store_true")
+parser.add_argument("--using_bpm_time_division",action="store_true")
+
+args = parser.parse_args()
+
+# makes arugments into global variables of the same name, used later in the code
+globals().update(vars(args))
+data_path = Path(data_path)
 
 ## distributing tasks accross nodes ##
 from mpi4py import MPI
@@ -39,28 +41,25 @@ tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
 if rank < num_tasks%size:
     tasks.append(size*num_tasks_per_job+rank)
 
-# path = candidate_audio_files[0]
-
-#%%
-
 for i in tasks:
     path = candidate_audio_files[i]
-    #print(path)
     song_file_path = path.__str__()
+    # feature files are going to be saved as numpy files
     features_file = song_file_path+"_"+feature_name+"_"+str(feature_size)+".npy"
 
     level_file_found = False
+    # find level files with target difficulties that exist
     for diff in difficulties.split(","):
         if Path(path.parent.__str__()+"/"+diff+".json").is_file():
             level = list(path.parent.glob('./'+diff+'.json'))[0]
-            # level = list(path.parent.glob('./'+"Expert"+'.json'))[0]
             level = level.__str__()
             level_file_found = True
     if not level_file_found:
         continue
 
-    if replace_present or not os.path.isfile(features_file):
+    if replace_existing or not os.path.isfile(features_file):
         print("creating feature file",i)
+        # get level
         level = json.load(open(level, 'r'))
 
         # get song
@@ -68,30 +67,21 @@ for i in tasks:
 
         bpm = level['_beatsPerMinute']
         sr = sampling_rate
-        if using_bpm_time_division:
-            beat_duration = 60/bpm #beat duration in seconds
-            step_size = beat_duration/beat_subdivision #one vec of mfcc features per 16th of a beat (hop is in num of samples)
-        else:
-            beat_subdivision = 1/(step_size*bpm/60)
+        # beat_subdivision = 1/(step_size*bpm/60)
+
+        hop = int(sr * step_size)
 
         #get feature
-        #features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
-        state_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
         if feature_name == "chroma":
-            features = feature_extraction_hybrid_raw(y_wav,sr,bpm)
+            if using_bpm_time_division:
+                state_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
+                features = extract_features_hybrid_beat_synced(y_wav,sr,state_times,bpm,beat_discretization=1/beat_subdivision)
+            else:
+                features = extract_features_hybrid(y_wav,sr,hop)
         elif feature_name == "mel":
-            # features = feature_extraction_hybrid(y_wav,sr,state_times,bpm,beat_subdivision=beat_subdivision,mel_dim=12)
-            features = feature_extraction_mel(y_wav,sr,state_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
-            features = librosa.power_to_db(features, ref=np.max)
+            if using_bpm_time_division:
+                raise NotImplementedError("Mel features with beat synced times not implemented, but trivial TODO")
+            else:
+                features = extract_features_mel(y_wav,sr,hop,mel_dim=feature_size)
+                features = librosa.power_to_db(features, ref=np.max)
         np.save(features_file,features)
-
-        # uncomment to look for notes beyond the end of time
-        # notes = level['_notes']
-        # from math import floor
-        # for note in notes:
-        #     sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
-        #     # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
-        #     if sample_index >= y_wav.shape[1]:
-        #         print("note beyond the end of time")
-        #         print((note['_time']*60/bpm)-(y_wav.shape[0]/sr))
-        #         continue

@@ -105,13 +105,11 @@ class StageTwoDataset(BaseDataset):
         #useful quantities, to sync notes to song features
         sr = self.opt.sampling_rate
         if self.opt.using_bpm_time_division:
-            # beat_duration_samples = int(60*sr/bpm) #beat duration in samples
             beat_subdivision = self.opt.beat_subdivision
             beat_duration = 60/bpm #beat duration in seconds
             sample_duration = step_size = beat_duration/beat_subdivision #in seconds
         else:
             sample_duration = step_size = self.opt.step_size # in seconds
-            beat_subdivision = 1/(step_size*bpm/60)
         features = np.load(self.feature_files[song_file_path])
 
 
@@ -128,7 +126,7 @@ class StageTwoDataset(BaseDataset):
         sequence_length = y.shape[1]*sample_duration
 
         ## BLOCKS TENSORS ##
-        one_hot_states, states, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,top_k=2000,beat_discretization=1/beat_subdivision,states=unique_states,one_hot=True)
+        one_hot_states, states, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(self.level_jsons[item].__str__(),sequence_length,bpm,step_size, top_k=2000,states=unique_states,one_hot=True)
         # print(indices.shape,states.shape,one_hot_states.shape,delta_forward.shape,delta_backward.shape)
         truncated_sequence_length = min(len(states),self.opt.max_token_seq_len)
         states = states[:truncated_sequence_length]
@@ -143,6 +141,7 @@ class StageTwoDataset(BaseDataset):
 
         # get features at the places where a note appears, to construct feature sequence to help transformer
         y = y[:,indices]
+        print(y.shape)
         input_windows = [y]
 
         song_sequence = torch.tensor(input_windows)

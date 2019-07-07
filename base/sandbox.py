@@ -8,11 +8,11 @@ import torch
 from pathlib import Path
 import json
 import os.path
-from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel,feature_extraction_hybrid
+from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
 import matplotlib.pyplot as plt
 import librosa.display
 import IPython.display as ipd
-%matplotlib
+# %matplotlib
 
 feature_name = "mel"
 feature_size = 100
@@ -103,3 +103,26 @@ for note in notes:
 # ipd.Audio(y_perc, rate=sampling_rate)
 # ipd.Audio(y_wav, rate=sampling_rate)
 # ipd.Audio(y_harm, rate=sampling_rate)
+
+reading_notes = False
+notes = []
+index = 0
+
+with open("test_ddc.sm", "r") as f:
+    for line in f.readlines():
+        line = line[:-1]
+        if line=="#NOTES:":
+            if not reading_notes:
+                reading_notes = True
+                continue
+            else:
+                break
+        if line[0]!=" " and line[0]!=",":
+            if reading_notes:
+                if line!="0000":
+                    # print(line)
+                    notes.append(index)
+                index += 1
+
+event_times = [(60/125/192)*note for note in notes]
+# notes

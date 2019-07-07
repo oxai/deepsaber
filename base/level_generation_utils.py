@@ -3,10 +3,13 @@ import json
 generated_folder = "generated/"
 logo_path = "logo.jpg"
 
-def make_level_from_notes(notes, bpm, song_name, opt, args, open_in_browser=False):
+def make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=False, open_in_browser=False):
     temperature = args.temperature
     checkpoint = args.checkpoint
-    song_path = "../../"+song_name
+    song_path = args.song_path
+
+    if open_in_browser:
+        assert upload_to_dropbox
 
     #make song and info jsons
     song_json = {u'_beatsPerBar': 4,
@@ -21,7 +24,18 @@ def make_level_from_notes(notes, bpm, song_name, opt, args, open_in_browser=Fals
 
     info_json = {"songName":song_name,"songSubName":song_name,"authorName":"DeepSaber","beatsPerMinute":bpm,"previewStartTime":12,"previewDuration":10,"coverImagePath":"cover.jpg","environmentName":"NiceEnvironment","difficultyLevels":[{"difficulty":"Expert","difficultyRank":4,"audioPath":"song.ogg","jsonPath":"Expert.json"}]}
 
-    signature_string = song_name+"_"+opt.model+"_"+opt.dataset_name+"_"+opt.experiment_name+"_"+str(temperature)+"_"+checkpoint
+    signature = "_".join([a+"_"+str(b).replace("/","") for a,b in vars(args).items()])
+    if args.two_stage:
+        signature = args.experiment_name.replace("/","")+"_"+args.checkpoint+"_"+args.experiment_name2.replace("/","")+"_"+args.checkpoint2+"_"+str(args.peak_threshold)
+    else:
+        signature = args.experiment_name.replace("/","")+"_"+args.checkpoint+"_"+str(args.peak_threshold)
+    if args.use_ddc:
+        signature += "_ddc"
+    if args.use_beam_search:
+        signature += "_bs"
+    else:
+        signature +="_"+str(args.temperature)
+    signature_string = song_name+"_"+signature
     json_file = generated_folder+"test_song"+signature_string+".json"
     with open(json_file, "w") as f:
         f.write(json.dumps(song_json))

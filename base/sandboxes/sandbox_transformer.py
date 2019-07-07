@@ -12,7 +12,7 @@ import torch
 import pickle
 import os
 
-from stateSpaceFunctions import feature_extraction_hybrid_raw
+from featureExtration import extract_features_hybrid
 
 #%%
 experiment_name = "lstm_testing/"

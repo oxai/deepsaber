@@ -12,7 +12,7 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 # feature_size = 24
 # number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
-from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel,feature_extraction_hybrid
+from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
 import Constants
 
 class GeneralBeatSaberDataset(BaseDataset):

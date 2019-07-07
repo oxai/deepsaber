@@ -1,5 +1,20 @@
 Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
 
+# train
+
+## _prepare and preprocess data_
+
+_data augmentation_
+
+augment_data.sh
+
+_data preprocessing_
+
+process_songs.py, which uses
+
+# generate
+
+---------------
 
 # Beatsaber level generator @OxAI
 
@@ -95,7 +110,7 @@ Steps for creating a custom model with custom command line options:
             {'params': [param for name, param in self.net.named_parameters() if name[-4:] != 'bias'],
              'lr': opt.learning_rate, 'weight_decay': opt.weight_decay}  # filter parameters have weight decay
         ])]
-    
+
         @staticmethod
     def modify_commandline_options(parser, is_train):
         parser.add_argument('--layers', type=int, default=10, help="Number of layers in each block")
@@ -109,7 +124,7 @@ Steps for creating a custom model with custom command line options:
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
         return parser
-    
+
     def forward(self):
         self.output = self.wave_net.forward(self.input)
         self.loss_crossentropy = F.cross_entropy(self.output, self.target)

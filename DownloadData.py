@@ -42,7 +42,7 @@ def download_top_k_played_songs(k, update_existing=False):
     illegalNameChars = re.compile("[\/\\:\*\?\"<>|]")
     nbDownloaded = 0
     page = 0
-    while nbDownloaded < k:
+    while total_downloaded < k:
         # Get the HTML page. The page has 20 files on it
         HTMLreq = Request('http://beatsaver.com/browse/played/'+str(page*20), headers={'User-Agent': 'Mozilla/5.0'})
         response = urlopen(HTMLreq)
@@ -57,7 +57,7 @@ def download_top_k_played_songs(k, update_existing=False):
         ratingMatches = re.findall(ratingRegEx, HTML)  # Extract rating
         for index, match in enumerate(fileNameMatches):
             # Download the corresponding ZIP file
-            if nbDownloaded < k:
+            if total_downloaded < k:
                 fileName = re.sub(illegalNameChars, "", html.unescape(titleMatches[index])).rstrip(' - ')
 
                 if fileName not in downloaded_songs:
@@ -75,7 +75,7 @@ def download_top_k_played_songs(k, update_existing=False):
                     zip_ref = zipfile.ZipFile(os.path.join(DATA_DIR, song_name+".zip"), 'r')
                     zip_ref.extractall(os.path.join(EXTRACT_DIR, song_name))  # Need to create new folder DataE to work
                     zip_ref.close()
-                    print('Extracted song ' + str(nbDownloaded) + ' of ' + str(k) + ': ' + song_name)
+                    print('Extracted song ' + str(total_downloaded) + ' of ' + str(k) + ': ' + song_name)
                     total_downloaded += 1
                     nbDownloaded += 1
                 else:
@@ -273,6 +273,6 @@ def get_beastsaber_meta_from_id(song_id):
     return beastsaber_meta
 
 if __name__ == "__main__":
-    fileNamesA, titlesA = download_top_k_played_songs(20, update_existing=False)
+    fileNamesA, titlesA = download_top_k_played_songs(1000, update_existing=False)
     #update_meta_data_for_downloaded_songs()
 

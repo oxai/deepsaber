@@ -7,14 +7,18 @@ dataset=stage_two
 model=transformer
 exp=transformer_testing
 
-$py train.py --data_dir=../AugDataTest --dataset_name=$dataset --model=$model --batch_size=2 --num_windows=0 --nepoch=500 --nepoch_decay=500 --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=1000 \
+$py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batch_size=2 --num_windows=0 --nepoch=500 --nepoch_decay=500 --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=1000 \
     --pad_batches \
+    --src_vector_input \
+    --d_src 102 \
+    --feature_size 100 \
+    --feature_name mel \
     --tgt_vocab_size=2004 \
     --label_smoothing \
-    --max_token_seq_len=50 \
+    --max_token_seq_len=1000 \
     --reduced_state \
     --gpu_ids=0 \
-    --level_diff=Expert\
+    --level_diff=Expert \
     --workers=0
     #--load \
     #--load_iter=1000 \

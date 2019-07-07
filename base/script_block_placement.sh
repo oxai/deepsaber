@@ -6,7 +6,7 @@ py=/usr/bin/python3
 #py=/media/usr/bin/python3
 dataset=general_beat_saber
 model=wavenet
-layers=5
+layers=7
 blocks=3
 exp=block_placement_new_nohumreg
 num_windows=10
@@ -21,10 +21,11 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     --input_channels=$((100+1+4)) \
     --num_classes=$((1+4)) \
     --extra_output \
-    --workers=8 \
+    --workers=32 \
     --level_diff=Expert \
     --reduced_state \
     --binarized \
+<<<<<<< HEAD
     --gpu_ids=0 \
     --continue_train \
     --load_iter=930000 \
@@ -35,4 +36,3 @@ $py train.py --data_dir=../AugData --dataset_name=$dataset --model=$model --batc
     #--load \
     # --gpu_ids=0,1,2,3,4,5,6,7 \
 
-# would be nice to find a better way to look_ahead than the time shifts tbh :P

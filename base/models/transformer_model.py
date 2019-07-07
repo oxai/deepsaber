@@ -126,6 +126,7 @@ class TransformerModel(BaseModel):
         input_pos_shape = input_pos_.shape
         # 0 batch dimension, 1 window dimension, 2 input channel dimension, 3 time dimension
         self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3])).permute(0,2,1).to(self.device)
+        print(self.input.shape)
         # self.input_pos = input_pos_.reshape((input_pos_shape[0], input_pos_shape[1])).to(self.device)
         self.input_pos = input_pos_
         #we permute the dimensions because transformer input expects (batch_size, time, input_dim)
@@ -167,12 +168,11 @@ class TransformerModel(BaseModel):
             sample_duration = beat_duration * 1/beat_subdivision #sample_duration in seconds
         else:
             sample_duration = opt.step_size
-            beat_subdivision = 1/(step_size*bpm/60)
         sequence_length_samples = y.shape[1]
         sequence_length = sequence_length_samples*sample_duration
 
         ## BLOCKS TENSORS ##
-        one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,top_k=2000,beat_discretization=1/beat_subdivision,states=unique_states,one_hot=True,return_state_times=True)
+        one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,step_size,top_k=2000,states=unique_states,one_hot=True,return_state_times=True)
         if not generate_full_song:
             truncated_sequence_length = min(len(states),opt.max_token_seq_len)
         else:

@@ -8,11 +8,11 @@ import torch
 from pathlib import Path
 import json
 import os.path
-from stateSpaceFunctions import feature_extraction_hybrid_raw, feature_extraction_mel,feature_extraction_hybrid
+from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
 import matplotlib.pyplot as plt
 import librosa.display
 import IPython.display as ipd
-%matplotlib
+# %matplotlib
 
 feature_name = "mel"
 feature_size = 100

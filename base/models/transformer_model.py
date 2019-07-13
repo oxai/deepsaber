@@ -172,7 +172,7 @@ class TransformerModel(BaseModel):
         sequence_length = sequence_length_samples*sample_duration
 
         ## BLOCKS TENSORS ##
-        one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,step_size,top_k=2000,states=unique_states,one_hot=True,return_state_times=True)
+        one_hot_states, states, state_times, delta_forward, delta_backward, indices = get_block_sequence_with_deltas(json_file,sequence_length,bpm,sample_duration,top_k=2000,states=unique_states,one_hot=True,return_state_times=True)
         if not generate_full_song:
             truncated_sequence_length = min(len(states),opt.max_token_seq_len)
         else:

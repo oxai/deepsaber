@@ -11,9 +11,10 @@ import librosa
 import torch
 import numpy as np
 import Constants
-from level_generation_utils import make_level_from_notes
 from math import ceil
+from scipy import signal
 
+from level_generation_utils import make_level_from_notes, get_notes_from_stepmania_file
 from featureExtration import extract_features_hybrid,extract_features_mel,extract_features_hybrid_beat_synced
 
 parser = argparse.ArgumentParser(description='Generate Beat Saber level from song')
@@ -34,7 +35,6 @@ parser.add_argument('--ddc_diff', type=int, default=1)
 parser.add_argument('--open_in_browser', action="store_true")
 
 args = parser.parse_args()
-
 
 # debugging helpers
 
@@ -63,12 +63,6 @@ args = parser.parse_args()
 # args["generate_full_song"] = False
 # args["use_beam_search"] = True
 # args["open_in_browser"] = True
-# class Struct:
-#     def __init__(self, **entries):
-#         self.__dict__.update(entries)
-# args = Struct(**args)
-
-# signature = "_".join([a+"_"+str(b).replace("/","") for a,b in vars(args).items()])
 
 experiment_name = args.experiment_name+"/"
 checkpoint = args.checkpoint
@@ -79,26 +73,21 @@ if args.two_stage:
     assert args.experiment_name2 is not None
     assert args.checkpoint2 is not None
 
-# song_name = "18"
-# song_name = "test_song"+song_name+".wav"
-# song_path = song_dir+song_name
-# song_path = "../../"+song_name
 from pathlib import Path
 song_name = Path(song_path).stem
-# print(experiment_name)
 
 ''' LOAD MODEL, OPTS, AND WEIGHTS (for stage1 if two_stage) '''
 #%%
 
-#loading opt object from experiment
+##loading opt object from experiment
 opt = json.loads(open(experiment_name+"opt.json","r").read())
-#print(opt)
-opt["load_iter"]=int(checkpoint)
+# we assume we have 1 GPU in generating machine :P
 opt["gpu_ids"] = [0]
 opt["cuda"] = True
 opt["experiment_name"] = args.experiment_name.split("/")[0]
-if "dropout" not in opt:
+if "dropout" not in opt: #for older experiments
     opt["dropout"] = 0.0
+# construct opt Struct object
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)
@@ -107,31 +96,27 @@ opt = Struct(**opt)
 if args.two_stage:
     assert opt.binarized
 
-model = create_model(opt)
-model.setup()
-if opt.model=='wavenet' or opt.model=='adv_wavenet':
-    if not opt.gpu_ids:
-        receptive_field = model.net.receptive_field
+if not args.use_ddc:
+    model = create_model(opt)
+    model.setup()
+    if opt.model=='wavenet' or opt.model=='adv_wavenet':
+        if not opt.gpu_ids:
+            receptive_field = model.net.receptive_field
+        else:
+            receptive_field = model.net.module.receptive_field
     else:
-        receptive_field = model.net.module.receptive_field
-else:
-    receptive_field = 1
+        receptive_field = 1
 
-checkpoint = "iter_"+checkpoint
-model.load_networks(checkpoint)
+    checkpoint = "iter_"+checkpoint
+    model.load_networks(checkpoint)
 
 ''' GET SONG FEATURES '''
 #%%
 
 y_wav, sr = librosa.load(song_path, sr=16000)
 
-from test_song_bpms import bpms
-
 # useful quantities
-if args.bpm is not None:
-    bpm = args.bpm
-else:
-    bpm = bpms[song_name]
+bpm = args.bpm
 feature_name = opt.feature_name
 feature_size = opt.feature_size
 sampling_rate = opt.sampling_rate
@@ -148,108 +133,59 @@ beat_duration_samples = int(60*sr/bpm) #beat duration in samples
 if using_bpm_time_division:
     # duration of one time step in samples:
     hop = int(beat_duration_samples * 1/beat_subdivision)
-    # num_samples_per_feature = hop
     step_size = beat_duration/beat_subdivision # in seconds
 else:
     beat_subdivision = 1/(step_size*bpm/60)
-    hop = step_size*sr
+    hop = int(step_size*sr)
 
 # get feature
 sample_times = np.arange(0,y_wav.shape[0]/sr,step=step_size)
 if opt.feature_name == "chroma":
     features = extract_features_hybrid_beat_synced(y_wav,sr,sample_times,bpm,beat_discretization=1/beat_subdivision,mel_dim=12)
 elif opt.feature_name == "mel":
-    features = extract_features_mel(y_wav,sr,sample_times,bpm,mel_dim=feature_size,beat_discretization=1/beat_subdivision)
+    features = extract_features_mel(y_wav,sr,hop,mel_dim=feature_size)
     features = librosa.power_to_db(features, ref=np.max)
 
 
 ''' GENERATE LEVEL '''
 #%%
-if not args.use_ddc:
+if not args.use_ddc: #if using DDC first stage
     song = torch.tensor(features).unsqueeze(0)
-    # temperature = 1.00
 
     #generate level
+    # first_samples basically works as a padding, for the first few outputs, which don't have any "past part" of the song to look at.
     first_samples = torch.full((1,opt.output_channels,receptive_field//2),Constants.START_STATE)
-    # first_samples = torch.full((1,receptive_field//2),Constants.START_STATE)
     # stuff for older models (will remove at some point:)
-    # first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
-    # first_samples[0,0,0] = Constants.START_STATE
+    ## first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
+    ## first_samples[0,0,0] = Constants.START_STATE
     print("Generating level timings... (sorry I'm a bit slow)")
-    if opt.concat_outputs:
+    if opt.concat_outputs: #whether to concatenate the generated outputs as new inputs (AUTOREGRESSIVE)
         output,peak_probs = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
-    else:
+        peak_probs = np.array(peak_probs)
+
+        window = signal.hamming(ceil(Constants.HUMAN_DELTA/opt.step_size))
+        smoothed_peaks = np.convolve(peak_probs,window,mode='same')
+        index = np.random.randint(len(smoothed_peaks))
+        # for debugg help, but maybe useful for future work too
+        # import matplotlib.pyplot as plt
+        # plt.plot(smoothed_peaks[index:index+1000])
+
+        # plt.savefig("smoothed_peaks.png")
+        # pickle.dump(smoothed_peaks, open("smoothed_peaks.p","wb"))
+        thresholded_peaks = smoothed_peaks*(smoothed_peaks>args.peak_threshold)
+        peaks = signal.find_peaks(thresholded_peaks)[0]
+        print("number of peaks", len(peaks))
+    else: # NOT-AUTOREGRESSIVE (we keep it separate like this, because some models have both)
         output = model.net.module.generate_no_autoregressive(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
     states_list = output[0,:,:].permute(1,0)
-    # states_list.tolist()
-    # np.unique(states_list)
-
-    peak_probs = np.array(peak_probs)
-
-    import matplotlib.pyplot as plt
-    # plt.plot(peak_probs[0:300])
-
-    from scipy import signal
-    # window = signal.hamming(15)
-    window = signal.hamming(ceil(Constants.HUMAN_DELTA/opt.step_size))
-
-    smoothed_peaks = np.convolve(peak_probs,window,mode='same')
-    index = np.random.randint(len(smoothed_peaks))
-    plt.plot(smoothed_peaks[index:index+1000])
-
-    plt.savefig("smoothed_peaks.png")
-    pickle.dump(smoothed_peaks, open("smoothed_peaks.p","wb"))
-
-    # thresholded_peaks = smoothed_peaks*(smoothed_peaks>0.0148)
-    thresholded_peaks = smoothed_peaks*(smoothed_peaks>args.peak_threshold)
-    # thresholded_peaks = smoothed_peaks*(smoothed_peaks>0.46)
-
-    # plt.plot(thresholded_peaks[:])
-
-    peaks = signal.find_peaks(thresholded_peaks)[0]
-
-    print("number of peaks", len(peaks))
-
 #%%
-
-if args.use_ddc:
-
-    reading_notes = False
-    notes = []
-    index = 0
+else: # if not using DDC first stage
     diff = args.ddc_diff
-    counter = 0
     print("Reading ddc file ", ddc_file)
-    with open(ddc_file, "r") as f:
-        for line in f.readlines():
-            line = line[:-1]
-            if line=="#NOTES:":
-                if counter == diff and not reading_notes:
-                    reading_notes = True
-                    counter += 1
-                    continue
-                elif counter > diff:
-                    break
-                else:
-                    counter += 1
-                    continue
-            if reading_notes:
-                if line[0]!=" " and line[0]!=",":
-                    if line!="0000":
-                        # print(line)
-                        notes.append(index)
-                    index += 1
-
-    # len(times_real)
+    notes = get_notes_from_stepmania_file(ddc_file, diff)
     times_real = [(4*(60/125)/192)*note for note in notes]
     # notes
-
 #%%
-
-
-#if using reduced_state representation convert from reduced_state_index to state tuple
-#old (before transformer)
-# states_list = [(unique_states[i[0].int().item()-1] if i[0].int().item() != 0 else tuple(12*[0])) for i in states_list ]
 
 #convert from states to beatsaber notes
 print("Processing notes...")
@@ -269,15 +205,6 @@ else: # this is where the notes are generated for end-to-end models that actuall
 print("Number of generated notes (after pruning): ", len(notes))
 
 json_file = make_level_from_notes(notes, bpm, song_name, opt, args)
-# json_file = make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=True, open_in_browser=True)
-# notes
-# list(map(lambda x: ))
-# times = [note["_time"] for note in notes]
-# np.unique(np.diff(times_real), return_counts=True)
-# np.diff(times_real) <= 0.125
-# np.diff(times) <= 0.125
-# len(times) = len()
-
 
 #%%
 
@@ -288,12 +215,9 @@ if args.two_stage:
     #%%
     ''' LOAD MODEL, OPTS, AND WEIGHTS (for stage2 if two_stage) '''
     experiment_name = args.experiment_name2+"/"
-    # experiment_name = "block_selection_new/"
     checkpoint = args.checkpoint2
-    # checkpoint = "975000"
-    # checkpoint = "1080000"
 
-    #loading opt object from experiment
+    #loading opt object from experiment, and constructing Struct object after adding some things
     opt = json.loads(open(experiment_name+"opt.json","r").read())
     # extra things Beam search wants
     opt["gpu_ids"] = [0]
@@ -311,39 +235,11 @@ if args.two_stage:
 
     model = create_model(opt)
     model.setup()
-    if opt.model=='wavenet' or opt.model=='adv_wavenet':
-        if not opt.gpu_ids:
-            receptive_field = model.net.receptive_field
-        else:
-            receptive_field = model.net.module.receptive_field
-    else:
-        receptive_field = 1
-
     checkpoint = "iter_"+checkpoint
     model.load_networks(checkpoint)
-
-    # generated_folder = "generated/"
-    # signature_string = song_name+"_"+opt.model+"_"+opt.dataset_name+"_"+opt.experiment_name+"_"+str(temperature)+"_"+args.checkpoint
-    # signature_string = song_name+"_"+"wavenet"+"_"+"general_beat_saber"+"_"+"block_placement"+"_"+str(temperature)+"_"+args.checkpoint
-    # json_file = generated_folder+"test_song"+signature_string+".json"
-    # json_file = "/home/guillefix/code/beatsaber/DataE/156)Rap God (Explicit) - /Rap God/ExpertPlus.json"
-    # sequence_length = 366
-
     unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
-    # json_file = 'generated/test_songtest_song35_fixed.wav_wavenet_general_beat_saber_block_placement_new_1.0_60000.json'
-    # json_file = 'generated/test_songtest_song35_fixed.wav_wavenet_general_beat_saber_block_placement_new_nohumreg_1.0_65000.json'
 
     #%%
-    # import imp; import stateSpaceFunctions; imp.reload(stateSpaceFunctions)
-    # import imp; import transformer.Translator; imp.reload(transformer.Translator)
-    # import transformer.Beam; imp.reload(transformer.Beam)
-    # import models.transformer_model; imp.reload(models.transformer_model)
-
-    ## results of Beam search
-    # can we add some stochasticity to beam search maybe?
-    # state_times, generated_sequences = model.generate(features, json_file, bpm, unique_states, generate_full_song=False)
-    # len(state_times)
-    # state_times, generated_sequence = model.generate(features, json_file, bpm, unique_states, generate_full_song=False)
     print("Generating state sequence...")
     state_times, generated_sequence = model.generate(features, json_file, bpm, unique_states, temperature=temperature, use_beam_search=args.use_beam_search, generate_full_song=args.generate_full_song)
     # state_times is the times of the nonemtpy states, in bpm units
@@ -351,30 +247,7 @@ if args.two_stage:
     #%%
     from stateSpaceFunctions import stage_two_states_to_json_notes
     times_real = [t*60/bpm for t in state_times]
-    # times_real[]
-    # np.arange(len(times_real))[:-1][np.diff(times_real) <= 0.07]
-    # np.unique(np.diff(times_real), return_counts=True)
-    # np.min(np.diff(times_real))
-    # len(generated_sequences[0])
-    # len(times_real)
     notes2 = stage_two_states_to_json_notes(generated_sequence, state_times, bpm, hop, sr, state_rank=unique_states)
-    # notes2 = stage_two_states_to_json_notes(generated_sequences[0], state_times, bpm, hop, sr, state_rank=unique_states)
-    # notes2 = stage_two_states_to_json_notes(np.array(generated_sequences[0][:-2])[diff_mask].tolist(), times_filtered, bpm, hop, sr, state_rank=unique_states)
+    # print("Bad notes:", np.unique(np.diff(times_real)[np.diff(times_real)<=Constants.HUMAN_DELTA], return_counts=True))
 
-    # np.array(np.diff(times_real)) <= 0.1
-    # np.diff(times_real)
-    # np.all(np.isclose([t*bpm/60 for t in times_real], times))
-    print("Bad notes:", np.unique(np.diff(times_real)[np.diff(times_real)<=Constants.HUMAN_DELTA], return_counts=True))
-    # diff = np.diff(times_real)
-    # diff1 = np.append(diff,10) <= 0.1
-    # diff2 = np.insert(diff,0,10) <= 0.1
-    # diff_mask = np.logical_or(diff1, diff2)
-    # times_filtered = np.array(times_real)[diff_mask]
-    #
-    # np.diff(times) <= 0.125
-    #
-    print(len(notes2))
-    # remake level with actual notes from stage 2 now
-    print("Generating level...")
-    print("Uploading to dropbox...")
     make_level_from_notes(notes2, bpm, song_name, opt, args, upload_to_dropbox=True, open_in_browser=args.open_in_browser)

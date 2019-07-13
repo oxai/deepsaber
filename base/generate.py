@@ -92,6 +92,8 @@ song_name = Path(song_path).stem
 
 #loading opt object from experiment
 opt = json.loads(open(experiment_name+"opt.json","r").read())
+#print(opt)
+opt["load_iter"]=int(checkpoint)
 opt["gpu_ids"] = [0]
 opt["cuda"] = True
 opt["experiment_name"] = args.experiment_name.split("/")[0]

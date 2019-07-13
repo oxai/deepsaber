@@ -13,3 +13,5 @@ tar xzvf AugData_${folder_name}_features.tar.gz
 find AugData_${folder_name}_features/ -name "*_"${feature}".npy" -printf '%P\0' | xargs -0 -i cp AugData_${folder_name}_features/{} ./AugData/{}
 
 
+## to download from google cloud
+# rsync -avm --include='*_mel_100.npy' --include='*/' --exclude='*' instance-1.us-central1-a.skillful-eon-241416:~/code/beatsaber/AugData ./AugData/

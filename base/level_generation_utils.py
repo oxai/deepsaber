@@ -60,12 +60,13 @@ def make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=Fa
     if open_in_browser:
         import subprocess
         def run_bash_command(bashCommand):
-            print(bashCommand)
+            # print(bashCommand)
             process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
             output, error = process.communicate()
             return output
 
-        bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
+        # bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
+        bashCommand = "ffmpeg -y -i "+song_path+" -c:a libvorbis -q:a 4 "+ level_folder+"/song.ogg"
         run_bash_command(bashCommand)
 
         bashCommand = "zip -r "+generated_folder+song_name+"_"+signature_string+".zip "+level_folder
@@ -78,10 +79,36 @@ def make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=Fa
         link = run_bash_command(bashCommand)
         demo_link = "https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/"+link[15:-2].decode("utf-8") +'1'
         print(demo_link)
-        run_bash_command("google-chrome "+demo_link)
+        # run_bash_command("google-chrome "+demo_link)
     # zip -r test_song11 test_song11.wav
     # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
     # sox -t wav -b 16 ~/code/test_song11.wav -t ogg song.ogg
     return json_file
 
 #%%
+
+def get_notes_from_stepmania_file(ddc_file, diff):
+    reading_notes = False
+    index = 0
+    counter = 0
+    notes = []
+    with open(ddc_file, "r") as f:
+        for line in f.readlines():
+            line = line[:-1]
+            if line=="#NOTES:":
+                if counter == diff and not reading_notes:
+                    reading_notes = True
+                    counter += 1
+                    continue
+                elif counter > diff:
+                    break
+                else:
+                    counter += 1
+                    continue
+            if reading_notes:
+                if line[0]!=" " and line[0]!=",":
+                    if line!="0000":
+                        # print(line)
+                        notes.append(index)
+                    index += 1
+    return notes

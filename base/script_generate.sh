@@ -17,6 +17,6 @@ python3 generate.py --song_path $song_path --experiment_name $exp1 --checkpoint 
     --ddc_diff 3 \
     --bpm 128 \
     --use_beam_search \
-    --use_ddc \
+    #--use_ddc \
     #--generate_full_song \
     #--peak_threshold 0.008 \

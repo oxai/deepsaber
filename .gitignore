@@ -3,6 +3,7 @@ base/.idea
 **/.idea
 Data/
 DataE/
+DataE_old/
 AugData*
 AugData/*
 Readings/

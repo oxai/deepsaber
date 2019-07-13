@@ -201,6 +201,7 @@ def get_scoresaber_id_of_song(song_identifier, author_identifier):
     HTMLreq = Request('https://scoresaber.com/?search=' + author_identifier, headers={'User-Agent': 'Mozilla/5.0'})
     response = urlopen(HTMLreq)
     HTML = str(response.read().decode())
+    print(HTML)
     titleRegEx = re.compile("<td class=\"song\">\\r\\n\s*?<img src=\"[\/a-zA-Z0-9]*.png\" \/>\\r\\n\s*<a href=\"\/leaderboard\/[0-9]*\">\\r\\n\s*(.*?(?=\\r))")
     leaderboardURLRegEx = re.compile("<a href=\"(\/leaderboard\/[0-9]*)\">")
     illegalNameChars = re.compile("[\/\\:\*\?\"<>|]")
@@ -209,7 +210,7 @@ def get_scoresaber_id_of_song(song_identifier, author_identifier):
     leaderboard_id = []
     for index, match in enumerate(titleMatches):
         # Download the corresponding ZIP file
-        fileName = re.sub(illegalNameChars, "", html.unescape(titleMatches[index]))
+        fileName = re.sub(illegalNameChars, "", html.unescape(titleMatches[index])).strip()
         if fileName == song_identifier:
             leaderboard_id.append(int(leaderboardMatches[index].split('/')[-1]))
     if len(leaderboard_id) > 0:
@@ -275,4 +276,3 @@ def get_beastsaber_meta_from_id(song_id):
 if __name__ == "__main__":
     fileNamesA, titlesA = download_top_k_played_songs(1000, update_existing=False)
     #update_meta_data_for_downloaded_songs()
-

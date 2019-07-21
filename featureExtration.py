@@ -1,5 +1,15 @@
 import librosa
 import math, numpy as np
+import numpy as np
+
+def extract_features_multi_mel(y, sr=44100.0, hop=512, nffts=[1024, 2048, 4096], mel_dim=100):
+    featuress = []
+    for nfft in nffts:
+        mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=mel_dim, n_fft=nfft, hop_length=hop)  # C2 is 65.4 Hz
+        features = librosa.power_to_db(mel, ref=np.max)
+        featuress.append(features)
+    features = np.stack(featuress, axis=2)
+    return features
 
 def extract_features_hybrid(y,sr,hop,mel_dim=12,window_mult=1):
     hop -= hop % 32  #  Chroma CQT only accepts hop lengths that are multiples of 32, so this ensures that condition is met
@@ -37,7 +47,8 @@ def extract_features_hybrid_beat_synced(y, sr, state_times,bpm,beat_discretizati
 
 def extract_features_mel(y, sr, hop,mel_dim=100):
     mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=mel_dim, hop_length=hop)  # C2 is 65.4 Hz
-    return mel
+    features = librosa.power_to_db(mel, ref=np.max)
+    return features
 
 def extract_features_chroma(y,sr, state_times):
     #hop = #int((44100 * 60 * beat_discretization) / bpm) Hop length must be a multiple of 2^6

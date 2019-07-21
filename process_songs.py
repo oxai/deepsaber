@@ -3,10 +3,8 @@ import librosa
 from pathlib import Path
 import json
 import os.path
-from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
-
+from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, create_analyzers, extract_features_multi_mel
 import sys
-
 import argparse
 
 parser = argparse.ArgumentParser(description="Preprocess songs data")
@@ -15,7 +13,7 @@ parser.add_argument("data_path",type=str, help="Directory contining Beat Saber l
 parser.add_argument("difficulties",type=str, help="Comma-separated list of difficulties to process (e.g. \"Expert,Hard\"")
 parser.add_argument("--feature_name",metavar='',type=str, default="mel")
 parser.add_argument("--feature_size",metavar='',type=int, default=100)
-parser.add_argument("--sampling_rate",metavar='',type=int, default=16000)
+parser.add_argument("--sampling_rate",metavar='',type=float, default=44100.0)
 parser.add_argument("--beat_subdivision",metavar='',type=int, default=16)
 parser.add_argument("--step_size",metavar='',type=float, default=0.01)
 parser.add_argument("--replace_existing",action="store_true")
@@ -33,8 +31,10 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 print(rank)
+print("creating {} of size {}".format(feature_name,feature_size))
 
-candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
+#assuming egg sound format, as used in new BeatSaber format
+candidate_audio_files = sorted(data_path.glob('**/*.egg'), key=lambda path: path.parent.__str__())
 num_tasks = len(candidate_audio_files)
 num_tasks_per_job = num_tasks//size
 tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
@@ -50,9 +50,11 @@ for i in tasks:
     level_file_found = False
     # find level files with target difficulties that exist
     for diff in difficulties.split(","):
-        if Path(path.parent.__str__()+"/"+diff+".json").is_file():
-            level = list(path.parent.glob('./'+diff+'.json'))[0]
+        if Path(path.parent.__str__()+"/"+diff+".dat").is_file():
+            level = list(path.parent.glob('./'+diff+'.dat'))[0]
             level = level.__str__()
+            info_file = list(path.parent.glob('./info.dat'))[0]
+            info_file = info_file.__str__()
             level_file_found = True
     if not level_file_found:
         continue
@@ -61,14 +63,13 @@ for i in tasks:
         print("creating feature file",i)
         # get level
         level = json.load(open(level, 'r'))
+        info = json.load(open(info_file, 'r'))
 
         # get song
         y_wav, sr = librosa.load(song_file_path, sr=sampling_rate)
 
-        bpm = level['_beatsPerMinute']
+        bpm = info['_beatsPerMinute']
         sr = sampling_rate
-        # beat_subdivision = 1/(step_size*bpm/60)
-
         hop = int(sr * step_size)
 
         #get feature
@@ -83,5 +84,10 @@ for i in tasks:
                 raise NotImplementedError("Mel features with beat synced times not implemented, but trivial TODO")
             else:
                 features = extract_features_mel(y_wav,sr,hop,mel_dim=feature_size)
-                features = librosa.power_to_db(features, ref=np.max)
+        elif feature_name == "multi_mel":
+            if using_bpm_time_division:
+                raise NotImplementedError("Mel features with beat synced times not implemented, but trivial TODO")
+            else:
+                features = extract_features_multi_mel(y_wav, sr=sampling_rate, hop=hop, nffts=[1024,2048,4096], mel_dim=feature_size)
+
         np.save(features_file,features)

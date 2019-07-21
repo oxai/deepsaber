@@ -12,7 +12,7 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 print(rank)
 
-num_tasks = 12
+num_tasks = 83
 num_tasks_per_job = num_tasks//size
 tasks = list(range(rank*num_tasks_per_job,(rank+1)*num_tasks_per_job))
 if rank < num_tasks%size:

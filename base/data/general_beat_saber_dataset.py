@@ -121,9 +121,8 @@ class GeneralBeatSaberDataset(BaseDataset):
         #num_samples_per_feature = beat_duration//self.opt.beat_subdivision #this is the number of samples between successive frames (as used in the data processing file), so I think that means each frame occurs every mel_hop + 1. I think being off by one sound sample isn't a big worry though.
         features = np.load(self.feature_files[song_file_path])
 
-
         # for short
-        y = features
+        y = features #dims = time x features
 
         receptive_field = self.receptive_field
         # we pad the song features with zeros to imitate during training what happens during generation

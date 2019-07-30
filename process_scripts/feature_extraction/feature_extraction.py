@@ -8,7 +8,7 @@ def extract_features_multi_mel(y, sr=44100.0, hop=512, nffts=[1024, 2048, 4096],
         mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=mel_dim, n_fft=nfft, hop_length=hop)  # C2 is 65.4 Hz
         features = librosa.power_to_db(mel, ref=np.max)
         featuress.append(features)
-    features = np.stack(featuress, axis=2)
+    features = np.stack(featuress, axis=1)
     return features
 
 def extract_features_hybrid(y,sr,hop,mel_dim=12,window_mult=1):

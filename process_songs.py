@@ -3,7 +3,7 @@ import librosa
 from pathlib import Path
 import json
 import os.path
-from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, create_analyzers, extract_features_multi_mel
+from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, extract_features_multi_mel
 import sys
 import argparse
 

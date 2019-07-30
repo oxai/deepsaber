@@ -1,14 +1,14 @@
-import IOFunctions
-from identifyStateSpace import compute_explicit_states_from_json
+import io_functions
+from identify_state_space import compute_explicit_states_from_json
 import math, numpy as np
 import librosa
 import os
-#from featuresBase import extract_beat_times_chroma_tempo_from_ogg
+#from features_base import extract_beat_times_chroma_tempo_from_ogg
 
 '''
 This file contains all helper functions to take a JSON level file and convert it to the current note representation
 Requirements: The stateSpace directory. It contains sorted_states.pkl, which stores all identified states in the dataset.
-To generate this folder, run identifyStateSpace.py
+To generate this folder, run identify_state_space.py
 '''
 NUM_DISTINCT_STATES = 4672 # This is the number of distinct states in our dataset
 EMPTY_STATE_INDEX = 0 # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
@@ -23,7 +23,7 @@ def compute_state_sequence_representation_from_json(json_file, states=None, top_
     :return: The sequence of state ranks (of those in the top K) appearing in the level
     '''
     if states is None:  # Only load if state is not passed
-        states = IOFunctions.loadFile("sorted_states.pkl", "stateSpace") # Load the state representation
+        states = io_functions.loadFile("sorted_states.pkl", "stateSpace") # Load the state representation
     if EMPTY_STATE_INDEX == 0:  # RANK 0 is reserved for the empty state
         # states_rank = {state: i+1 for i, state in enumerate(states)}
         states_rank = {state: i+NUM_SPECIAL_STATES for i, state in enumerate(states)}
@@ -112,14 +112,14 @@ def extract_all_representations_from_dataset(dataset_dir,top_k=2000,beat_discret
 
 
 def extract_representations_from_song_directory(directory,top_k=2000,beat_discretization=1/16, audio_feature_select="Hybrid"):
-    OGG_files = IOFunctions.get_all_ogg_files_from_data_directory(directory)
+    OGG_files = io_functions.get_all_ogg_files_from_data_directory(directory)
     if len(OGG_files) == 0:  # No OGG file ... skip
         print("No OGG file for song "+directory)
         return
     OGG_file = OGG_files[0]  # There should only be one OGG file in every directory anyway, so we get that
-    JSON_files = IOFunctions.get_all_json_level_files_from_data_directory(directory)
+    JSON_files = io_functions.get_all_json_level_files_from_data_directory(directory)
     if len(JSON_files) == 0:  # No Non-Autosave JSON files
-        JSON_files = IOFunctions.get_all_json_level_files_from_data_directory(directory, include_autosaves=True)
+        JSON_files = io_functions.get_all_json_level_files_from_data_directory(directory, include_autosaves=True)
         # So now it's worth checking out the autosaves
         if len(JSON_files) == 0: # If there's STILL no JSON file, declare failure (some levels only have autosave)
             print("No level data for song "+directory)
@@ -133,7 +133,7 @@ def extract_representations_from_song_directory(directory,top_k=2000,beat_discre
     y, sr = librosa.load(OGG_file)  # Load the OGG in LibROSA as usual
     level_state_feature_maps = {}
     for JSON_file in JSON_files: # Corresponding to different difficulty levels I hope
-        bs_level = IOFunctions.parse_json(JSON_file)
+        bs_level = io_functions.parse_json(JSON_file)
         try:
             bpm = bs_level["_beatsPerMinute"] # Try to get BPM from metadata to avoid having to compute it from scratch
         except:
@@ -175,7 +175,7 @@ def stage_two_states_to_json_notes(state_sequence, state_times, bpm, hop, sr, st
     if state_rank is None:  # Only load if state is not passed
         # GUILLERMO: Provide the states rank yourself, otherwise let me know and we can change the
         # load script (i.e., feed ../stateSpace)
-        state_rank = IOFunctions.loadFile("sorted_states.pkl", "stateSpace")   # Load the state representation
+        state_rank = io_functions.loadFile("sorted_states.pkl", "stateSpace")   # Load the state representation
         # Add three all zero states for the sake of simplicity
     state_rank[0:0] = [tuple(12 * [0])] * 3  # Eliminate the need for conditionals
     states_grid = [state_rank[state] for state in state_sequence]

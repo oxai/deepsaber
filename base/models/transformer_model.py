@@ -5,7 +5,7 @@ import torch.nn as nn
 from .base_model import BaseModel
 from .transformer.Models import Transformer
 import Constants
-from stateSpaceFunctions import get_block_sequence_with_deltas
+from state_space_functions import get_block_sequence_with_deltas
 from transformer.Translator import Translator
 
 def cal_performance(pred, gold, smoothing=False):

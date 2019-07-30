@@ -6,9 +6,9 @@ import re
 import html
 import numpy as np
 
-import IOFunctions
-from IOFunctions import read_meta_data_file, get_list_of_downloaded_songs, get_all_json_level_files_from_data_directory
-from identifyStateSpace import compute_explicit_states_from_bs_level
+import io_functions
+from io_functions import read_meta_data_file, get_list_of_downloaded_songs, get_all_json_level_files_from_data_directory
+from identify_state_space import compute_explicit_states_from_bs_level
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')
@@ -59,7 +59,7 @@ def extract_features_from_all_levels():
                 features = np.append(features, feature_target[0])
                 targets = np.append(targets, feature_target[1])
     features_and_targets = np.stack([features, targets], axis=1)
-    IOFunctions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, 'features_and_targets_' + getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H-%M-%S') + '.pkl'))
+    io_functions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, 'features_and_targets_' + getpass.getuser() + '_' + time.strftime('%Y-%m-%d_%H-%M-%S') + '.pkl'))
 
     return features_and_targets
 
@@ -79,7 +79,7 @@ def extract_features_targets_from_dir(song_dir):
                 json_files = get_all_json_level_files_from_data_directory(os.path.join(EXTRACT_DIR, song_dir))
                 if(len(json_files) == len(difficulty_rating)):
                     for i in range(len(json_files)):
-                        bs_level = IOFunctions.parse_json(json_files[i])
+                        bs_level = io_functions.parse_json(json_files[i])
                         features = np.append(features, np.array(extract_features_from_beatsaber_level(bs_level)))
                         try:
                             targets = np.append(targets, np.array(
@@ -94,7 +94,7 @@ def extract_features_targets_from_dir(song_dir):
                             print(meta_data)
             if len(features) is not 0 and len(targets) is not 0:
                 features_and_targets = np.stack([features, targets], axis=1)
-                IOFunctions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl')))
+                io_functions.saveFile(features_and_targets, os.path.join(EXTRACT_DIR, os.path.join(song_dir, 'features_targets.pkl')))
         except Exception:
             print(Exception)
     return [features, targets]
@@ -104,7 +104,7 @@ def read_features_targets_from_song_dir(song_dir):
     if not os.path.exists(features_targets_filename):
         features_and_targets = None
     else:
-        features_and_targets = np.array(IOFunctions.loadFile(features_targets_filename))
+        features_and_targets = np.array(io_functions.loadFile(features_targets_filename))
     return features_and_targets
 
 def extract_features_from_beatsaber_level(bs_level):
@@ -391,11 +391,11 @@ def measure_regression_prediction_error(model, x_test, y_test):
 if __name__ == '__main__':
     # feature_targets = extract_features_targets_from_dir('994)Made In Love - Chart by Mystikmol')
     features_and_targets = extract_features_from_all_levels()
-    IOFunctions.saveFile(features_and_targets, 'dataset_features_and_target_metrics.pkl')
-    features_and_targets = IOFunctions.loadFile('dataset_features_and_target_metrics.pkl')
+    io_functions.saveFile(features_and_targets, 'dataset_features_and_target_metrics.pkl')
+    features_and_targets = io_functions.loadFile('dataset_features_and_target_metrics.pkl')
     # models = get_linear_regression_model_for_all_targets(features_and_targets[0], features_and_targets[1])
-    # IOFunctions.saveFile(models, 'dataset_targets_linear_model.pkl')
-    # models = IOFunctions.loadFile('dataset_targets_linear_model.pkl')
+    # io_functions.saveFile(models, 'dataset_targets_linear_model.pkl')
+    # models = io_functions.loadFile('dataset_targets_linear_model.pkl')
 
     errors = []
     error_mean = []
@@ -425,7 +425,7 @@ if __name__ == '__main__':
             y_pred[-1].append(this_y_pred)
             if j == 0:
                 sort_idx = np.argsort(this_y_test)
-                ax = IOFunctions.add_data_to_plot(x=y_test[-1][sort_idx], y=errors[-1][sort_idx], title='test_model_' + str(j),
+                ax = io_functions.add_data_to_plot(x=y_test[-1][sort_idx], y=errors[-1][sort_idx], title='test_model_' + str(j),
                                                   ax=ax, style='r-', label=str(j), legend=True, realtime=True)
 
     difficulty_error = []

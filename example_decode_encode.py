@@ -1,5 +1,5 @@
-from IOFunctions import parse_json, get_song_from_directory_by_identifier, create_dataStructure, encode_json
-from featuresBase import *
+from io_functions import parse_json, get_song_from_directory_by_identifier, create_dataStructure, encode_json
+from features_base import *
 from shutil import copyfile
 from glob import glob
 

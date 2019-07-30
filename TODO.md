@@ -10,8 +10,8 @@
 		/download_data.py - Perhaps integrate Beastsaber as download source
 	/data_processing - lots of redundant code here, repetition in /base/models
 		/difficulty_analysis.py [INCOMPLETE]
-		/identify_state_space.py [DUPLICATE?]
-		/state_space_functions.py [DUPLICATE?] 
+		/identify_state_space.py [DUPLICATE?] (level_processing_functions.py)
+		/state_space_functions.py [DUPLICATE?] (level_processing_functions.py) 
 	/feature_extraction - possible duplications in /base/models
 		/example_decode_encode.py [LEGACY?] perhaps redundant (DEV testing code?)
 		/feature_extraction.py

@@ -20,12 +20,10 @@ def get_reduced_tensors_from_level(notes,indices,sequence_length,num_classes,bpm
     for note in notes:
         # we add receptive_field because we padded the y with 0s, to imitate generation
         sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/num_samples_per_feature - 0.5)
-        # does librosa add some padding too?
-        # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
+        # check if note falls within the length of the song (why are there so many that don't??)
         if sample_index >= l:
             #print("note beyond the end of time")
             continue
-
         #constructing the representation of the block (as a number from 0 to 19)
         if note["_type"] == 3:
             note_representation = 19

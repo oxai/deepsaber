@@ -18,3 +18,4 @@ venv
 **/opt.txt
 AugData.tar.gz
 base/*.out
+.DS_Store

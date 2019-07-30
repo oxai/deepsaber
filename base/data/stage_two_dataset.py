@@ -13,7 +13,7 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 # number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
 import Constants
-from state_space_functions import get_block_sequence_with_deltas
+from process_scripts.data_processing.state_space_functions import get_block_sequence_with_deltas
 
 class StageTwoDataset(BaseDataset):
 

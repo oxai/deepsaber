@@ -1,11 +1,18 @@
-import io_functions, os, numpy as np
-from identify_state_space import compute_explicit_states_from_json
+import os, numpy as np
+from process_scripts.data_retrieval import io_functions
+from process_scripts.data_processing.identify_state_space import compute_explicit_states_from_json
 from graphviz import Digraph
 from sklearn.preprocessing import normalize
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-EXTRACTED_DATA_DIR = os.path.join(THIS_DIR, 'DataE')
+ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
 
 def produce_finite_state_machine_from_json(json_file, apply_filter=False):
     print("Analysing file " + json_file)

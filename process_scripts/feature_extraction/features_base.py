@@ -437,7 +437,7 @@ def generate_beatsaber_notes_from_beat_times_and_chroma(beat_times, beat_chroma,
 
     return notes
     '''
-    sorted_states, states_counts = produce_distinct_state_space_representations(EXTRACTED_DATA_DIR, k=2000)
+    sorted_states, states_counts = produce_distinct_state_space_representations(EXTRACT_DIR, k=2000)
 
 
     #states_per_song = 20

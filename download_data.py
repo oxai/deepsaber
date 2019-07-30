@@ -9,7 +9,7 @@ from mpi4py import MPI
 
 import requests
 
-from IOFunctions import write_meta_data_file, read_meta_data_file
+from io_functions import write_meta_data_file, read_meta_data_file
 
 # GLOBAL VARIABLES
 # DATA_DIR - The desired location for compressed song level data (files may be deleted following file extraction)
@@ -61,8 +61,8 @@ def download_top_k_levels_from_beastsaber(num_levels):
     # all_urls = comm.gather(all_urls, root=0)
     # if rank == 0:
     #     print(all_urls)
-    # import imp; import DownloadData; imp.reload(DownloadData)
-    # from DownloadData import get_scoresaber_id_of_song, get_beastsaber_meta_from_id, get_scoresaber_difficulty_from_scoresaber_id
+    # import imp; import download_data; imp.reload(download_data)
+    # from download_data import get_scoresaber_id_of_song, get_beastsaber_meta_from_id, get_scoresaber_difficulty_from_scoresaber_id
     #
     # get_scoresaber_id_of_song("We Will Rock You (2011 Remaster) - Queen", "Joetastic")
 

@@ -1,4 +1,4 @@
-import IOFunctions, os, numpy as np
+import io_functions, os, numpy as np
 from collections import Counter
 
 ''' @RA: Trying to identify state patterns which appear in data, to determine an optimal state representation
@@ -16,7 +16,7 @@ EXTRACTED_DATA_DIR = os.path.join(THIS_DIR, 'DataE')
 
 
 def compute_explicit_states_from_json(level_json, as_tuple = True):
-    bs_level = IOFunctions.parse_json(level_json)
+    bs_level = io_functions.parse_json(level_json)
     states_as_tuples = compute_explicit_states_from_bs_level(bs_level, as_tuple)
     return states_as_tuples
 
@@ -46,12 +46,12 @@ def compute_explicit_states_from_bs_level(bs_level, as_tuple = True):
 
 
 def compute_shortest_inter_event_beat_gap(data_directory):
-    json_files = IOFunctions.get_all_json_level_files_from_data_directory(data_directory)
+    json_files = io_functions.get_all_json_level_files_from_data_directory(data_directory)
     minimum_beat_gap = np.inf
     for file in json_files:
         # print("Analysing file " + file)
         # Now go through them file by file
-        json_representation = IOFunctions.parse_json(file)
+        json_representation = io_functions.parse_json(file)
         notes = json_representation["_notes"]  #
         # Step 1: Extract the distinct times then convert to list and then numpy array for future processing.
         # Cumbersome, yes, but it works, and this is only for the sake of analytics
@@ -69,7 +69,7 @@ def compute_shortest_inter_event_beat_gap(data_directory):
 
 
 def produce_distinct_state_space_representations(data_directory=EXTRACTED_DATA_DIR, k=2000):
-    json_files = IOFunctions.get_all_json_level_files_from_data_directory(data_directory)
+    json_files = io_functions.get_all_json_level_files_from_data_directory(data_directory)
     '''Definition of a state representation
             @RA: This is a 12-dimensional array, such that every dimension represents a position in the grid
             If 0, position is empty, otherwise for a note: type * 9(numberOfDirections) + cutDirection + 1
@@ -110,7 +110,7 @@ def produce_distinct_state_space_representations(data_directory=EXTRACTED_DATA_D
 def produce_transition_probability_matrix_from_distinct_state_spaces(states=None, data_directory=EXTRACTED_DATA_DIR):
     if states is None:
         states = produce_distinct_state_space_representations(2000, data_directory)
-    json_files = IOFunctions.get_all_json_level_files_from_data_directory(data_directory)
+    json_files = io_functions.get_all_json_level_files_from_data_directory(data_directory)
     for file in json_files:
         print("Analysing file " + file)
         transition_table = np.zeros((len(states), len(states)), dtype='uint8')
@@ -144,11 +144,11 @@ if __name__ == "__main__":
     output_path = os.path.join(THIS_DIR, 'stateSpace')
     if not os.path.isdir(output_path):
         os.mkdir(output_path)
-    IOFunctions.saveFile(sorted_states, 'sorted_states.pkl', output_path, append=False)
-    IOFunctions.saveFile(sorted_states_prior_probability, 'sorted_states_prior_probability.pkl', output_path,
+    io_functions.saveFile(sorted_states, 'sorted_states.pkl', output_path, append=False)
+    io_functions.saveFile(sorted_states_prior_probability, 'sorted_states_prior_probability.pkl', output_path,
                          append=False)
     sorted_states_transition_probabilities = produce_transition_probability_matrix_from_distinct_state_spaces(
         sorted_states, EXTRACTED_DATA_DIR)
-    IOFunctions.saveFile(sorted_states_transition_probabilities, 'sorted_states_transition_probabilities.pkl',
+    io_functions.saveFile(sorted_states_transition_probabilities, 'sorted_states_transition_probabilities.pkl',
                          output_path, append=False)
     # compute_shortest_inter_event_beat_gap(EXTRACTED_DATA_DIR)

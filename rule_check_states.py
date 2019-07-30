@@ -1,14 +1,14 @@
 import numpy as np
 import json
 import math
-from IOFunctions import *
-from identifyStateSpace import *
+from io_functions import *
+from identify_state_space import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 EXTRACTED_DATA_DIR = os.path.join(THIS_DIR, 'DataE')
 
 def check_state_rules_for_directory(data_directory):
-    json_files = IOFunctions.get_all_json_level_files_from_data_directory(data_directory)
+    json_files = io_functions.get_all_json_level_files_from_data_directory(data_directory)
     '''Definition of a state representation 
             @RA: This is a 12-dimensional array, such that every dimension represents a position in the grid
             If 0, position is empty, otherwise for a note: type * 9(numberOfDirections) + cutDirection + 1
@@ -27,7 +27,7 @@ def check_state_rules_for_directory(data_directory):
 def check_state_rules_of_bsLevel(file):
     print("Analysing file " + file)
 
-    # use function from identifyStateSpace to extract states from json
+    # use function from identify_state_space to extract states from json
     state_dict, note_times = compute_explicit_states_from_json(file, as_tuple=False)
 
     state_validations = []

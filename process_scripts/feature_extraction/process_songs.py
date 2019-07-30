@@ -32,7 +32,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 print(rank)
-print("creating {} of size {}".format(feature_name,feature_size))
+print("creating {} of size {}".format(feature_name, feature_size))
 
 #assuming egg sound format, as used in new BeatSaber format
 candidate_audio_files = sorted(data_path.glob('**/*.egg'), key=lambda path: path.parent.__str__())

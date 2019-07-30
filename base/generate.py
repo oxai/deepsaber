@@ -245,7 +245,7 @@ if args.two_stage:
     # state_times is the times of the nonemtpy states, in bpm units
 
     #%%
-    from stateSpaceFunctions import stage_two_states_to_json_notes
+    from state_space_functions import stage_two_states_to_json_notes
     times_real = [t*60/bpm for t in state_times]
     notes2 = stage_two_states_to_json_notes(generated_sequence, state_times, bpm, hop, sr, state_rank=unique_states)
     # print("Bad notes:", np.unique(np.diff(times_real)[np.diff(times_real)<=Constants.HUMAN_DELTA], return_counts=True))

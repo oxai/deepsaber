@@ -1,5 +1,5 @@
-import IOFunctions, os, numpy as np
-from identifyStateSpace import compute_explicit_states_from_json
+import io_functions, os, numpy as np
+from identify_state_space import compute_explicit_states_from_json
 from graphviz import Digraph
 from sklearn.preprocessing import normalize
 
@@ -98,7 +98,7 @@ def low_pass_filter_probabilities(x):
 
 
 if __name__ == '__main__':
-    json_files = IOFunctions.get_all_json_level_files_from_data_directory(EXTRACTED_DATA_DIR)
+    json_files = io_functions.get_all_json_level_files_from_data_directory(EXTRACTED_DATA_DIR)
     apply_filter = False
     view_output = False # True to view immediately
     for json_file in json_files:

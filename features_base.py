@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 from glob import glob
-from IOFunctions import saveFile, loadFile, get_song_from_directory_by_identifier
+from io_functions import saveFile, loadFile, get_song_from_directory_by_identifier
 import random
-from identifyStateSpace import *
+from identify_state_space import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, 'Data')

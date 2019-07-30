@@ -8,7 +8,7 @@ import IPython.display as ipd
 import matplotlib.pyplot as plt
 import math
 import numpy as np
-from IOFunctions import parse_json
+from io_functions import parse_json
 from glob import glob
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

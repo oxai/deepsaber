@@ -105,7 +105,7 @@ def low_pass_filter_probabilities(x):
 
 
 if __name__ == '__main__':
-    json_files = io_functions.get_all_json_level_files_from_data_directory(EXTRACTED_DATA_DIR)
+    json_files = io_functions.get_all_json_level_files_from_data_directory(EXTRACT_DIR)
     apply_filter = False
     view_output = False # True to view immediately
     for json_file in json_files:

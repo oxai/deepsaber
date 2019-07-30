@@ -19,3 +19,4 @@ venv
 AugData.tar.gz
 base/*.out
 sandbox_scrap.py
+.DS_Store

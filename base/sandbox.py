@@ -8,7 +8,7 @@ import torch
 from pathlib import Path
 import json
 import os.path
-from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
+from process_scripts.feature_extraction.feature_extration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
 import matplotlib.pyplot as plt
 import librosa.display
 import IPython.display as ipd

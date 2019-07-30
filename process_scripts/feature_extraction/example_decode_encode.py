@@ -1,11 +1,12 @@
-from io_functions import parse_json, get_song_from_directory_by_identifier, create_dataStructure, encode_json
-from features_base import *
+from process_scripts.data_retrieval.io_functions import parse_json, get_song_from_directory_by_identifier, create_dataStructure, encode_json
+from process_scripts.feature_extraction.features_base import *
 from shutil import copyfile
 from glob import glob
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(THIS_DIR, 'Data')
-EXTRACT_DIR = os.path.join(THIS_DIR, 'DataE')
+ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
 if not os.path.isdir(DATA_DIR):
     os.mkdir(DATA_DIR)
 if not os.path.isdir(EXTRACT_DIR):

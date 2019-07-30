@@ -3,21 +3,22 @@ import librosa
 from pathlib import Path
 import json
 import os.path
-from featureExtration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, extract_features_multi_mel
+from process_scripts.feature_extraction.feature_extraction import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, extract_features_multi_mel
+
 import sys
 import argparse
 
 parser = argparse.ArgumentParser(description="Preprocess songs data")
 
-parser.add_argument("data_path",type=str, help="Directory contining Beat Saber level folders")
-parser.add_argument("difficulties",type=str, help="Comma-separated list of difficulties to process (e.g. \"Expert,Hard\"")
-parser.add_argument("--feature_name",metavar='',type=str, default="mel")
-parser.add_argument("--feature_size",metavar='',type=int, default=100)
-parser.add_argument("--sampling_rate",metavar='',type=float, default=44100.0)
-parser.add_argument("--beat_subdivision",metavar='',type=int, default=16)
-parser.add_argument("--step_size",metavar='',type=float, default=0.01)
-parser.add_argument("--replace_existing",action="store_true")
-parser.add_argument("--using_bpm_time_division",action="store_true")
+parser.add_argument("data_path", type=str, help="Directory contining Beat Saber level folders")
+parser.add_argument("difficulties", type=str, help="Comma-separated list of difficulties to process (e.g. \"Expert,Hard\"")
+parser.add_argument("--feature_name", metavar='', type=str, default="mel")
+parser.add_argument("--feature_size", metavar='', type=int, default=100)
+parser.add_argument("--sampling_rate", metavar='', type=float, default=44100.0)
+parser.add_argument("--beat_subdivision", metavar='', type=int, default=16)
+parser.add_argument("--step_size", metavar='', type=float, default=0.01)
+parser.add_argument("--replace_existing", action="store_true")
+parser.add_argument("--using_bpm_time_division", action="store_true")
 
 args = parser.parse_args()
 

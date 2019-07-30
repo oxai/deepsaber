@@ -1,4 +1,4 @@
-/base - Lots of stuff in here, needs filtering and organising into training, generation and models
+/base - !!! Lots of stuff in here, needs filtering and organising into training, generation and models !!!
 /data
 	/extracted_data - Beatsaber Levels and Songs
 	/metadata - [PLACEHOLDER] Beastsaber complete metadata file (guillermo)
@@ -6,8 +6,8 @@
 /models
 /process_scripts
 	/data_retrieval
-		/io_functions.py
-		/download_data.py
+		/io_functions.py - Check through
+		/download_data.py - Perhaps integrate Beastsaber as download source
 	/data_processing - lots of redundant code here, repetition in /base/models
 		/difficulty_analysis.py [INCOMPLETE]
 		/identify_state_space.py [DUPLICATE?]
@@ -20,8 +20,8 @@
 	/training
 	/generation
 	/evaluation
-		/rule_check_states.py - Needs some comments
-		/graph_visualisation.py - Needs some comments 
+		/rule_check_states.py - check/comment
+		/graph_visualisation.py - check/comment 
 	/misc
 		/bash_scripts - Misc Bash scripts (Guillermo)
 		/experiment_name - Unknown options file (Andrea/Guillermo)

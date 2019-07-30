@@ -12,17 +12,19 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 from glob import glob
-from io_functions import saveFile, loadFile, get_song_from_directory_by_identifier
+from process_scripts.data_retrieval.io_functions import saveFile, loadFile, get_song_from_directory_by_identifier
 import random
-from identify_state_space import *
+from process_scripts.data_processing.identify_state_space import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(THIS_DIR, 'Data')
-EXTRACT_DIR = os.path.join(THIS_DIR, 'DataE')
+ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
 if not os.path.isdir(DATA_DIR):
     os.mkdir(DATA_DIR)
 if not os.path.isdir(EXTRACT_DIR):
     os.mkdir(EXTRACT_DIR)
+
 
 def extract_beat_times_chroma_tempo_from_ogg(ogg_file):
     # Load sample song

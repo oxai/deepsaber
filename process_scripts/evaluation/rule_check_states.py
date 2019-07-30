@@ -1,11 +1,18 @@
 import numpy as np
 import json
 import math
-from io_functions import *
-from identify_state_space import *
+from process_scripts.data_retrieval.io_functions import *
+from process_scripts.data_processing.identify_state_space import *
+
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-EXTRACTED_DATA_DIR = os.path.join(THIS_DIR, 'DataE')
+ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
 
 def check_state_rules_for_directory(data_directory):
     json_files = io_functions.get_all_json_level_files_from_data_directory(data_directory)
@@ -160,7 +167,7 @@ def verify_state_rule_check(state):
     return state_validation_code == 0, state_validation_code
 
 if __name__ == "__main__":
-    check_state_rules_for_directory(EXTRACTED_DATA_DIR)
+    check_state_rules_for_directory(EXTRACT_DIR)
 
 
 

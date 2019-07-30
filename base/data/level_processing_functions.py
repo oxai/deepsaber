@@ -5,7 +5,8 @@ import pickle
 unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 import Constants
 
-def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length,extra_output):
+def get_reduced_tensors_from_level(notes,indices,sequence_length,num_classes,bpm,sr,num_samples_per_feature,receptive_field,input_length,output_length, time_offset):
+    l = sequence_length
     ## BLOCKS TENSORS ##
     # variable `blocks` of shape (time steps, number of locations in the block grid), storing the class of block (as a number from 0 to 19) at each point in the grid, at each point in time
     # this variable is here only used to construct the blocks_reduced later; in the non-reduced representation dataset, it would be used directly.
@@ -35,7 +36,11 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
         else:
             raise ValueError("I thought there was no notes with _type different from 0,1,3. Ahem, what are those??")
 
-        blocks[sample_index,note["_lineLayer"]*4+note["_lineIndex"]] = note_representation
+        # print(note)
+        try:
+            blocks[sample_index,note["_lineLayer"]*4+note["_lineIndex"]] = note_representation
+        except:
+            continue # some weird notes with too big or small lineLayer / lineIndex ??
 
     # convert blocks tensor to reduced_blocks using the dictionary `unique states` (reduced representation) provided by Ralph (loaded at beginning of file)
     for i,block in enumerate(blocks):
@@ -57,14 +62,17 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
                 blocks_reduced_classes[i,0] = Constants.EMPTY_STATE
 
     # get the block features corresponding to the windows
-    # if extra_output:
-    #     block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field:i+input_length+1,:] for i in indices]
-    # else:
-    #     block_reduced_classes_windows = [blocks_reduced_classes[i:i+input_length,:] for i in indices]
-    block_reduced_classes_windows = [blocks_reduced_classes[i+receptive_field//2:i+receptive_field//2+1,:] for i in indices]
-    block_reduced_classes_windows = torch.tensor(block_reduced_classes_windows,dtype=torch.long)
+    ##if wavenet model:
+    # block_reduced_targets_windows = [blocks_reduced_classes[i+receptive_field//2:i+receptive_field//2+output_length,:] for i in indices]
+    # block_reduced_targets_windows = torch.tensor(block_reduced_targets_windows,dtype=torch.long)
+    #
+    # blocks_reduced_windows = [blocks_reduced[i:i+receptive_field//2,:] for i in indices]
+    ##else
+    block_reduced_targets_windows = [blocks_reduced_classes[i+time_offset+receptive_field-1:i+time_offset+receptive_field-1+output_length,:] for i in indices]
+    block_reduced_targets_windows = torch.tensor(block_reduced_targets_windows,dtype=torch.long)
 
-    blocks_reduced_windows = [blocks_reduced[i:i+receptive_field//2,:] for i in indices]
+    blocks_reduced_windows = [blocks_reduced[i:i+input_length,:] for i in indices]
+    ##fi
     blocks_reduced_windows = torch.tensor(blocks_reduced_windows)
     blocks_reduced_windows_pad = torch.zeros(blocks_reduced_windows.shape)
     blocks_reduced_windows_pad[:,:,Constants.PAD_STATE] = 1.0
@@ -72,7 +80,7 @@ def get_reduced_tensors_from_level(notes,indices,l,num_classes,bpm,sr,num_sample
     # this is because the input features have dimensions (num_windows,time_steps,num_features)
     blocks_reduced_windows = blocks_reduced_windows.permute(0,2,1)
 
-    return blocks_reduced_windows, block_reduced_classes_windows
+    return blocks_reduced_windows, block_reduced_targets_windows
 
 def get_full_tensors_from_level(notes,indices,l,num_classes,output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length):
     ## BLOCKS TENSORS ##

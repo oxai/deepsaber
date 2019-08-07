@@ -1,12 +1,13 @@
 .idea
 base/.idea
 **/.idea
-Data/
+data/extracted_data/*
+data/metadata/*
+data/statespace/*
 DataE/
 DataE_old/
 DataSmol/
 DataNewZip*
-Data*
 AugData*
 AugData/*
 Readings/

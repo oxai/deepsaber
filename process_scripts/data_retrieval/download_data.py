@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from mpi4py import MPI
 
 import requests
-from process_scripts.data_retrieval.io_functions import write_meta_data_file, read_meta_data_file
+from process_scripts.misc.io_functions import write_meta_data_file, read_meta_data_file
 
 # GLOBAL VARIABLES
 # DATA_DIR - The desired location for compressed song level data (files may be deleted following file extraction)
@@ -37,7 +37,6 @@ def download_top_k_levels_from_beastsaber(num_levels):
     tasks = list(range(rank * num_levels_per_job, (rank + 1) * num_levels_per_job))
     if rank < num_levels % size:
         tasks.append(size * num_levels_per_job + rank)
-    import json
     # meta_data_filename = "metadata/BeatSaberScrappedData/combinedScrappedData.json"
     # meta_data = json.load(open(meta_data_filename))
     # meta_data = {x['Key']: x for x in meta_data}

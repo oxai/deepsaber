@@ -1,6 +1,7 @@
 .idea
 base/.idea
 **/.idea
+!__init__.py
 data/extracted_data/*
 data/metadata/*
 data/statespace/*

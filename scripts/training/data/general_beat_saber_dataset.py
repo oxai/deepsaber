@@ -13,7 +13,7 @@ unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
 # number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
 from scripts.feature_extraction.feature_extration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
-import Constants
+import constants
 
 class GeneralBeatSaberDataset(BaseDataset):
 
@@ -197,7 +197,7 @@ class GeneralBeatSaberDataset(BaseDataset):
             print("blocks_windows",blocks_windows.shape)
             print("input_windowss",input_windowss[0].shape)
         elif self.opt.binarized:
-            blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,1+Constants.NUM_SPECIAL_STATES,bpm,sr,num_samples_per_feature,blocks_receptive_field,blocks_input_length, output_length,blocks_time_offset)
+            blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,1+constants.NUM_SPECIAL_STATES,bpm,sr,num_samples_per_feature,blocks_receptive_field,blocks_input_length, output_length,blocks_time_offset)
         else: #not tested
             blocks_windows, blocks_targets = get_full_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,self.opt.output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length)
 

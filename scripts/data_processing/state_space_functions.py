@@ -3,7 +3,7 @@ from scripts.data_processing.state_space_functions import compute_explicit_state
 import math, numpy as np
 import librosa
 import os
-import base.Constants as Constants
+import models.constants as constants
 
 #from features_base import extract_beat_times_chroma_tempo_from_ogg
 from scripts.feature_extraction.feature_extraction import extract_features_chroma, extract_features_mfcc, \
@@ -199,7 +199,7 @@ def get_block_sequence_with_deltas(json_file, song_length, bpm, step_size, top_k
     max_index = int(song_length/step_size)-1  # Ascertain that rounding at the last step doesn't create a state after end of song
     feature_indices = np.array([min(max_index,int((time/step_size)+0.5)) for time in times_real_extended])  # + 0.5 is for rounding
     # States in a level file are not necessarily in time order, so sorting is done here, while also 
-    states = np.array([Constants.START_STATE]+[state for time, state in states_sequence_beat]+[Constants.END_STATE])
+    states = np.array([constants.START_STATE]+[state for time, state in states_sequence_beat]+[constants.END_STATE])
     if one_hot:
         adv_indexing_col = np.arange(len(states))  # Column used for advanced indexing to produce one-hot matrix
         one_hot_states = np.zeros((top_k + NUM_SPECIAL_STATES, states.shape[0]))

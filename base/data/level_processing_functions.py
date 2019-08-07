@@ -18,16 +18,12 @@ def get_reduced_tensors_from_level(notes,indices,sequence_length,num_classes,bpm
 
     ## CONSTRUCT BLOCKS TENSOR ##
     for note in notes:
-        #sample_index = floor((time of note in seconds)*sampling_rate/(num_samples_per_feature))
-        #sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
         # we add receptive_field because we padded the y with 0s, to imitate generation
         sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/num_samples_per_feature - 0.5)
-        # does librosa add some padding too?
-        # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
+        # check if note falls within the length of the song (why are there so many that don't??)
         if sample_index >= l:
             #print("note beyond the end of time")
             continue
-
         #constructing the representation of the block (as a number from 0 to 19)
         if note["_type"] == 3:
             note_representation = 19
@@ -62,17 +58,10 @@ def get_reduced_tensors_from_level(notes,indices,sequence_length,num_classes,bpm
                 blocks_reduced_classes[i,0] = Constants.EMPTY_STATE
 
     # get the block features corresponding to the windows
-    ##if wavenet model:
-    # block_reduced_targets_windows = [blocks_reduced_classes[i+receptive_field//2:i+receptive_field//2+output_length,:] for i in indices]
-    # block_reduced_targets_windows = torch.tensor(block_reduced_targets_windows,dtype=torch.long)
-    #
-    # blocks_reduced_windows = [blocks_reduced[i:i+receptive_field//2,:] for i in indices]
-    ##else
     block_reduced_targets_windows = [blocks_reduced_classes[i+time_offset+receptive_field-1:i+time_offset+receptive_field-1+output_length,:] for i in indices]
     block_reduced_targets_windows = torch.tensor(block_reduced_targets_windows,dtype=torch.long)
-
     blocks_reduced_windows = [blocks_reduced[i:i+input_length,:] for i in indices]
-    ##fi
+
     blocks_reduced_windows = torch.tensor(blocks_reduced_windows)
     blocks_reduced_windows_pad = torch.zeros(blocks_reduced_windows.shape)
     blocks_reduced_windows_pad[:,:,Constants.PAD_STATE] = 1.0

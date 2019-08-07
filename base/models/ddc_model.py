@@ -42,7 +42,7 @@ class DDCModel(BaseModel):
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
         parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
-        parser.add_argument('--humaneness_reg_coeff', type=float, default=1.0)
+        parser.add_argument('--humaneness_reg_coeff', type=float, default=0.0)
         parser.add_argument('--hidden_dim', type=int, default=512)
         parser.add_argument('--vocab_size', type=int, default=2)
         parser.add_argument('--dropout', type=float, default=0.0)
@@ -74,19 +74,27 @@ class DDCModel(BaseModel):
             self.loss_ce += self.opt.entropy_loss_coeff * S
         self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
 
-        # temperature, step_size = self.opt.humaneness_temp, self.opt.step_size
+        #TODO: implement humaneness_reg maybe
+        # problem is we don't have past notes available in input, so need to do that differently
+        # just use output I guess :P
+        # step_size = self.opt.step_size
         # humaneness_delta = Constants.HUMAN_DELTA
         # window_size = int(humaneness_delta/step_size)
-
+        #
         # receptive_field = self.net.module.receptive_field
-        # notes = (torch.argmax(self.input[:,-5:,receptive_field//2-(window_size):receptive_field//2],1)==4).float()
+        # notes = (torch.argmax(input[:,-5:,receptive_field//2-(window_size):receptive_field//2],1)==4).float()
         # distance_factor = torch.tensor(np.exp(-2*np.arange(window_size,0,-1)/window_size)).float().cuda()
-        # weights = torch.tensordot(notes,distance_factor,dims=1)
-        # humaneness_reg = F.cross_entropy(x,torch.zeros(weights.shape).long().cuda(), reduction='none')
-        # humaneness_reg = torch.dot(humaneness_reg, weights)
-        # self.loss_humaneness_reg = humaneness_reg
+        # if self.opt.entropy_loss_coeff > 0:
+        #     weights = torch.tensordot(notes,distance_factor,dims=1)
+        #     humaneness_reg = F.cross_entropy(x,torch.zeros(weights.shape).long().cuda(), reduction='none')
+        #     humaneness_reg = torch.dot(humaneness_reg, weights)
+        #     self.loss_humaneness_reg = humaneness_reg
+        #     # self.loss_humaneness_reg = 0
+        #     self.loss_total = self.loss_ce + self.opt.humaneness_reg_coeff * self.loss_humaneness_reg
+        # else:
+        #     self.loss_humaneness_reg = 0
+        #     self.loss_total = self.loss_ce
         self.loss_humaneness_reg = 0
-        # self.loss_total = self.loss_ce + self.opt.humaneness_reg_coeff * self.loss_humaneness_reg
         self.loss_total = self.loss_ce
 
     def backward(self):

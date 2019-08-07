@@ -24,3 +24,6 @@ base/*.out
 sandbox_scrap.py
 .DS_Store
 scripts/training/experiments
+data/old_data
+data/DataSample
+data/DataSample.tar.gz

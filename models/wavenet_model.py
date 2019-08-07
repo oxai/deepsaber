@@ -53,7 +53,7 @@ class WaveNetModel(BaseModel):
         parser.add_argument('--kernel_size', type=int, default=2)
         parser.add_argument('--bias', action='store_false')
         parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
-        parser.add_argument('--humaneness_reg_coeff', type=float, default=1.0)
+        parser.add_argument('--humaneness_reg_coeff', type=float, default=0.0)
         parser.add_argument('--dropout', type=float, default=0.0)
         return parser
 

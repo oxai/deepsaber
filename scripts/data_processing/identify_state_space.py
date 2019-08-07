@@ -16,6 +16,7 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
+
 if not os.path.isdir(DATA_DIR):
     os.mkdir(DATA_DIR)
 if not os.path.isdir(EXTRACT_DIR):
@@ -153,8 +154,8 @@ if __name__ == "__main__":
     io_functions.saveFile(sorted_states, 'sorted_states.pkl', output_path, append=False)
     io_functions.saveFile(sorted_states_prior_probability, 'sorted_states_prior_probability.pkl', output_path,
                          append=False)
-    sorted_states_transition_probabilities = produce_transition_probability_matrix_from_distinct_state_spaces(
-        sorted_states, EXTRACT_DIR)
+    #sorted_states_transition_probabilities = produce_transition_probability_matrix_from_distinct_state_spaces(
+    #    sorted_states, EXTRACT_DIR)
     io_functions.saveFile(sorted_states_transition_probabilities, 'sorted_states_transition_probabilities.pkl',
                          output_path, append=False)
     # compute_shortest_inter_event_beat_gap(EXTRACT_DIR)

@@ -1,5 +1,5 @@
-from process_scripts.misc.io_functions import parse_json, create_dataStructure, encode_json
-from process_scripts.feature_extraction.features_base import *
+from scripts.misc.io_functions import parse_json, create_dataStructure, encode_json
+from scripts.feature_extraction.features_base import *
 from shutil import copyfile
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

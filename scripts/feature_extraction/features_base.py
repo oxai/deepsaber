@@ -4,9 +4,9 @@ import pandas as pd
 
 import librosa
 import librosa.display
-from process_scripts.misc.io_functions import saveFile, loadFile, get_song_from_directory_by_identifier
+from scripts.misc.io_functions import saveFile, loadFile, get_song_from_directory_by_identifier
 import random
-from process_scripts.data_processing.state_space_functions import *
+from scripts.data_processing.state_space_functions import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.pardir(os.pardir(THIS_DIR))

@@ -1,10 +1,12 @@
-from process_scripts.misc import io_functions
-from process_scripts.data_processing.state_space_functions import compute_explicit_states_from_json
+from scripts.misc import io_functions
+from scripts.data_processing.state_space_functions import compute_explicit_states_from_json
 import math, numpy as np
 import librosa
 import os
+import base.Constants as Constants
+
 #from features_base import extract_beat_times_chroma_tempo_from_ogg
-from process_scripts.feature_extraction.feature_extraction import extract_features_chroma, extract_features_mfcc, \
+from scripts.feature_extraction.feature_extraction import extract_features_chroma, extract_features_mfcc, \
     extract_features_hybrid_beat_synced
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +35,6 @@ To generate this folder, run identify_state_space.py
 '''
 
 EMPTY_STATE_INDEX = 0 # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
-import base.Constants as Constants
 NUM_SPECIAL_STATES = 3 # also padding
 
 

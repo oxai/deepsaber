@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from mpi4py import MPI
 
 import requests
-from process_scripts.misc.io_functions import write_meta_data_file, read_meta_data_file
+from scripts.misc.io_functions import write_meta_data_file, read_meta_data_file
 
 # GLOBAL VARIABLES
 # DATA_DIR - The desired location for compressed song level data (files may be deleted following file extraction)

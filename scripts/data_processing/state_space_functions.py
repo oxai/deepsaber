@@ -1,12 +1,12 @@
 from scripts.misc import io_functions
 from scripts.data_processing.state_space_functions import compute_explicit_states_from_json
-import math, numpy as np
+import math
+import numpy as np
 import librosa
 import os
 import models.constants as constants
 from collections import Counter
 
-#from features_base import extract_beat_times_chroma_tempo_from_ogg
 from scripts.feature_extraction.feature_extraction import extract_features_chroma, extract_features_mfcc, \
     extract_features_hybrid_beat_synced
 
@@ -28,11 +28,9 @@ Goal of this code:
 Based on the findings of this experiment, we can determine which representation serves our objectives best :)
 
 MAR 3 UPDATE: Code refactored to avoid state space computation code repetition
-'''
-'''
+
 This file contains all helper functions to take a JSON level file and convert it to the current note representation
 Requirements: The stateSpace directory. It contains sorted_states.pkl, which stores all identified states in the dataset.
-To generate this folder, run identify_state_space.py
 '''
 
 EMPTY_STATE_INDEX = 0  # or NUM_DISTINCT_STATES. CONVENTION: The empty state is the zero-th state.
@@ -190,7 +188,7 @@ def get_block_sequence_with_deltas(json_file, song_length, bpm, step_size, top_k
     :param states: ???????
     :param one_hot: Returns states as one-hot (True) or numerical (False)
     :return_state_times: Returns the original beat occurrences of states, used for level variation within 2-stage model
-    :return: 
+    :return:
     '''
     state_sequence = compute_state_sequence_representation_from_json(json_file=json_file, top_k=top_k, states=states)
     states_sequence_beat = [(time, state) for time, state in sorted(state_sequence.items(),key=lambda x:x[0]) if (time*60/bpm) <= song_length]
@@ -215,7 +213,6 @@ def get_block_sequence_with_deltas(json_file, song_length, bpm, step_size, top_k
             return one_hot_states, states, delta_forward, delta_backward, feature_indices
     else:
         return states, delta_forward, delta_backward, feature_indices
-
 
 
 def compute_discretized_state_sequence_from_json(json_file, top_k=2000,beat_discretization = 1/16):
@@ -250,12 +247,12 @@ def extract_all_representations_from_dataset(dataset_dir,top_k=2000,beat_discret
     directory_dict = {}
     for song_dir in song_directories:
         directory_dict[song_dir] = extract_representations_from_song_directory(song_dir,
-                                        top_k=top_k,beat_discretization=beat_discretization, audio_feature_select=True)
+                                        top_k=top_k, beat_discretization=beat_discretization, audio_feature_select=True)
         break
     return directory_dict    #TODO: Add some code here to save the representations eventually
 
 
-def extract_representations_from_song_directory(directory,top_k=2000,beat_discretization=1/16, audio_feature_select="Hybrid"):
+def extract_representations_from_song_directory(directory, top_k=2000, beat_discretization=1/16, audio_feature_select="Hybrid"):
     OGG_files = io_functions.get_all_ogg_files_from_data_directory(directory)
     if len(OGG_files) == 0:  # No OGG file ... skip
         print("No OGG file for song "+directory)
@@ -333,6 +330,7 @@ def stage_two_states_to_json_notes(state_sequence, state_times, bpm, hop, sr, st
 
     return notes
 
+
 def grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr):
     if grid_value > 0:  # Non-EMPTY grid cell
         # json_object = {"_time": (time * bpm * hop) / (sr * 60),
@@ -348,6 +346,7 @@ def grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr):
         return json_object
     else:
         return None
+
 
 if __name__ == "__main__":
     sorted_states, states_counts = produce_distinct_state_space_representations(EXTRACT_DIR, k=1000)

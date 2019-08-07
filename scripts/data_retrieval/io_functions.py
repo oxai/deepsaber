@@ -72,6 +72,7 @@ def parse_json(json_filepath):
     data['_obstacles'] = df_obstacles
     return data
 
+
 def get_song_from_directory_by_identifier(identifier, difficulty=None):
     song_directory = os.path.join(EXTRACT_DIR, identifier)
     if len(os.listdir(song_directory)) == 1 and os.path.isdir(os.listdir(song_directory)[0]):
@@ -212,6 +213,7 @@ def get_list_of_downloaded_songs():
         i += 1
     return downloaded_songs_full, downloaded_songs
 
+
 def read_meta_data_file(filename):
     num_lines = sum(1 for line in open(filename))
     f = open(filename, 'r')
@@ -243,6 +245,7 @@ def read_meta_data_file(filename):
                                     if num_lines > 16:
                                         meta_data['levelQuality'] = f.readline().split(': ')[1].split('\n')[0]
     return meta_data
+
 
 def write_meta_data_file(filename, meta_data):
     #if not os.path.exists(filename):

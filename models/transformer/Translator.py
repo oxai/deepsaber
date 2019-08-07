@@ -1,5 +1,5 @@
 ''' This module will handle the text generation with beam search. '''
-import Constants
+import constants
 
 import torch
 import torch.nn as nn
@@ -214,7 +214,7 @@ class Translator(object):
             src_seq, src_mask, src_pos = src_seq.to(self.device), src_mask.to(self.device), src_pos.to(self.device)
             src_enc, *_ = self.model.encoder(src_seq, src_mask, src_pos)
 
-            dec_seq = [Constants.START_STATE]
+            dec_seq = [constants.START_STATE]
 
             #-- Decode
             # for len_dec_seq in range(1, self.model_opt.max_token_seq_len + 1):

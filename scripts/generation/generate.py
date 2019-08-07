@@ -10,7 +10,7 @@ import json, pickle
 import librosa
 import torch
 import numpy as np
-import Constants
+import constants
 from math import ceil
 from scipy import signal
 
@@ -154,16 +154,16 @@ if not args.use_ddc: #if using DDC first stage
 
     #generate level
     # first_samples basically works as a padding, for the first few outputs, which don't have any "past part" of the song to look at.
-    first_samples = torch.full((1,opt.output_channels,receptive_field//2),Constants.START_STATE)
+    first_samples = torch.full((1,opt.output_channels,receptive_field//2),constants.START_STATE)
     # stuff for older models (will remove at some point:)
-    ## first_samples = torch.full((1,opt.output_channels,receptive_field),Constants.EMPTY_STATE)
-    ## first_samples[0,0,0] = Constants.START_STATE
+    ## first_samples = torch.full((1,opt.output_channels,receptive_field),constants.EMPTY_STATE)
+    ## first_samples[0,0,0] = constants.START_STATE
     print("Generating level timings... (sorry I'm a bit slow)")
     if opt.concat_outputs: #whether to concatenate the generated outputs as new inputs (AUTOREGRESSIVE)
         output,peak_probs = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
         peak_probs = np.array(peak_probs)
 
-        window = signal.hamming(ceil(Constants.HUMAN_DELTA/opt.step_size))
+        window = signal.hamming(ceil(constants.HUMAN_DELTA/opt.step_size))
         smoothed_peaks = np.convolve(peak_probs,window,mode='same')
         index = np.random.randint(len(smoothed_peaks))
         # for debugg help, but maybe useful for future work too
@@ -194,7 +194,7 @@ if opt.binarized: # for experiments where the output is state/no state
         times_real = [float(i*hop/sr) for i in peaks]
     notes = [{"_time":float(t*bpm/60), "_cutDirection":1, "_lineIndex":1, "_lineLayer":1, "_type":0} for t in times_real]
     print("Number of generated notes: ", len(notes))
-    notes = np.array(notes)[np.where(np.diff([-1]+times_real) > Constants.HUMAN_DELTA)[0]].tolist()
+    notes = np.array(notes)[np.where(np.diff([-1]+times_real) > constants.HUMAN_DELTA)[0]].tolist()
 else: # this is where the notes are generated for end-to-end models that actually output states
     unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
     states_list = [(unique_states[i[0].int().item()-4] if i[0].int().item() not in [0,1,2,3] else tuple(12*[0])) for i in states_list ]
@@ -248,6 +248,6 @@ if args.two_stage:
     from state_space_functions import stage_two_states_to_json_notes
     times_real = [t*60/bpm for t in state_times]
     notes2 = stage_two_states_to_json_notes(generated_sequence, state_times, bpm, hop, sr, state_rank=unique_states)
-    # print("Bad notes:", np.unique(np.diff(times_real)[np.diff(times_real)<=Constants.HUMAN_DELTA], return_counts=True))
+    # print("Bad notes:", np.unique(np.diff(times_real)[np.diff(times_real)<=constants.HUMAN_DELTA], return_counts=True))
 
     make_level_from_notes(notes2, bpm, song_name, opt, args, upload_to_dropbox=True, open_in_browser=args.open_in_browser)

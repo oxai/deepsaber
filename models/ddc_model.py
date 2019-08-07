@@ -3,7 +3,7 @@ from .networks import WaveNetModel as WaveNet
 import torch.nn.functional as F
 from torch import nn
 import torch
-import Constants
+import constants
 import numpy as np
 
 class DDCModel(BaseModel):
@@ -78,7 +78,7 @@ class DDCModel(BaseModel):
         # problem is we don't have past notes available in input, so need to do that differently
         # just use output I guess :P
         # step_size = self.opt.step_size
-        # humaneness_delta = Constants.HUMAN_DELTA
+        # humaneness_delta = constants.HUMAN_DELTA
         # window_size = int(humaneness_delta/step_size)
         #
         # receptive_field = self.net.module.receptive_field

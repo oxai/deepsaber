@@ -9,7 +9,7 @@ from torch.optim import lr_scheduler, Optimizer
 from torch.autograd import Variable, Function
 from torch.nn import init
 import numpy as np
-import Constants
+import constants
 
 
 class WaveNetModel(nn.Module):
@@ -253,7 +253,7 @@ class WaveNetModel(nn.Module):
                 shape = input.shape
                 input = input.view(shape[0],shape[1]*shape[2],shape[3])
                 blocks_reduced_windows_pad = torch.zeros((shape[0],shape[1]*shape[2],self.receptive_field//2 + self.receptive_field%2))
-                blocks_reduced_windows_pad[:,Constants.PAD_STATE,:] = 1.0
+                blocks_reduced_windows_pad[:,constants.PAD_STATE,:] = 1.0
                 input = torch.cat([input,blocks_reduced_windows_pad],2)
 
                 # #this is because "nothing" is a class, but I haven't put a one on the many_hot vector in its position

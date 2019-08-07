@@ -60,7 +60,7 @@ def paired_collate_fn(insts,tgt_dim=2):
     tgt_insts = collate_fn(tgt_insts,dim=tgt_dim)
     return {'input':src_insts, 'target':tgt_insts}
 
-from Constants import PAD_STATE
+from constants import PAD_STATE
 def collate_fn(insts,dim=-1): #dim is time dim
     ''' Pad the instance to the max seq length in batch '''
 

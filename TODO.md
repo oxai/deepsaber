@@ -4,7 +4,7 @@
 	/metadata - [PLACEHOLDER] Beastsaber complete metadata file (guillermo)
 	/statespace - Contains outputs of identify_state_space.py (tim/ralph)
 /models
-/process_scripts
+/scripts
 	/data_retrieval
 		/io_functions.py - Check through
 		/download_data.py - Perhaps integrate Beastsaber as download source

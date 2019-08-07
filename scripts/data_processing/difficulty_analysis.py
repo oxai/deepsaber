@@ -3,9 +3,9 @@ import time
 import os
 import numpy as np
 
-from process_scripts.misc import io_functions
-from process_scripts.misc.io_functions import read_meta_data_file, get_list_of_downloaded_songs, get_all_json_level_files_from_data_directory
-from process_scripts.data_processing.state_space_functions import compute_explicit_states_from_bs_level
+from scripts.misc import io_functions
+from scripts.misc.io_functions import read_meta_data_file, get_list_of_downloaded_songs, get_all_json_level_files_from_data_directory
+from scripts.data_processing.state_space_functions import compute_explicit_states_from_bs_level
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.pardir(os.pardir(THIS_DIR))

@@ -15,7 +15,7 @@ from math import ceil
 from scipy import signal
 
 from level_generation_utils import make_level_from_notes, get_notes_from_stepmania_file
-from process_scripts.feature_extraction.feature_extration import extract_features_hybrid,extract_features_mel,extract_features_hybrid_beat_synced
+from scripts.feature_extraction.feature_extration import extract_features_hybrid,extract_features_mel,extract_features_hybrid_beat_synced
 
 parser = argparse.ArgumentParser(description='Generate Beat Saber level from song')
 parser.add_argument('--song_path', type=str)

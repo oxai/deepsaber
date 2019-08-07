@@ -1,4 +1,4 @@
-from process_scripts.data_processing.state_space_functions import *
+from scripts.data_processing.state_space_functions import *
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -87,7 +87,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--time_offset', type=int, default=1, help='time shift between the last read input, and the output predicted. The default value of 1 corresponds to predicting the next output')
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
-        parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
+        # parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
         parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
         parser.add_argument('--flatten_context', action='store_true', help='whether to flatten the temporal context added for each time point into the feature dimension, or not')
         parser.add_argument('--max_token_seq_len', type=int, default=1024)

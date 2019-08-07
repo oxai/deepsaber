@@ -30,17 +30,10 @@ class DDCModel(BaseModel):
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
-        parser.add_argument('--layers', type=int, default=10, help="Number of layers in each block")
-        parser.add_argument('--blocks', type=int, default=4, help="Number of residual blocks in network")
-        parser.add_argument('--dilation_channels', type=int, default=32, help="Number of channels in dilated convolutions")
-        parser.add_argument('--residual_channels', type=int, default=32, help="Number of channels in the residual link")
-        parser.add_argument('--skip_channels', type=int, default=256)
-        parser.add_argument('--end_channels', type=int, default=256)
-        parser.add_argument('--input_channels', type=int, default=(1+20))
-        parser.add_argument('--num_classes', type=int, default=20)
-        parser.add_argument('--output_channels', type=int, default=(4*3))
-        parser.add_argument('--kernel_size', type=int, default=2)
-        parser.add_argument('--bias', action='store_false')
+        # parser.add_argument('--num_classes', type=int, default=20)
+        # parser.add_argument('--output_channels', type=int, default=(4*3))
+        # parser.add_argument('--kernel_size', type=int, default=2)
+        # parser.add_argument('--bias', action='store_false')
         parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
         parser.add_argument('--humaneness_reg_coeff', type=float, default=0.0)
         parser.add_argument('--hidden_dim', type=int, default=512)

@@ -1,9 +1,7 @@
 import os, numpy as np
-from process_scripts.data_retrieval import io_functions
-from process_scripts.data_processing.identify_state_space import compute_explicit_states_from_json
+from scripts.misc import io_functions
+from scripts.data_processing.state_space_functions import compute_explicit_states_from_json
 from graphviz import Digraph
-from sklearn.preprocessing import normalize
-
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.pardir(os.pardir(THIS_DIR))

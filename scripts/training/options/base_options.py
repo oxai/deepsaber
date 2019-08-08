@@ -18,7 +18,7 @@ import importlib
 import pkgutil
 import models
 import scripts.training.data as data
-import scripts.misc.utils as utils
+import scripts.misc.utils.utils as utils
 import json
 
 class BaseOptions:

@@ -2,7 +2,8 @@ import sys
 import os
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(os.path.join(THIS_DIR, os.pardir, os.pardir), os.pardir)))
+# print(ROOT_DIR)
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
 if not os.path.isdir(DATA_DIR):
@@ -26,8 +27,8 @@ unique_states = pickle.load(open(DATA_DIR+"/statespace/sorted_states.pkl","rb"))
 # feature_size = 24
 # number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
-from scripts.feature_extraction.feature_extration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
-import constants
+from scripts.feature_extraction.feature_extraction import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
+import models.constants
 
 
 class GeneralBeatSaberDataset(BaseDataset):

@@ -359,7 +359,7 @@ def grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr):
 if __name__ == "__main__":
     sorted_states, states_counts = produce_distinct_state_space_representations(EXTRACT_DIR, k=1000)
     sorted_states_prior_probability = np.divide(states_counts, sum(states_counts))
-    output_path = os.path.join(THIS_DIR, 'stateSpace')
+    output_path = DATA_DIR+"/statespace/"
     if not os.path.isdir(output_path):
         os.mkdir(output_path)
     io_functions.saveFile(sorted_states, 'sorted_states.pkl', output_path, append=False)

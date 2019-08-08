@@ -4,6 +4,8 @@ import zipfile
 import pickle
 import os
 import html
+
+import sys
 from bs4 import BeautifulSoup
 from mpi4py import MPI
 
@@ -15,13 +17,14 @@ from scripts.misc.io_functions import write_meta_data_file, read_meta_data_file
 # EXTRACT_DIR - The desired location for extracted song level data
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
 if not os.path.isdir(DATA_DIR):
     os.mkdir(DATA_DIR)
 if not os.path.isdir(EXTRACT_DIR):
     os.mkdir(EXTRACT_DIR)
+sys.path.append(ROOT_DIR)
 
 def get_soup(url):
     r = requests.get(url)
@@ -232,23 +235,6 @@ def update_meta_data_for_downloaded_levels():
         else:
             print('No existing meta_file.')
             print('Current approach to overcome this is unstable.')
-            # print('No existing meta_file, searching by folder name and taking first candidate.')
-            # search_key = downloaded_levels[i]
-            # page = 0
-            # req_address = 'http://beatsaver.com/search/all/' + str(page * 40) + '?key=' + search_key
-            # HTMLreq = Request(req_address, headers={'User-Agent': 'Mozilla/5.0'})
-            # response = urlopen(HTMLreq)
-            # HTML = str(response.read())
-            # thumbsUpRegEx = re.compile("<i class=\"fas fa-thumbs-up\"><\/i>\s(.*?) \/")
-            # thumbsDownRegEx = re.compile("<i class=\"fas fa-thumbs-down\"><\/i>\s(.*?)" + r"\\" + "n\s*?<\/li>")
-            # fileNameMatches = re.findall(fileNameRegEx, HTML)  # Extract file names (both very hacky)
-            # if len(fileNameMatches) > 0:
-            #     match_found = True
-            #     match_id = 0
-            # else:
-            #     print('No track found for: '+downloaded_levels_full[i])
-            #     print('It is recommended that you delete '+downloaded_levels_full[i])
-
         if match_found is True:
             titleMatches = re.findall(titleRegEx, HTML)  # Extract song titles
             fileNameMatches = re.findall(fileNameRegEx, HTML)  # Extract file names (both very hacky)

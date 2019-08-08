@@ -13,11 +13,11 @@ if not os.path.isdir(EXTRACT_DIR):
 sys.path.append(ROOT_DIR)
 
 from scripts.misc import io_functions
-from scripts.data_processing.state_space_functions import compute_explicit_states_from_json
 import math
 import numpy as np
 import librosa
 import os
+import sys
 import models.constants as constants
 from collections import Counter
 
@@ -43,11 +43,14 @@ NUM_SPECIAL_STATES = 3  # also padding
 
 
 def compute_explicit_states_from_json(level_json, as_tuple = True):
+    ''' JSON file wrapped for extracting a BeatSaber Level state representation. '''
     bs_level = io_functions.parse_json(level_json)
     states_as_tuples = compute_explicit_states_from_bs_level(bs_level, as_tuple)
     return states_as_tuples
 
+
 def compute_explicit_states_from_bs_level(bs_level, as_tuple = True):
+
     notes = bs_level["_notes"]  # Parse the JSON notes to use the notes representation
     note_times = set(notes["_time"])  # Extract the distinct note times
     state_dict = {eventTime: np.zeros(12) for eventTime in note_times}  # Initialise a state at every time event

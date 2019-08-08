@@ -88,6 +88,7 @@ def extract_beat_times_chroma_tempo_from_ogg(ogg_file):
     beat_chroma = beat_chroma[:, :-1]  
     return tempo, beat_times, beat_chroma
 
+
 def convert_beatchroma_to_notes_position(beat_chroma):
     indexMax = np.argmax(beat_chroma, axis=0)
     num_beats = len(indexMax)
@@ -163,6 +164,7 @@ def generate_note_types_from_line_index(line_index):
             type.append(1)
         else:
             type.append(0)
+
 
 def filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_duration, difficulty):
     beats_per_bar = 4  # an assumption for now

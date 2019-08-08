@@ -1,21 +1,16 @@
 import argparse
 import sys, os, time
-sys.path.append("/home/guillefix/code/beatsaber/base")
-sys.path.append("/home/guillefix/code/beatsaber/base/models")
-sys.path.append("/home/guillefix/code/beatsaber")
-from options.train_options import TrainOptions
-from data import create_dataset, create_dataloader
 from models import create_model
 import json, pickle
 import librosa
 import torch
 import numpy as np
-import constants
+import models.constants
 from math import ceil
 from scipy import signal
 
-from level_generation_utils import make_level_from_notes, get_notes_from_stepmania_file
-from scripts.feature_extraction.feature_extration import extract_features_hybrid,extract_features_mel,extract_features_hybrid_beat_synced
+from scripts.generation.level_generation_utils import make_level_from_notes, get_notes_from_stepmania_file
+from scripts.feature_extraction.feature_extraction import extract_features_mel, extract_features_hybrid_beat_synced
 
 parser = argparse.ArgumentParser(description='Generate Beat Saber level from song')
 parser.add_argument('--song_path', type=str)

@@ -1,18 +1,7 @@
-import sys, os
-sys.path.append("/home/guillefix/code/beatsaber/base")
-sys.path.append("/home/guillefix/code/beatsaber")
-sys.path.append("/home/guillefix/code/beatsaber/base/models")
 import numpy as np
-import librosa
-import torch
 from pathlib import Path
 import json
-import os.path
-from scripts.feature_extraction.feature_extration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
-import matplotlib.pyplot as plt
 import librosa.display
-import IPython.display as ipd
-# %matplotlib
 
 feature_name = "mel"
 feature_size = 100
@@ -72,7 +61,7 @@ for note in notes:
     #sample_index = floor((time of note in seconds)*sampling_rate/(num_samples_per_feature))
     #sample_index = floor((note['_time']*60/bpm)*sr/num_samples_per_feature)
     # we add receptive_field because we padded the y with 0s, to imitate generation
-    sample_index = receptive_field + floor((note['_time']*60/bpm)*sr/hop - 0.5)
+    sample_index = receptive_field + np.floor((note['_time'] * 60 / bpm) * sr / hop - 0.5)
     # does librosa add some padding too?
     # check if note falls within the length of the song (why are there so many that don't??) #TODO: research why this happens
     if sample_index >= l:

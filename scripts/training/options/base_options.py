@@ -1,20 +1,31 @@
+import sys
 import os
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
+
+sys.path.append(ROOT_DIR)
 import argparse
 import multiprocessing as mp
 import torch
 import importlib
 import pkgutil
 import models
-import scripts.training.data
-import scripts.utils
+import scripts.training.data as data
+import scripts.misc.utils as utils
 import json
-
 
 class BaseOptions:
     def __init__(self):
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                          add_help=False)  # TODO - check that help is still displayed
-        parser.add_argument('--task', type=str, default='base', help="Module from which dataset and model are loaded")
+        parser.add_argument('--task', type=str, default='scripts.training', help="Module from which dataset and model are loaded")
         parser.add_argument('-d', '--data_dir', type=str, default='/Users/andreachatrian/Documents/Repositories/oxai/beatsaber/DataE')
         parser.add_argument('--dataset_name', type=str, default="song")
         parser.add_argument('--batch_size', default=1, type=int)
@@ -69,6 +80,7 @@ class BaseOptions:
 
         # modify dataset-related parser options fsldkn
         dataset_name = opt.dataset_name
+        print(dataset_name, task_name)
         dataset_option_setter = data.get_option_setter(dataset_name, task_name)
         parser = dataset_option_setter(parser, self.is_train)
 

@@ -9,7 +9,7 @@ from torch.optim import lr_scheduler, Optimizer
 from torch.autograd import Variable, Function
 from torch.nn import init
 import numpy as np
-import constants
+import models.constants
 
 
 class WaveNetModel(nn.Module):

@@ -2,7 +2,7 @@ from .base_model import BaseModel
 from .networks import WaveNetModel as WaveNet
 import torch.nn.functional as F
 import torch
-import constants
+import models.constants
 import numpy as np
 
 class WaveNetModel(BaseModel):

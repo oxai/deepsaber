@@ -2,14 +2,14 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import transformer.Constants as Constants
+import transformer.constants as constants
 from transformer.Layers import EncoderLayer, DecoderLayer
 
 __author__ = "Yu-Hsiang Huang"
 
 def get_non_pad_mask(seq):
     assert seq.dim() == 2
-    return seq.ne(Constants.PAD).type(torch.float).unsqueeze(-1)
+    return seq.ne(constants.PAD).type(torch.float).unsqueeze(-1)
 
 def get_sinusoid_encoding_table(n_position, d_hid, padding_idx=None):
     ''' Sinusoid position encoding table '''
@@ -36,7 +36,7 @@ def get_attn_key_pad_mask(seq_k, seq_q):
 
     # Expand to fit the shape of key query attention matrix.
     len_q = seq_q.size(1)
-    padding_mask = seq_k.eq(Constants.PAD)
+    padding_mask = seq_k.eq(constants.PAD)
     padding_mask = padding_mask.unsqueeze(1).expand(-1, len_q, -1)  # b x lq x lk
 
     return padding_mask
@@ -69,7 +69,7 @@ class Encoder(nn.Module):
                 d_src, d_word_vec)
         else:
             self.src_word_emb = nn.Embedding(
-                n_src_vocab, d_word_vec, padding_idx=Constants.PAD)
+                n_src_vocab, d_word_vec, padding_idx=constants.PAD)
 
         self.position_enc = nn.Embedding.from_pretrained(
             get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),
@@ -120,7 +120,7 @@ class Decoder(nn.Module):
                 d_tgt, d_word_vec)
         else:
             self.tgt_word_emb = nn.Embedding(
-                n_tgt_vocab, d_word_vec, padding_idx=Constants.PAD)
+                n_tgt_vocab, d_word_vec, padding_idx=constants.PAD)
 
         self.position_enc = nn.Embedding.from_pretrained(
             get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),

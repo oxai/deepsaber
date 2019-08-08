@@ -4,14 +4,12 @@
 	/metadata - [PLACEHOLDER] Beastsaber complete metadata file (guillermo)
 	/statespace - Contains outputs of identify_state_space.py (tim/ralph)
 /models
-/process_scripts
+/scripts
 	/data_retrieval
-		/io_functions.py - Check through
 		/download_data.py - Perhaps integrate Beastsaber as download source
 	/data_processing - lots of redundant code here, repetition in /base/models
 		/difficulty_analysis.py [INCOMPLETE]
-		/identify_state_space.py [DUPLICATE?] (level_processing_functions.py)
-		/state_space_functions.py [DUPLICATE?] (level_processing_functions.py)
+		/state_space_functions.py [DUPLICATE] (level_processing_functions.py)
 	/feature_extraction - possible duplications in /base/models
 		/example_decode_encode.py [LEGACY?] perhaps redundant (DEV testing code?)
 		/feature_extraction.py
@@ -23,6 +21,7 @@
 		/rule_check_states.py - check/comment
 		/graph_visualisation.py - check/comment
 	/misc
+	    /io_functions.py - Check through
 		/bash_scripts - Misc Bash scripts (Guillermo)
 		/experiment_name - Unknown options file (Andrea/Guillermo)
 /web - [DEV] The beginnings of a web api for level generation

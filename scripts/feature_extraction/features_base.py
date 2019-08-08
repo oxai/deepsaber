@@ -2,19 +2,11 @@ import pandas as pd
 
 # %%
 
-import numpy as np
-import os
 import librosa
-import json
 import librosa.display
-import IPython.display as ipd
-import matplotlib.pyplot as plt
-import math
-import numpy as np
-from glob import glob
-from process_scripts.data_retrieval.io_functions import saveFile, loadFile, get_song_from_directory_by_identifier
+from scripts.misc.io_functions import saveFile, loadFile, get_song_from_directory_by_identifier
 import random
-from process_scripts.data_processing.identify_state_space import *
+from scripts.data_processing.state_space_functions import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
@@ -96,6 +88,7 @@ def extract_beat_times_chroma_tempo_from_ogg(ogg_file):
     beat_chroma = beat_chroma[:, :-1]  
     return tempo, beat_times, beat_chroma
 
+
 def convert_beatchroma_to_notes_position(beat_chroma):
     indexMax = np.argmax(beat_chroma, axis=0)
     num_beats = len(indexMax)
@@ -171,6 +164,7 @@ def generate_note_types_from_line_index(line_index):
             type.append(1)
         else:
             type.append(0)
+
 
 def filter_notes_by_patterns(line_index, line_layer, beat_times_beats, beat_duration, difficulty):
     beats_per_bar = 4  # an assumption for now

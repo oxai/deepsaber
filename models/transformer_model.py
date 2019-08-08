@@ -4,8 +4,8 @@ import torch.nn.functional as F
 import torch.nn as nn
 from .base_model import BaseModel
 from .transformer.Models import Transformer
-import Constants
-from process_scripts.data_processing.state_space_functions import get_block_sequence_with_deltas
+import constants
+from scripts.data_processing.state_space_functions import get_block_sequence_with_deltas
 from transformer.Translator import Translator
 
 def cal_performance(pred, gold, smoothing=False):
@@ -19,7 +19,7 @@ def cal_performance(pred, gold, smoothing=False):
     # print(pred.shape, gold.shape)
     # print(pred, gold)
     # name = input("Enter your name: ")   # Python 3
-    non_pad_mask = gold.ne(Constants.PAD_STATE)
+    non_pad_mask = gold.ne(constants.PAD_STATE)
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
 
@@ -39,11 +39,11 @@ def cal_loss(pred, gold, smoothing):
         one_hot = one_hot * (1 - eps) + (1 - one_hot) * eps / (n_class - 1)
         log_prb = F.log_softmax(pred, dim=1)
 
-        non_pad_mask = gold.ne(Constants.PAD_STATE)
+        non_pad_mask = gold.ne(constants.PAD_STATE)
         loss = -(one_hot * log_prb).sum(dim=1)
         loss = loss.masked_select(non_pad_mask).mean()
     else:
-        loss = F.cross_entropy(pred, gold, ignore_index=Constants.PAD, reduction='mean')
+        loss = F.cross_entropy(pred, gold, ignore_index=constants.PAD, reduction='mean')
 
     return loss
 
@@ -195,7 +195,7 @@ class TransformerModel(BaseModel):
             song_sequence = torch.cat([song_sequence,input_forward_deltas.double(),input_backward_deltas.double()],1)
 
         src_pos = torch.tensor(np.arange(len(indices))).unsqueeze(0)
-        src_mask = torch.tensor(Constants.NUM_SPECIAL_STATES*np.ones(len(indices))).unsqueeze(0)
+        src_mask = torch.tensor(constants.NUM_SPECIAL_STATES*np.ones(len(indices))).unsqueeze(0)
 
         ## actually generate level ##
         translator = Translator(opt,self)

@@ -7,7 +7,7 @@
 
 import torch
 import numpy as np
-import transformer.Constants as Constants
+import transformer.constants as constants
 
 class Beam():
     ''' Beam search '''
@@ -25,8 +25,8 @@ class Beam():
         self.prev_ks = []
 
         # The outputs at each time-step.
-        self.next_ys = [torch.full((size,), Constants.PAD, dtype=torch.long, device=device)]
-        self.next_ys[0][:] = Constants.BOS
+        self.next_ys = [torch.full((size,), constants.PAD, dtype=torch.long, device=device)]
+        self.next_ys[0][:] = constants.BOS
         # self.next_ys[0][:] = np.random.randint(3,30)
 
     def get_current_state(self):
@@ -70,9 +70,9 @@ class Beam():
         self.next_ys.append(best_scores_id - prev_k * num_words)
 
         # End condition is when top-of-beam is EOS.
-        # if self.next_ys[-1][0].item() == Constants.EOS:
-        # if self.next_ys[-1][0].item() == Constants.EOS:
-        #     self.next_ys[-1][0] = Constants.UNK
+        # if self.next_ys[-1][0].item() == constants.EOS:
+        # if self.next_ys[-1][0].item() == constants.EOS:
+        #     self.next_ys[-1][0] = constants.UNK
         if len(self.next_ys) == sequence_length - 1:
             self._done = True
             self.all_scores.append(self.scores)
@@ -96,8 +96,8 @@ class Beam():
         else:
             _, keys = self.sort_scores()
             # hyps = [[self.next_ys[0][k]] + self.get_hypothesis(k) for k in keys]
-            hyps = [[Constants.BOS] + self.get_hypothesis(k) for k in keys]
-            # hyps = [[Constants.BOS] + h for h in hyps]
+            hyps = [[constants.BOS] + self.get_hypothesis(k) for k in keys]
+            # hyps = [[constants.BOS] + h for h in hyps]
             dec_seq = torch.LongTensor(hyps)
 
         return dec_seq

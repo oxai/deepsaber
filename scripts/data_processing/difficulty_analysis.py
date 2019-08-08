@@ -1,14 +1,11 @@
 import getpass
 import time
-from urllib.request import Request, urlopen
 import os
-import re
-import html
 import numpy as np
 
-from process_scripts.data_retrieval import io_functions
-from process_scripts.data_retrieval.io_functions import read_meta_data_file, get_list_of_downloaded_songs, get_all_json_level_files_from_data_directory
-from process_scripts.data_processing.identify_state_space import compute_explicit_states_from_bs_level
+from scripts.misc import io_functions
+from scripts.misc.io_functions import read_meta_data_file, get_list_of_downloaded_songs, get_all_json_level_files_from_data_directory
+from scripts.data_processing.state_space_functions import compute_explicit_states_from_bs_level
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
@@ -427,7 +424,7 @@ if __name__ == '__main__':
             if j == 0:
                 sort_idx = np.argsort(this_y_test)
                 ax = io_functions.add_data_to_plot(x=y_test[-1][sort_idx], y=errors[-1][sort_idx], title='test_model_' + str(j),
-                                                  ax=ax, style='r-', label=str(j), legend=True, realtime=True)
+                                                   ax=ax, style='r-', label=str(j), legend=True, realtime=True)
 
     difficulty_error = []
     difficulty_error_mean = []

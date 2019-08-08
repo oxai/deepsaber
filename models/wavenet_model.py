@@ -2,7 +2,7 @@ from .base_model import BaseModel
 from .networks import WaveNetModel as WaveNet
 import torch.nn.functional as F
 import torch
-import Constants
+import constants
 import numpy as np
 
 class WaveNetModel(BaseModel):
@@ -84,7 +84,7 @@ class WaveNetModel(BaseModel):
         self.metric_accuracy = (torch.argmax(x,1) == self.target).sum().float()/len(self.target)
 
         step_size = self.opt.step_size
-        humaneness_delta = Constants.HUMAN_DELTA
+        humaneness_delta = constants.HUMAN_DELTA
         window_size = int(humaneness_delta/step_size)
         # print(humaneness_reg.shape)
         receptive_field = self.net.module.receptive_field

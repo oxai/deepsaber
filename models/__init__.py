@@ -7,7 +7,8 @@ def find_model_using_name(model_name, task_name):
     # the file "models/modelname_model.py"
     # will be imported.
     task_module = importlib.import_module(task_name)
-    model_filename = task_name + ".models." + model_name.lower() + "_model"
+    # model_filename = task_name + ".models." + model_name.lower() + "_model"
+    model_filename = "models." + model_name.lower() + "_model"
     modellib = importlib.import_module(model_filename, package=task_module)
 
     # In the file, the class called ModelNameModel() will

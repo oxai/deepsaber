@@ -1,8 +1,22 @@
+import sys
+import os
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
+
+sys.path.append(ROOT_DIR)
 import importlib
 from torch.utils.data import DataLoader
 from .base_dataset import BaseDataset
 import numpy as np
 import torch
+from models.constants import PAD_STATE
 
 def find_dataset_using_name(dataset_name, task_name):
     # Given the option --dataset_name [datasetname],
@@ -60,7 +74,6 @@ def paired_collate_fn(insts,tgt_dim=2):
     tgt_insts = collate_fn(tgt_insts,dim=tgt_dim)
     return {'input':src_insts, 'target':tgt_insts}
 
-from constants import PAD_STATE
 def collate_fn(insts,dim=-1): #dim is time dim
     ''' Pad the instance to the max seq length in batch '''
 

@@ -10,7 +10,7 @@ import html
 from matplotlib import pyplot
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
 if not os.path.isdir(DATA_DIR):
@@ -80,16 +80,16 @@ def get_song_from_directory_by_identifier(identifier, difficulty=None):
     song_json = dict()
     if difficulty is None:
         for difficulty in difficulties:
-            json = os.path.join(song_directory, difficulty + '.json')
+            json = os.path.join(song_directory, difficulty + '.dat')
             if os.path.isfile(json):
                 song_json[difficulty] = json
     else:
-        json = os.path.join(song_directory, difficulty + '.json')
+        json = os.path.join(song_directory, difficulty + '.dat')
         if os.path.isfile(json):
             song_json = json
         else:
             raise Exception('No file of difficulty: '+difficulty+' in: '+song_directory)
-    song_ogg = glob(os.path.join(song_directory, '*.ogg'))[0]
+    song_ogg = glob(os.path.join(song_directory, '*.egg'))[0]
     song_filename = song_ogg.split('/')[-1]
     return song_directory, song_ogg, song_json, song_filename
 
@@ -174,7 +174,7 @@ which are optimised. (Technically these two fcts can be made one with an extra p
 
 
 def get_all_ogg_files_from_data_directory(data_directory):
-    file_regex = re.compile("^.*\\.ogg$")
+    file_regex = re.compile("^.*\\.egg$")
     ogg_files = []
     for root, subdirectories, files in os.walk(data_directory):
         for name in files:

@@ -1,3 +1,17 @@
+import sys
+import os
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
+
+sys.path.append(ROOT_DIR)
+
 from scripts.misc import io_functions
 import math
 import numpy as np
@@ -10,15 +24,6 @@ from collections import Counter
 from scripts.feature_extraction.feature_extraction import extract_features_chroma, extract_features_mfcc, \
     extract_features_hybrid_beat_synced
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
-DATA_DIR = os.path.join(ROOT_DIR, 'data')
-EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
-if not os.path.isdir(DATA_DIR):
-    os.mkdir(DATA_DIR)
-if not os.path.isdir(EXTRACT_DIR):
-    os.mkdir(EXTRACT_DIR)
-sys.path.append(ROOT_DIR)
 
 ''' @RA: Trying to identify state patterns which appear in data, to determine an optimal state representation
 Goal of this code:
@@ -201,13 +206,13 @@ def get_block_sequence_with_deltas(json_file, song_length, bpm, step_size, top_k
     times_beats = np.array([time for time, state in states_sequence_beat])
     max_index = int(song_length/step_size)-1  # Ascertain that rounding at the last step doesn't create a state after end of song
     feature_indices = np.array([min(max_index,int((time/step_size)+0.5)) for time in times_real_extended])  # + 0.5 is for rounding
-    # States in a level file are not necessarily in time order, so sorting is done here, while also 
+    # States in a level file are not necessarily in time order, so sorting is done here, while also
     states = np.array([constants.START_STATE]+[state for time, state in states_sequence_beat]+[constants.END_STATE])
     if one_hot:
         adv_indexing_col = np.arange(len(states))  # Column used for advanced indexing to produce one-hot matrix
         one_hot_states = np.zeros((top_k + NUM_SPECIAL_STATES, states.shape[0]))
         one_hot_states[states.astype(int), adv_indexing_col.astype(int)] = 1  # Advanced Indexing to fill one hot
-    time_diffs = np.diff(times_real_extended)  # Compute differences between times 
+    time_diffs = np.diff(times_real_extended)  # Compute differences between times
     delta_backward = np.expand_dims(np.insert(time_diffs, 0, times_real_extended[0]), axis=0)
     delta_forward = np.expand_dims(np.append(time_diffs, song_length - times_real_extended[-1]), axis=0)
     if one_hot:
@@ -222,7 +227,7 @@ def get_block_sequence_with_deltas(json_file, song_length, bpm, step_size, top_k
 if __name__ == "__main__":
     sorted_states, states_counts = produce_distinct_state_space_representations(EXTRACT_DIR, k=1000)
     sorted_states_prior_probability = np.divide(states_counts, sum(states_counts))
-    output_path = os.path.join(THIS_DIR, 'stateSpace')
+    output_path = DATA_DIR+"/statespace/"
     if not os.path.isdir(output_path):
         os.mkdir(output_path)
     io_functions.saveFile(sorted_states, 'sorted_states.pkl', output_path, append=False)

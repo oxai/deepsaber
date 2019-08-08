@@ -26,9 +26,19 @@
 	/generation
 	/evaluation
 		/rule_check_states.py - check/comment
-		/graph_visualisation.py - check/comment 
+		/graph_visualisation.py - check/comment
 	/misc
 	    /io_functions.py - Check through
 		/bash_scripts - Misc Bash scripts (Guillermo)
 		/experiment_name - Unknown options file (Andrea/Guillermo)
-/web - [DEV] The beginnings of a web api for level generation 
+/web - [DEV] The beginnings of a web api for level generation
+
+---
+fix importing. E.g. base_options.py imports from `base`, that doesn't exist now....
+
+make stage_two_dataset work with new beat saber data.
+
+stage_two uses state_space_functions, while general_beat_saber uses level_processing_functions. Need to merge these two.
+Finish writing training readme, for stage_two.
+Make non-reduced-state data work
+write block placement testing stuff

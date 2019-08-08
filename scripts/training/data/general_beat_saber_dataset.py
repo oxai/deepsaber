@@ -1,19 +1,35 @@
+import sys
+import os
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(os.path.join(THIS_DIR, os.pardir, os.pardir), os.pardir)))
+# print(ROOT_DIR)
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
+
+sys.path.append(ROOT_DIR)
+
 from pathlib import Path
 from itertools import tee
 import numpy as np
 import torch
 import librosa
-from base.data.base_dataset import BaseDataset
+from .base_dataset import BaseDataset
 import json
 from math import floor, ceil
 import pickle
-unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
+unique_states = pickle.load(open(DATA_DIR+"/statespace/sorted_states.pkl","rb"))
 # feature_name = "chroma"
 # feature_size = 24
 # number_reduced_states = 2000
 from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
-from scripts.feature_extraction.feature_extration import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
-import constants
+from scripts.feature_extraction.feature_extraction import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
+import models.constants
+
 
 class GeneralBeatSaberDataset(BaseDataset):
 
@@ -87,7 +103,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         parser.add_argument('--time_offset', type=int, default=1, help='time shift between the last read input, and the output predicted. The default value of 1 corresponds to predicting the next output')
         parser.add_argument('--reduced_state', action='store_true', help='if true, use reduced state representation')
         parser.add_argument('--concat_outputs', action='store_true', help='if true, concatenate the outputs to the input sequence')
-        parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
+        # parser.add_argument('--extra_output', action='store_true', help='set true for wavenet, as it needs extra output to predict, other than the outputs fed as input :P')
         parser.add_argument('--binarized', action='store_true', help='set true to predict only wheter there is a state or not')
         parser.add_argument('--flatten_context', action='store_true', help='whether to flatten the temporal context added for each time point into the feature dimension, or not')
         parser.add_argument('--max_token_seq_len', type=int, default=1024)

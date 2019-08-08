@@ -26,9 +26,11 @@ if not os.path.isdir(EXTRACT_DIR):
     os.mkdir(EXTRACT_DIR)
 sys.path.append(ROOT_DIR)
 
+
 def get_soup(url):
     r = requests.get(url)
     return BeautifulSoup(r.content, "html.parser")
+
 
 def download_top_k_levels_from_beastsaber(num_levels):
     # Left for Guillermo

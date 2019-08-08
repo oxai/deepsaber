@@ -1,23 +1,10 @@
 import sys
-#sys.path.append("/users/guillefix/beatsaber/base")
-#sys.path.append("/users/guillefix/beatsaber")
 
-sys.path.append("/home/guillefix/code/beatsaber/base")
-sys.path.append("/home/guillefix/code/beatsaber")
-sys.path.append("/home/guillefix/code/beatsaber/base/models")
-#sys.path.append("/media/home/guillefix/code/beatsaber/base")
-#sys.path.append("/media/home/guillefix/code/beatsaber")
-#sys.path.append("/media/home/guillefix/code/beatsaber/base/models")
-
-# sys.path.append("/home/mackenzie/PycharmProjects/beatsaber/base")
-# sys.path.append("/home/mackenzie/PycharmProjects/beatsaber")
 import time
-from options.train_options import TrainOptions
-from data import create_dataset, create_dataloader
 from models import create_model
 import random
+from scripts.training.options.train_options import TrainOptions
 
-#
 if __name__ == '__main__':
     opt = TrainOptions().parse()
     model = create_model(opt)

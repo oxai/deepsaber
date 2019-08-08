@@ -4,9 +4,9 @@ import multiprocessing as mp
 import torch
 import importlib
 import pkgutil
-from base import models
-from base import data
-from base.utils import utils
+import models
+import scripts.training.data
+import scripts.utils
 import json
 
 

@@ -1,6 +1,17 @@
 import librosa
 import math, numpy as np
 import numpy as np
+import os, sys
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+if not os.path.isdir(EXTRACT_DIR):
+    os.mkdir(EXTRACT_DIR)
+sys.path.append(ROOT_DIR)
 
 def extract_features_multi_mel(y, sr=44100.0, hop=512, nffts=[1024, 2048, 4096], mel_dim=100):
     featuress = []

@@ -1,16 +1,20 @@
 import os, numpy as np
+
+import sys
+
 from scripts.misc import io_functions
 from scripts.data_processing.state_space_functions import compute_explicit_states_from_json
 from graphviz import Digraph
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.pardir(os.pardir(THIS_DIR))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
 if not os.path.isdir(DATA_DIR):
     os.mkdir(DATA_DIR)
 if not os.path.isdir(EXTRACT_DIR):
     os.mkdir(EXTRACT_DIR)
+sys.path.append(ROOT_DIR)
 
 def produce_finite_state_machine_from_json(json_file, apply_filter=False):
     print("Analysing file " + json_file)

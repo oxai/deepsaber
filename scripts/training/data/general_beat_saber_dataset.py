@@ -143,7 +143,7 @@ class GeneralBeatSaberDataset(BaseDataset):
 
         # for short
         y = features #dimensions of y are: features x time OR features x window_sizes x time
-        print(y.shape)
+        # print(y.shape)
 
         receptive_field = self.receptive_field
         # we pad the song features with zeros to imitate during training what happens during generation
@@ -206,12 +206,12 @@ class GeneralBeatSaberDataset(BaseDataset):
         # print(len(y.shape))
 
         ## BLOCKS TENSORS ##
-        print(input_length, output_length, time_offset)
+        # print(input_length, output_length, time_offset)
         if self.opt.reduced_state:
             blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,bpm,sr,num_samples_per_feature,blocks_receptive_field,blocks_input_length, output_length,blocks_time_offset)
-            print("blocks_targets",blocks_targets.shape)
-            print("blocks_windows",blocks_windows.shape)
-            print("input_windowss",input_windowss[0].shape)
+            # print("blocks_targets",blocks_targets.shape)
+            # print("blocks_windows",blocks_windows.shape)
+            # print("input_windowss",input_windowss[0].shape)
         elif self.opt.binarized:
             blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,1+constants.NUM_SPECIAL_STATES,bpm,sr,num_samples_per_feature,blocks_receptive_field,blocks_input_length, output_length,blocks_time_offset)
         else: #not tested

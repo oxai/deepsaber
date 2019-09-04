@@ -3,7 +3,7 @@ from .networks import WaveNetModel as WaveNet
 import torch.nn.functional as F
 from torch import nn
 import torch
-import constants
+from models import constants
 import numpy as np
 
 class DDCModel(BaseModel):
@@ -37,7 +37,7 @@ class DDCModel(BaseModel):
         parser.add_argument('--entropy_loss_coeff', type=float, default=0.0)
         parser.add_argument('--humaneness_reg_coeff', type=float, default=0.0)
         parser.add_argument('--hidden_dim', type=int, default=512)
-        parser.add_argument('--vocab_size', type=int, default=2)
+        parser.add_argument('--num_classes', type=int, default=2)
         parser.add_argument('--dropout', type=float, default=0.0)
         return parser
 
@@ -118,22 +118,22 @@ class DDCNet(nn.Module):
         # self.fc2 = nn.Linear(256, 128)
         self.lstm = nn.LSTM(input_size=20*7*11, hidden_size=opt.hidden_dim, num_layers=2, batch_first=True)  # Define the LSTM
         self.hidden_to_state = nn.Linear(opt.hidden_dim,
-                                         opt.vocab_size)  # vocab_size used so far is 2001 by default (2000 + empty state)
+                                         opt.num_classes)
 
     def forward(self, x):
         # batch/window x time x temporal_context x frequency_features x mel_window_sizes
-        print(x.shape)
+        # print(x.shape)
         [N,L,dim,deltaT,winsizes] = x.shape
         x = x.view(N*L,deltaT,dim,winsizes)
         x = x.permute(0,3,1,2)
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        print(x.shape)
+        # print(x.shape)
         # x = x.view(N,L,20*9) # time x batch x CNN_features
         x = x.view(N,L,20*7*11) # time x batch x CNN_features
         # x = F.relu(self.fc1(x))
         # x = F.relu(self.fc2(x))
         lstm_out, _ = self.lstm(x)
         logits = self.hidden_to_state(lstm_out)
-        print(logits.shape)
+        # print(logits.shape)
         return x

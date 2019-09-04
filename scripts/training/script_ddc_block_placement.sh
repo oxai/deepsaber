@@ -11,7 +11,7 @@ blocks=3
 exp=block_placement_new_nohumreg
 num_windows=10
 
-$py train.py --data_dir=../../DataSample --dataset_name=$dataset --model=$model --batch_size=1 \
+$py train.py --data_dir=../../data/DataSample --dataset_name=$dataset --model=$model --batch_size=1 \
     --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 \
     --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=10000 --time_offset=0\
     --time_shifts=15\
@@ -19,7 +19,7 @@ $py train.py --data_dir=../../DataSample --dataset_name=$dataset --model=$model 
     --val_epoch_freq=0 \
     --feature_name=multi_mel \
     --feature_size=80 \
-    --input_channels=$((80+4)) \
+    --num_classes=$((1+4)) \
     --workers=0 \
     --level_diff=Expert \
     --reduced_state \
@@ -28,3 +28,4 @@ $py train.py --data_dir=../../DataSample --dataset_name=$dataset --model=$model 
     # --continue_train \
     # --load_iter=930000 \
     # --gpu_ids=0,1,2,3,4,5,6,7 \
+    # --input_channels=$((80+4)) \

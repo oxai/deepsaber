@@ -2,7 +2,7 @@ import sys
 import os
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir), os.pardir))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
 if not os.path.isdir(DATA_DIR):
@@ -17,11 +17,11 @@ from itertools import tee
 import numpy as np
 import torch
 import librosa
-from base.data.base_dataset import BaseDataset
+from scripts.training.data.base_dataset import BaseDataset
 import json
 from math import floor, ceil
 import pickle
-unique_states = pickle.load(open("../stateSpace/sorted_states.pkl","rb"))
+unique_states = pickle.load(open(os.path.join(DATA_DIR, 'statespace/sorted_states.pkl'),"rb"))
 # feature_name = "chroma"
 # feature_size = 24
 # number_reduced_states = 2000
@@ -38,18 +38,19 @@ class StageTwoDataset(BaseDataset):
         data_path = Path(opt.data_dir)
         if not data_path.is_dir():
             raise ValueError('Invalid directory:'+opt.data_dir)
-        # self.audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
-        candidate_audio_files = sorted(data_path.glob('**/*.ogg'), key=lambda path: path.parent.__str__())
+        candidate_audio_files = sorted(data_path.glob('**/*.egg'), key=lambda path: path.parent.__str__())
         self.level_jsons = []
+        self.info_jsons = []
         self.audio_files = []
         self.feature_files = {}
 
+        # cleaning up data, from songs which are too short
         for i, path in enumerate(candidate_audio_files):
             #print(path)
             features_file = path.__str__()+"_"+self.opt.feature_name+"_"+str(self.opt.feature_size)+".npy"
             level_file_found = False
             for diff in self.opt.level_diff.split(","):
-                if Path(path.parent.__str__()+"/"+diff+".json").is_file():
+                if Path(path.parent.__str__()+"/"+diff+".dat").is_file():
                     level_file_found = True
             if not level_file_found:
                 continue
@@ -60,19 +61,19 @@ class StageTwoDataset(BaseDataset):
             input_length = receptive_field + output_length -1
             try:
                 features = np.load(features_file)
-
-                if (features.shape[1]-(input_length+self.opt.time_shifts-1)) < 1:
+                if (features.shape[-1]-(input_length+self.opt.time_shifts-1)) < 1:
                     print("Smol song; ignoring..")
                     continue
-
                 self.feature_files[path.__str__()] = features_file
             except FileNotFoundError:
                 raise Exception("An unprocessed song found; need to run preprocessing script process_songs.py before starting to train with them")
 
             for diff in self.opt.level_diff.split(","):
                 try:
-                    level = list(path.parent.glob('./'+diff+'.json'))[0]
+                    level = list(path.parent.glob('./'+diff+'.dat'))[0]
+                    info_file = list(path.parent.glob('./info.dat'))[0]
                     self.level_jsons.append(level)
+                    self.info_jsons.append(info_file)
                     self.audio_files.append(path)
                 except:
                     continue
@@ -80,7 +81,9 @@ class StageTwoDataset(BaseDataset):
 
         assert self.audio_files, "List of audio files cannot be empty"
         assert self.level_jsons, "List of level files cannot be empty"
+        assert self.info_jsons, "List of info files cannot be empty"
         assert len(self.audio_files) == len(self.level_jsons)
+        assert len(self.audio_files) == len(self.info_jsons)
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -106,13 +109,12 @@ class StageTwoDataset(BaseDataset):
         return "stage_two_dataset"
 
     def __getitem__(self, item):
-        #NOTE: there is a lot of code repeat between this and the non-reduced version, perhaps we could fix that
         song_file_path = self.audio_files[item].__str__()
-        # print(song_file_path)
 
         level = json.load(open(self.level_jsons[item].__str__(), 'r'))
+        info = json.load(open(self.info_jsons[item].__str__(), 'r'))
 
-        bpm = level['_beatsPerMinute']
+        bpm = info['_beatsPerMinute']
         features_rate = bpm*self.opt.beat_subdivision
         notes = level['_notes']
 
@@ -155,7 +157,7 @@ class StageTwoDataset(BaseDataset):
 
         # get features at the places where a note appears, to construct feature sequence to help transformer
         y = y[:,indices]
-        print(y.shape)
+        # print(y.shape)
         input_windows = [y]
 
         song_sequence = torch.tensor(input_windows)

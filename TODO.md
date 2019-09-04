@@ -9,7 +9,14 @@
 		/download_data.py - Perhaps integrate Beastsaber as download source
 	/data_processing - lots of redundant code here, repetition in /base/models
 		/difficulty_analysis.py [INCOMPLETE]
-		/state_space_functions.py [DUPLICATE] (level_processing_functions.py)
+		/state_space_functions.py (level_processing_functions.py)
+			produce_distinct_state_space_representations()
+			compute_explicit_states_from_json()
+			compute_explicit_states_from_bs_level() - Wrapper
+			compute_shortest_inter_event_beat_gap()
+			produce_transition_probability_matrix_from_distinct_state_spaces() 
+			compute_state_sequence_representation_from_json() - Sorts output of produce_distinct_state_space_representations for use in get_block_sequence_with_deltas()
+			get_block_sequence_with_deltas()
 	/feature_extraction - possible duplications in /base/models
 		/example_decode_encode.py [LEGACY?] perhaps redundant (DEV testing code?)
 		/feature_extraction.py

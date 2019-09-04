@@ -54,19 +54,24 @@ def compute_explicit_states_from_bs_level(bs_level, as_tuple = True):
     notes = bs_level["_notes"]  # Parse the JSON notes to use the notes representation
     note_times = set(notes["_time"])  # Extract the distinct note times
     state_dict = {eventTime: np.zeros(12) for eventTime in note_times}  # Initialise a state at every time event
-    for entry in notes.itertuples():
-        entry_cut_direction = entry[1]  # Extract the individual note parts
-        entry_col = entry[2]
-        entry_row = entry[3]
-        entry_time = entry[4]
-        entry_type = entry[5]
-        entry_index = 4 * entry_row + entry_col  # Compute Index to update in the state representation
+    # for entry in notes.itertuples():
+    for i,entry in notes.iterrows():
+        entry_cut_direction = entry["_cutDirection"]  # Extract the individual note parts
+        entry_col = entry["_lineIndex"]
+        entry_row = entry["_lineLayer"]
+        entry_time = entry["_time"]
+        entry_type = entry["_type"]
+        entry_index = int(4 * entry_row + entry_col)  # Compute Index to update in the state representation
         if entry_type == 3:  # This is a bomb
             entry_representation = 19
         else:  # This is a note
             entry_representation = 1 + 9 * entry_type + entry_cut_direction
         # Now Retrieve and update the corresponding state representation
-        state_dict[entry_time][entry_index] = entry_representation
+        # print(entry_time, entry_index)
+        try:
+            state_dict[entry_time][entry_index] = entry_representation
+        except:
+            continue  # some weird notes with too big or small lineLayer / lineIndex ??
     if not as_tuple:
         return state_dict, note_times
     else: # Tuples can be hashed

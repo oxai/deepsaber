@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 from .base_model import BaseModel
 from .transformer.Models import Transformer
-import constants
+from models import constants
 from scripts.data_processing.state_space_functions import get_block_sequence_with_deltas
 from transformer.Translator import Translator
 

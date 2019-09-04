@@ -18,7 +18,7 @@ if not os.path.isdir(EXTRACT_DIR):
 sys.path.append(ROOT_DIR)
 
 unique_states = pickle.load(open(DATA_DIR+"/statespace/sorted_states.pkl","rb"))
-import models.constants
+from models import constants
 
 
 def get_reduced_tensors_from_level(notes, indices, sequence_length, num_classes, bpm, sr, num_samples_per_feature,

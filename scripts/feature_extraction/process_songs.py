@@ -17,11 +17,13 @@ if not os.path.isdir(EXTRACT_DIR):
 sys.path.append(ROOT_DIR)
 from scripts.feature_extraction.feature_extraction import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, extract_features_multi_mel
 
+from scripts.feature_extraction.feature_extraction import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, extract_features_multi_mel
+
 parser = argparse.ArgumentParser(description="Preprocess songs data")
 
 parser.add_argument("data_path", type=str, help="Directory contining Beat Saber level folders")
 parser.add_argument("difficulties", type=str, help="Comma-separated list of difficulties to process (e.g. \"Expert,Hard\"")
-parser.add_argument("--feature_name", metavar='', type=str, default="mel")
+parser.add_argument("--feature_name", metavar='', type=str, default="mel", help="mel, chroma, multi_mel")
 parser.add_argument("--feature_size", metavar='', type=int, default=100)
 parser.add_argument("--sampling_rate", metavar='', type=float, default=44100.0)
 parser.add_argument("--beat_subdivision", metavar='', type=int, default=16)

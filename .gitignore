@@ -27,3 +27,5 @@ scripts/training/experiments
 data/old_data
 data/DataSample
 data/DataSample.tar.tz
+old/
+DataSample.tar.gz

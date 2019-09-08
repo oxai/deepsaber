@@ -160,7 +160,8 @@ class GeneralBeatSaberDataset(BaseDataset):
         ## WINDOWS ##
         # sample indices at which we will get opt.num_windows windows of the song to feed as inputs
             # TODO: make this deterministic, and determined by `item`, so that one epoch really corresponds to going through all the data..
-        sequence_length = min(y.shape[-1],self.opt.max_token_seq_len)
+        # sequence_length = min(y.shape[-1],self.opt.max_token_seq_len)
+        sequence_length = y.shape[-1]
         output_length = self.opt.output_length
         time_offset = self.opt.time_offset
         if self.opt.num_windows >= 1:
@@ -194,6 +195,7 @@ class GeneralBeatSaberDataset(BaseDataset):
                     input_windows = [y[:,:,i+ii:i+ii+input_length] for i in indices]
                 input_windows = torch.tensor(input_windows)
                 input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
+                # input_windows = (input_windows.permute(3,0,1,2) - input_windows.mean(-1)).permute(1,2,3,0)
                 input_windowss.append(input_windows.float())
         else: #if we are not including context
             if len(y.shape) == 2:
@@ -202,6 +204,7 @@ class GeneralBeatSaberDataset(BaseDataset):
                 input_windows = [y[:,:,i:i+input_length] for i in indices]
             input_windows = torch.tensor(input_windows)
             input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
+            # input_windows = (input_windows.permute(3,0,1,2) - input_windows.mean(-1)).permute(1,2,3,0)
             input_windowss = [input_windows]
         # print(len(y.shape))
 

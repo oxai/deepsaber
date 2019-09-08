@@ -107,6 +107,28 @@ class DDCModel(BaseModel):
             except AttributeError:
                 pass
 
+    def generate(self,y):
+        # dimensions of y are: features x window_sizes x time
+        receptive_field = 1
+        input_length = y.shape[-1]
+        y = np.concatenate((np.zeros((y.shape[0],y.shape[1],receptive_field+self.opt.time_shifts//2)),y),2)
+        # we also pad at the end to allow generation to be of the same length of song, by padding an amount corresponding to time_shifts
+        y = np.concatenate((y,np.zeros((y.shape[0],y.shape[1],self.opt.time_shifts//2))),2)
+        input_windowss = []
+        time_shifts = self.opt.time_shifts - 1
+        # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
+        for ii in range(-time_shifts//2, time_shifts//2+1):
+            input_windows = [y[:,:,self.opt.time_shifts//2+ii:self.opt.time_shifts//2+ii+input_length]]
+            input_windows = torch.tensor(input_windows)
+            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
+            # input_windows = (input_windows.permute(3,0,1,2) - input_windows.mean(-1)).permute(1,2,3,0)
+            input_windowss.append(input_windows.float())
+        input = torch.stack(input_windowss,dim=1).float()
+        input_shape = input.shape
+        input = input.to(self.device)
+        input = input.permute(0,4,1,2,3) # batch/window x time x temporal_context x frequency_features x mel_window_sizes
+        return F.softmax(self.net.module.forward(input),2)
+
 
 class DDCNet(nn.Module):
     def __init__(self,opt):
@@ -137,22 +159,3 @@ class DDCNet(nn.Module):
         logits = self.hidden_to_state(lstm_out)
         # print(logits.shape)
         return logits
-
-    def generate(self,y):
-        receptive_field = 1
-        y = np.concatenate((np.zeros((y.shape[0],y.shape[1],receptive_field+self.opt.time_shifts//2)),y),2)
-        # we also pad at the end to allow generation to be of the same length of song, by padding an amount corresponding to time_shifts
-        y = np.concatenate((y,np.zeros((y.shape[0],y.shape[1],self.opt.time_shifts//2))),2)
-        input_windowss = []
-        time_shifts = self.opt.time_shifts - 1
-        # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
-        for ii in range(-time_shifts//2, time_shifts//2+1):
-            input_windows = [y[:,:,0+ii:0+ii+input_length]]
-            input_windows = torch.tensor(input_windows)
-            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
-            input_windowss.append(input_windows.float())
-        input = torch.stack(input_windowss,dim=1).float()
-        input_shape = input.shape
-        input = input.to(self.device)
-        input = input.permute(0,4,1,2,3) # batch/window x time x temporal_context x frequency_features x mel_window_sizes
-        return F.softmax(self.forward(x),2)

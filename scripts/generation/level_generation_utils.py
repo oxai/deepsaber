@@ -84,7 +84,11 @@ def make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=Fa
             signature = args.json_file.split("/")[1] + "_"
         except:
             signature = ""
-        signature += args.experiment_name.replace("/","")+"_"+args.checkpoint+"_"+str(args.peak_threshold)
+        signature += args.experiment_name.replace("/","")+"_"+args.checkpoint
+        try:
+            signature +="_"+str(args.peak_threshold)
+        except:
+            pass
         try:
             if args.use_beam_search:
                 signature += "_bs"
@@ -98,7 +102,7 @@ def make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=Fa
         signature = "ddc_".join([a+"_"+str(b).replace("/","") for a,b in vars(args).items()])
 
     signature_string = song_name+"_"+signature
-    json_file = generated_folder+"test_song"+signature_string+".dat"
+    json_file = generated_folder+signature_string+".dat"
     with open(json_file, "w") as f:
         f.write(json.dumps(song_json))
 

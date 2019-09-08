@@ -4,6 +4,8 @@ import os
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
+SCRIPTS_DIR = os.path.join(ROOT_DIR, 'scripts')
+TRAINING_DIR = os.path.join(SCRIPTS_DIR, 'training')
 EXTRACT_DIR = os.path.join(DATA_DIR, 'extracted_data')
 if not os.path.isdir(DATA_DIR):
     os.mkdir(DATA_DIR)
@@ -45,7 +47,7 @@ class BaseOptions:
         parser.add_argument('--gpu_ids', default='-1', type=str, help='gpu ids (comma separated numbers - e.g. 1,2,3), =-1 for cpu use')
         parser.add_argument('--workers', default=4, type=int, help='the number of workers to load the data')
         parser.add_argument('--experiment_name', default="experiment_name", type=str)
-        parser.add_argument('--checkpoints_dir', default='', type=str, help='checkpoint folder')
+        parser.add_argument('--checkpoints_dir', default=TRAINING_DIR, type=str, help='checkpoint folder')
         parser.add_argument('--load', action='store_true', help='whether to load model or not.')
         parser.add_argument('--load_epoch', type=str, default='latest', help='which epoch to load? set to latest to use latest cached model')
         parser.add_argument('--load_iter', type=int, default=0, help='which iteration to load? if load_iter > 0, whether load models by iteration')

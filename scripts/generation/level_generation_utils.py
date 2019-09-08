@@ -123,22 +123,22 @@ def make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=Fa
     #import soundfile as sf
     # y, sr = librosa.load(song_path, sr=48000)
     # sf.write(level_folder+"/song.ogg", y, sr, format='ogg', subtype='vorbis')
+    import subprocess
+    def run_bash_command(bashCommand):
+        # print(bashCommand)
+        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+        output, error = process.communicate()
+        return output
+
+    # bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
+    bashCommand = "ffmpeg -y -i "+song_path+" -c:a libvorbis -q:a 4 "+ level_folder+"/song.ogg"
+    run_bash_command(bashCommand)
+    bashCommand = "mv "+level_folder+"/song.ogg"+" "+ level_folder+"/song.egg"
+    run_bash_command(bashCommand)
+
+    bashCommand = "zip -r "+generated_folder+song_name+"_"+signature_string+".zip "+level_folder
+    run_bash_command(bashCommand)
     if open_in_browser:
-        import subprocess
-        def run_bash_command(bashCommand):
-            # print(bashCommand)
-            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-            output, error = process.communicate()
-            return output
-
-        # bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
-        bashCommand = "ffmpeg -y -i "+song_path+" -c:a libvorbis -q:a 4 "+ level_folder+"/song.ogg"
-        run_bash_command(bashCommand)
-        bashCommand = "mv "+level_folder+"/song.ogg"+" "+ level_folder+"/song.egg"
-        run_bash_command(bashCommand)
-
-        bashCommand = "zip -r "+generated_folder+song_name+"_"+signature_string+".zip "+level_folder
-        run_bash_command(bashCommand)
 
         bashCommand = "./dropbox_uploader.sh upload "+generated_folder+song_name+"_"+signature_string+".zip /deepsaber_generated/"
         run_bash_command(bashCommand)

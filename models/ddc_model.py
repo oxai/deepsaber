@@ -110,30 +110,48 @@ class DDCModel(BaseModel):
 class DDCNet(nn.Module):
     def __init__(self,opt):
         super(DDCNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 20, (7,3))
+        self.conv1 = nn.Conv2d(3, 20, (7,3)) #assumes CHW format
         # self.pool = nn.MaxPool1d(3, 3)
-        self.pool = nn.MaxPool2d((3,1), (3,1))
+        self.pool = nn.MaxPool2d((1,3), (1,3))
         self.conv2 = nn.Conv2d(20, 20, 3)
         # self.fc1 = nn.Linear(20 * 9, 256)
         # self.fc2 = nn.Linear(256, 128)
-        self.lstm = nn.LSTM(input_size=20*7*11, hidden_size=opt.hidden_dim, num_layers=2, batch_first=True)  # Define the LSTM
+        self.lstm = nn.LSTM(input_size=20*7*8, hidden_size=opt.hidden_dim, num_layers=2, batch_first=True)  # Define the LSTM
         self.hidden_to_state = nn.Linear(opt.hidden_dim,
                                          opt.num_classes)
 
     def forward(self, x):
         # batch/window x time x temporal_context x frequency_features x mel_window_sizes
         # print(x.shape)
-        [N,L,dim,deltaT,winsizes] = x.shape
+        [N,L,deltaT,dim,winsizes] = x.shape
         x = x.view(N*L,deltaT,dim,winsizes)
         x = x.permute(0,3,1,2)
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
         # print(x.shape)
-        # x = x.view(N,L,20*9) # time x batch x CNN_features
-        x = x.view(N,L,20*7*11) # time x batch x CNN_features
+        x = x.view(N,L,20*7*8) #  batch x time x CNN_features
         # x = F.relu(self.fc1(x))
         # x = F.relu(self.fc2(x))
         lstm_out, _ = self.lstm(x)
         logits = self.hidden_to_state(lstm_out)
         # print(logits.shape)
         return x
+
+    def generate(self,y):
+        receptive_field = 1
+        y = np.concatenate((np.zeros((y.shape[0],y.shape[1],receptive_field+self.opt.time_shifts//2)),y),2)
+        # we also pad at the end to allow generation to be of the same length of song, by padding an amount corresponding to time_shifts
+        y = np.concatenate((y,np.zeros((y.shape[0],y.shape[1],self.opt.time_shifts//2))),2)
+        input_windowss = []
+        time_shifts = self.opt.time_shifts - 1
+        # loop that gets the input features for each of the windows, shifted by `ii`, and saves them in `input_windowss`
+        for ii in range(-time_shifts//2, time_shifts//2+1):
+            input_windows = [y[:,:,0+ii:0+ii+input_length]]
+            input_windows = torch.tensor(input_windows)
+            input_windows = (input_windows - input_windows.mean())/torch.abs(input_windows).max()
+            input_windowss.append(input_windows.float())
+        input = torch.stack(input_windowss,dim=1).float()
+        input_shape = input.shape
+        input = input.to(self.device)
+        input = input.permute(0,4,1,2,3) # batch/window x time x temporal_context x frequency_features x mel_window_sizes
+        return self.forward(x)

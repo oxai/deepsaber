@@ -3,7 +3,6 @@ import librosa
 from pathlib import Path
 import json
 import os.path
-from scripts.feature_extraction.feature_extraction import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, extract_features_multi_mel
 import sys
 import argparse
 
@@ -16,6 +15,7 @@ if not os.path.isdir(DATA_DIR):
 if not os.path.isdir(EXTRACT_DIR):
     os.mkdir(EXTRACT_DIR)
 sys.path.append(ROOT_DIR)
+from scripts.feature_extraction.feature_extraction import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced, extract_features_multi_mel
 
 parser = argparse.ArgumentParser(description="Preprocess songs data")
 

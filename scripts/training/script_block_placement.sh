@@ -11,7 +11,7 @@ blocks=3
 exp=block_placement_new_nohumreg
 num_windows=10
 
-$py train.py --data_dir=../DataSample --dataset_name=$dataset --model=$model \
+$py train.py --data_dir=../../data/DataSample --dataset_name=$dataset --model=$model \
     --batch_size=10 --flatten_context --concat_outputs --output_length=1 \
     --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 --layers=$layers --blocks=$blocks \
     --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=10000 \

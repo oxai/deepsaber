@@ -1,16 +1,32 @@
 Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
 
+# Getting the data
+
+### _download data_
+
+`scripts/data_retrieval/download_data.py`
+
+### _obtain the most common states to use for the reduced state representation_
+
+`scripts/data_processing/state_space_functions.py`
+
 # train
 
 ## _prepare and preprocess data_
 
 _data augmentation_
 
-augment_data.sh
+`scripts/data_processing/augment_data.sh`
 
 _data preprocessing_
 
-process_songs.py, which uses
+`scripts/feature_extration/process_songs.py` []
+
+##_training_
+
+`scripts/training/train.py`
+
+`scripts/training/script_block_placement.sh`
 
 # generate
 

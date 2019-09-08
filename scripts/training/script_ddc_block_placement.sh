@@ -6,8 +6,6 @@ py=/usr/bin/python3
 #py=/media/usr/bin/python3
 dataset=general_beat_saber
 model=ddc
-layers=7
-blocks=3
 exp=block_placement_ddc
 num_windows=10
 

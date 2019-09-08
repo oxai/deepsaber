@@ -14,7 +14,7 @@
 			compute_explicit_states_from_json()
 			compute_explicit_states_from_bs_level() - Wrapper
 			compute_shortest_inter_event_beat_gap()
-			produce_transition_probability_matrix_from_distinct_state_spaces() 
+			produce_transition_probability_matrix_from_distinct_state_spaces()
 			compute_state_sequence_representation_from_json() - Sorts output of produce_distinct_state_space_representations for use in get_block_sequence_with_deltas()
 			get_block_sequence_with_deltas()
 	/feature_extraction - possible duplications in /base/models
@@ -34,11 +34,19 @@
 /web - [DEV] The beginnings of a web api for level generation
 
 ---
-fix importing. E.g. base_options.py imports from `base`, that doesn't exist now....
 
-make stage_two_dataset work with new beat saber data.
+# TODOs
 
-stage_two uses state_space_functions, while general_beat_saber uses level_processing_functions. Need to merge these two.
-Finish writing training readme, for stage_two.
-Make non-reduced-state data work
-write block placement testing stuff
+- [ ] stage_two dataset uses `state_space_functions`, while general_beat_saber dataset uses `level_processing_functions`. Check if need to merge these two, as they have a fair of common functionality I think.
+- [ ] is there a way go make `get_reduced_tensors_from_level` in `level_processing_functions` faster? -- now that we've fixed the bug, and made the sequence length longer, it's slowed down training :(
+- [ ] Finish writing main README
+- [ ] Finish writing training README, for stage_two.
+- [x] make stage_two_dataset work with new beat saber data.
+- [x] fix importing. E.g. base_options.py imports from `base`, that doesn't exist now....
+- [x] Make DDC port
+- [ ] Train on new data
+- [ ] Testing code. Use perplexity, as in NLP literature
+- [ ] GUI/website
+- [ ] Make stage two that uses multi_mel features, or even the DDC embeddings as its inputs
+- [ ] Make non-reduced-state data work, wavenet.
+- [ ] Obstacles, etc.

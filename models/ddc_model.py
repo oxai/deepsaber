@@ -60,6 +60,7 @@ class DDCModel(BaseModel):
         [n, l , classes] = x.size()
         x = x.view(n * l, classes)
 
+        # print(x)
         self.loss_ce = F.cross_entropy(x, self.target)
         if self.opt.entropy_loss_coeff > 0:
             S = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
@@ -135,7 +136,7 @@ class DDCNet(nn.Module):
         lstm_out, _ = self.lstm(x)
         logits = self.hidden_to_state(lstm_out)
         # print(logits.shape)
-        return x
+        return logits
 
     def generate(self,y):
         receptive_field = 1

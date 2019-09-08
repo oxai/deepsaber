@@ -8,7 +8,7 @@ dataset=general_beat_saber
 model=ddc
 layers=7
 blocks=3
-exp=block_placement_new_nohumreg
+exp=block_placement_ddc
 num_windows=10
 
 $py train.py --data_dir=../../data/DataSample --dataset_name=$dataset --model=$model --batch_size=1 \

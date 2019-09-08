@@ -28,11 +28,15 @@ _Data augmentation (optional)_
 
 _extract features_
 
-`scripts/feature_extraction/python3 process_songs.py data/extracted_data Expert,ExpertPlus --feature_name multi_mel --feature_size 80`
+Dependencies: librosa, mpi4py (and mpi itself). TODO: make mpi an optional dependency
 
-`scripts/feature_extraction/python3 process_songs.py data/extracted_data Expert,ExpertPlus --feature_name mel --feature_size 100`
+`mpiexec -n $(nproc) python3 scripts/feature_extraction/process_songs.py data/extracted_data Expert,ExpertPlus --feature_name multi_mel --feature_size 80`
+
+`mpiexec -n $(nproc) python3 scripts/feature_extraction/process_songs.py data/extracted_data Expert,ExpertPlus --feature_name mel --feature_size 100`
 
 _training_
+
+Dependencies: pytorch
 
 Train Stage 1. Either of two options:
  * (wavenet_option): `scripts/training/debug_script_block_placement.sh`

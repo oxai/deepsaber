@@ -8,16 +8,24 @@ cpt1=1220000
 exp2=block_selection_new
 cpt2=1600000
 #ddc_file=/home/guillefix/ddc_infer/57257860-f345-4e5c-ba69-36f57b561118/57257860-f345-4e5c-ba69-36f57b561118.sm
-ddc_file=$2
 
-python3 generate.py --song_path $song_path --experiment_name $exp1 --checkpoint $cpt1 --experiment_name2 $exp2 --checkpoint2 $cpt2 --two_stage \
-    --peak_threshold 0.007 \
-    --temperature 1.00 \
-    --open_in_browser \
-    --ddc_file $ddc_file \
-    --ddc_diff 3 \
-    --bpm 128 \
+py=python3
+
+# $py generate_end2end.py --song_path $song_path --experiment_name $exp1 --checkpoint $cpt1 \
+#     --temperature 1.00 \
+#     --open_in_browser \
+#     --bpm 128 \
+
+# ddc_file=$2
+# $py generate_stage1_ddc.py --song_path $song_path --bpm 128 \
+#   --ddc_file $ddc_file \
+#   --temperature 1.00 \
+#   --ddc_diff 3 \
+
+$py generate_stage1.py --song_path $song_path --experiment_name $exp1 --checkpoint $cpt1 --bpm 128 \
+  --peak_threshold 0.007 \
+  --temperature 1.00 | tail -1 | ( read json_file;
+  $py generate_stage2.py --song_path $song_path --json_file $json_file --experiment_name $exp2 --checkpoint $cpt2 --bpm 128 --temperature 1.00 \
     --use_beam_search \
-    #--use_ddc \
     #--generate_full_song \
-    #--peak_threshold 0.008 \
+  )

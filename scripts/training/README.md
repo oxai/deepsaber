@@ -82,3 +82,9 @@ The wavenet model is autoregressive so that it reads as inputs both the song fea
 <!-- _Transformer_
 
 The transformer reads the whole sequence (output from `stage_two` dataset). -->
+
+---------
+
+## Information about experiments
+
+`bloack_placement_new_nohumreg` and `block_selection_new`, with checkpoints 1220000 and 1600000 respectively, are the models which we used for the 29th May demo day, and the first teaser video.

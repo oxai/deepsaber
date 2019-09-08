@@ -13,7 +13,7 @@ num_windows=10
 
 $py train.py --data_dir=../../data/DataSample --dataset_name=$dataset --model=$model --batch_size=1 \
     --num_windows=$num_windows --nepoch=500 --nepoch_decay=500 \
-    --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=10000 --time_offset=0\
+    --print_freq=10 --experiment_name=$exp --save_by_iter --save_latest_freq=20 --time_offset=0\
     --time_shifts=15\
     --output_length=100 \
     --val_epoch_freq=0 \

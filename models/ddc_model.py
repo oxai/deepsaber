@@ -155,4 +155,4 @@ class DDCNet(nn.Module):
         input_shape = input.shape
         input = input.to(self.device)
         input = input.permute(0,4,1,2,3) # batch/window x time x temporal_context x frequency_features x mel_window_sizes
-        return self.forward(x)
+        return F.softmax(self.forward(x),2)

@@ -99,7 +99,14 @@ if opt.concat_outputs: #whether to concatenate the generated outputs as new inpu
     print("number of peaks", len(peaks))
 else: # NOT-AUTOREGRESSIVE (we keep it separate like this, because some models have both)
     # output = model.net.module.generate_no_autoregressive(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)
-    output = model.net.module.generate(features)
+    peak_probs = model.net.module.generate(features)[0,:,-1].numpy()
+    window = signal.hamming(ceil(constants.HUMAN_DELTA/opt.step_size))
+    smoothed_peaks = np.convolve(peak_probs,window,mode='same')
+    index = np.random.randint(len(smoothed_peaks))
+
+    thresholded_peaks = smoothed_peaks*(smoothed_peaks>args.peak_threshold)
+    peaks = signal.find_peaks(thresholded_peaks)[0]
+    print("number of peaks", len(peaks))
 #%%
 
 #convert from states to beatsaber notes

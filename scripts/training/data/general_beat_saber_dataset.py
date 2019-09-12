@@ -73,6 +73,9 @@ class GeneralBeatSaberDataset(BaseDataset):
             for diff in self.opt.level_diff.split(","):
                 try:
                     level = list(path.parent.glob('./'+diff+'.dat'))[0]
+                    if len(json.load(open(level,"r"))["_notes"]) == 0:
+                        print("Ignoring level with no notes")
+                        continue
                     info_file = list(path.parent.glob('./info.dat'))[0]
                     self.level_jsons.append(level)
                     self.info_jsons.append(info_file)

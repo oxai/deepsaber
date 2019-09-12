@@ -64,12 +64,16 @@ def parse_json(json_filepath):
     #create the dataframes
     df_events = pd.DataFrame(events)
     df_notes = pd.DataFrame(notes)
+    #print(notes)
+    #print(df_notes.columns)
+    #df_notes.columns = df_notes.columns.astype(str).str.strip()
     df_obstacles = pd.DataFrame(obstacles)
 
     #update dataframes in the data file
     data['_events'] = df_events
     data['_notes'] = df_notes
     data['_obstacles'] = df_obstacles
+    #print(data)
     return data
 
 

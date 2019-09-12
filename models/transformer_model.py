@@ -126,7 +126,7 @@ class TransformerModel(BaseModel):
         input_pos_shape = input_pos_.shape
         # 0 batch dimension, 1 window dimension, 2 input channel dimension, 3 time dimension
         self.input = input_.reshape((input_shape[0]*input_shape[1], input_shape[2], input_shape[3])).permute(0,2,1).to(self.device)
-        print(self.input.shape)
+        #print(self.input.shape)
         # self.input_pos = input_pos_.reshape((input_pos_shape[0], input_pos_shape[1])).to(self.device)
         self.input_pos = input_pos_
         #we permute the dimensions because transformer input expects (batch_size, time, input_dim)

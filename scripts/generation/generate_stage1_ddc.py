@@ -56,7 +56,7 @@ notes = np.array(notes)[np.where(np.diff([-1]+times_real) > constants.HUMAN_DELT
 
 print("Number of generated notes (after pruning): ", len(notes))
 
-json_file = make_level_from_notes(notes, args.bpm, song_name, opt, args)
+json_file = make_level_from_notes(notes, args.bpm, song_name, args)
 
 print(json_file)
 

@@ -2,7 +2,7 @@ import sys
 import os
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.join(os.path.join(THIS_DIR, os.pardir), os.pardir), os.pardir))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 SCRIPTS_DIR = os.path.join(ROOT_DIR, 'scripts')
 TRAINING_DIR = os.path.join(SCRIPTS_DIR, 'training')

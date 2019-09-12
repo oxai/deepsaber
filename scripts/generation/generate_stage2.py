@@ -88,4 +88,4 @@ times_real = [t*60/args.bpm for t in state_times]
 notes2 = stage_two_states_to_json_notes(generated_sequence, state_times, args.bpm, hop, opt.sampling_rate, state_rank=unique_states)
 # print("Bad notes:", np.unique(np.diff(times_real)[np.diff(times_real)<=constants.HUMAN_DELTA], return_counts=True))
 
-make_level_from_notes(notes2, args.bpm, song_name, opt, args, upload_to_dropbox=True, open_in_browser=args.open_in_browser)
+make_level_from_notes(notes2, args.bpm, song_name, args, upload_to_dropbox=True, open_in_browser=args.open_in_browser)

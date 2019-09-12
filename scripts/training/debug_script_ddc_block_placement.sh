@@ -22,7 +22,6 @@ $py train.py --data_dir=../../data/DataSample --dataset_name=$dataset --model=$m
     --num_classes=$((1+4)) \
     --workers=0 \
     --level_diff=Expert \
-    --reduced_state \
     --binarized \
     --gpu_ids=0 \
     # --continue_train \

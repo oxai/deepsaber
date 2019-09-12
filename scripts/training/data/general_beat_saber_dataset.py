@@ -26,9 +26,9 @@ unique_states = pickle.load(open(DATA_DIR+"/statespace/sorted_states.pkl","rb"))
 # feature_name = "chroma"
 # feature_size = 24
 # number_reduced_states = 2000
-from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level
+from .level_processing_functions import get_reduced_tensors_from_level, get_full_tensors_from_level, get_binary_reduced_tensors_from_level_faster, get_binary_classes_reduced_tensors_from_level
 from scripts.feature_extraction.feature_extraction import extract_features_hybrid, extract_features_mel,extract_features_hybrid_beat_synced
-import models.constants
+import models.constants as constants
 
 
 class GeneralBeatSaberDataset(BaseDataset):
@@ -45,6 +45,8 @@ class GeneralBeatSaberDataset(BaseDataset):
         self.info_jsons = []
         self.audio_files = []
         self.feature_files = {}
+        self.blocks_reduced_files = []
+        self.blocks_reduced_classes_files = []
 
         # cleaning up data, from songs which are too short
         for i, path in enumerate(candidate_audio_files):
@@ -72,6 +74,12 @@ class GeneralBeatSaberDataset(BaseDataset):
 
             for diff in self.opt.level_diff.split(","):
                 try:
+                    blocks_reduced_file = path.__str__()+"_"+diff+"_blocks_reduced_.npy"
+                    blocks_reduced_classes_file = path.__str__()+diff+"_blocks_reduced_classes_.npy"
+                    blocks_reduced = np.load(blocks_reduced_file)
+                    blocks_reduced_classes = np.load(blocks_reduced_classes_file)
+                    self.blocks_reduced_files.append(blocks_reduced_file)
+                    self.blocks_reduced_classes_files.append(blocks_reduced_classes_file)
                     level = list(path.parent.glob('./'+diff+'.dat'))[0]
                     info_file = list(path.parent.glob('./info.dat'))[0]
                     self.level_jsons.append(level)
@@ -140,6 +148,9 @@ class GeneralBeatSaberDataset(BaseDataset):
         # duration of one time step in samples:
         num_samples_per_feature = hop
         features = np.load(self.feature_files[song_file_path])
+
+        # blocks_reduced, blocks_reduced_classes = np.load(self.blocks_reduced_files[item].__str__()), np.load(self.blocks_reduced_classes_files[item].__str__())
+        blocks_reduced_classes = np.load(self.blocks_reduced_classes_files[item].__str__())
 
         # for short
         y = features #dimensions of y are: features x time OR features x window_sizes x time
@@ -216,7 +227,9 @@ class GeneralBeatSaberDataset(BaseDataset):
             # print("blocks_windows",blocks_windows.shape)
             # print("input_windowss",input_windowss[0].shape)
         elif self.opt.binarized:
-            blocks_windows, blocks_targets = get_reduced_tensors_from_level(notes,indices,sequence_length,1+constants.NUM_SPECIAL_STATES,bpm,sr,num_samples_per_feature,blocks_receptive_field,blocks_input_length, output_length,blocks_time_offset)
+            # blocks_targets = get_binary_classes_reduced_tensors_from_level(notes,indices,sequence_length,1+constants.NUM_SPECIAL_STATES,bpm,sr,num_samples_per_feature,blocks_receptive_field,blocks_input_length, output_length,blocks_time_offset)
+            # blocks_windows, blocks_targets = get_binary_reduced_tensors_from_level_fast(blocks_reduced, blocks_reduced_classes,indices,sequence_length,1+constants.NUM_SPECIAL_STATES,bpm,sr,num_samples_per_feature,blocks_receptive_field,blocks_input_length, output_length,blocks_time_offset)
+            blocks_targets = get_binary_reduced_tensors_from_level_faster(blocks_reduced_classes,indices,sequence_length,1+constants.NUM_SPECIAL_STATES,bpm,sr,num_samples_per_feature,blocks_receptive_field,blocks_input_length, output_length,blocks_time_offset)
         else: #not tested
             blocks_windows, blocks_targets = get_full_tensors_from_level(notes,indices,sequence_length,self.opt.num_classes,self.opt.output_channels,bpm,sr,num_samples_per_feature,receptive_field,input_length)
 

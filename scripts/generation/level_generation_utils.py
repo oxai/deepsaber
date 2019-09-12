@@ -51,9 +51,12 @@ def extract_features(song_path, args, opt):
 
     return hop, features
 
-def make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=False, open_in_browser=False):
+def make_level_from_notes(notes, bpm, song_name, args, upload_to_dropbox=False, open_in_browser=False):
     temperature = args.temperature
-    checkpoint = args.checkpoint
+    try:
+        checkpoint = args.checkpoint
+    except:
+        checkpoint = ""
     song_path = args.song_path
 
     if open_in_browser:
@@ -99,7 +102,8 @@ def make_level_from_notes(notes, bpm, song_name, opt, args, upload_to_dropbox=Fa
         except:
             pass
     except:
-        signature = "ddc_".join([a+"_"+str(b).replace("/","") for a,b in vars(args).items()])
+        # signature = "ddc_".join([a+"_"+str(b).replace("/","") for a,b in vars(args).items()])
+        signature = "ddc"+"_".join([a+"_"+str(b).replace("/","") for a,b in vars(args).items() if a !="ddc_file"])
 
     signature_string = song_name+"_"+signature
     json_file = generated_folder+signature_string+".dat"

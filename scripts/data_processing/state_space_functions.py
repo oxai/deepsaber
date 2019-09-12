@@ -125,6 +125,9 @@ def grid_cell_to_json_note(grid_index, grid_value, time, bpm, hop, sr):
 def compute_explicit_states_from_bs_level(bs_level, as_tuple = True):
     '''Extract state representation from BeatSaber level.'''
     notes = bs_level["_notes"]  # Parse the JSON notes to use the notes representation
+    #print("notes",notes)
+    #print("columns",notes.columns.tolist())
+    #print("notes time",notes["_time"])
     note_times = set(notes["_time"])  # Extract the distinct note times
     state_dict = {eventTime: np.zeros(12) for eventTime in note_times}  # Initialise a state at every time event
     # for entry in notes.itertuples():

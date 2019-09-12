@@ -81,6 +81,9 @@ class GeneralBeatSaberDataset(BaseDataset):
                     self.blocks_reduced_files.append(blocks_reduced_file)
                     self.blocks_reduced_classes_files.append(blocks_reduced_classes_file)
                     level = list(path.parent.glob('./'+diff+'.dat'))[0]
+                    if len(json.load(open(level,"r"))["_notes"]) == 0:
+                        print("Ignoring level with no notes")
+                        continue
                     info_file = list(path.parent.glob('./info.dat'))[0]
                     self.level_jsons.append(level)
                     self.info_jsons.append(info_file)

@@ -1,5 +1,63 @@
 Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
 
+## Quickest testing procedure:
+
+Run all this in root folder of repo
+
+_Get data_
+
+`wget -O DataSample.tar.gz https://www.dropbox.com/s/2i75ebqmm5yd15c/DataSample.tar.gz?dl=1`
+
+`tar xzvf DataSample.tar.gz`
+
+`mv scripts/misc/bash_scripts/extract_zips.sh DataSample/`
+
+`cd DataSample; ./extract_zips.sh`
+
+`rm DataSample/*.zip`
+
+`mv DataSample/* data/extracted_data`
+
+_Get reduced state list_
+
+`wget -O data/statespace/sorted_states.pkl https://www.dropbox.com/s/ygffzawbipvady8/sorted_states.pkl?dl=1`
+
+_Data augmentation (optional)_
+
+`scripts/data_processing/augment_data.sh`
+
+_extract features_
+
+Dependencies: librosa, mpi4py (and mpi itself). TODO: make mpi an optional dependency
+
+`mpiexec -n $(nproc) python3 scripts/feature_extraction/process_songs.py data/extracted_data Expert,ExpertPlus --feature_name multi_mel --feature_size 80`
+
+`mpiexec -n $(nproc) python3 scripts/feature_extraction/process_songs.py data/extracted_data Expert,ExpertPlus --feature_name mel --feature_size 100`
+
+_training_
+
+Dependencies: pytorch
+
+Train Stage 1. Either of two options:
+ * (wavenet_option): `scripts/training/debug_script_block_placement.sh`
+ * (ddc option): `scripts/training/debug_script_ddc_block_placement.sh`
+
+Train Stage 2: `scripts/training/debug_script_block_selection.sh`
+
+_generation_
+
+In the command below, after training substitute "checkpoint1" with the latest iteration number which appears saved in the folder `scripts/training/test_block_placement` or `scripts/training/test_ddc_block_placement` if used ddc; substitute "checkpoint2" with the latest iteration number which appears saved in the folder `scripts/training/test_block_selection`. The files in those folders have the form `iter_[checkpoint]_net_.pth`
+
+The last argument is the path to a song in wav format
+
+`scripts/generation/script_generate.sh deepsaber [checkpoint1] [checkpoint2] [path to some song in wav format]`
+
+To use the ddc options, or the "open in browser" option requires more setting up (specially the former). But the above should generate a zip file with the level.
+
+* The "open in browser" option is very useful for visualizing the level. You just need to set up the script `scripts/generation/dropbox_uploader.sh`. This is very easy, just run the script, and it will guide you with how to link it to your dropbox account (you need one.)
+
+* The DDC option requires setting up DDC (https://github.com/chrisdonahue/ddc), which now includes a docker component, and requires its own series of steps. But hopefully the new trained model will supersede this.
+
 # Getting the data
 
 ### _download data_

@@ -1,3 +1,27 @@
+
+
+# TODOs
+
+- [ ] GUI/website
+- [ ] Save the stage 1 probabilities and have interactive visualizer as you change threshold.
+- [ ] Finish writing main README
+- [ ] Finish writing training README, for stage_two.
+- [ ] stage_two dataset uses `state_space_functions`, while general_beat_saber dataset uses `level_processing_functions`. Check if need to merge these two, as they have a fair of common functionality I think.
+- [ ] `level_processing_functions` is even more ugly now, because of new fix to speed up training by preprocessing levels into numpy tensors, and leaving the old functions just in case (feature creep :P). So should remove the old functions, as memory is cheaper than computing generally, so preprocessing is generally preferred if it speeds up computing!
+- [x] is there a way go make `get_reduced_tensors_from_level` in `level_processing_functions` faster? -- now that we've fixed the bug, and made the sequence length longer, it's slowed down training :(. Yes there is, by preprocessing, but it introduced new TODO above!
+- [x] make stage_two_dataset work with new beat saber data.
+- [x] fix importing. E.g. base_options.py imports from `base`, that doesn't exist now....
+- [x] Make DDC port
+- [x] Train on new data
+- [ ] Testing code. Use perplexity, as in NLP literature
+- [ ] Make stage two that uses multi_mel features, or even the DDC embeddings as its inputs
+- [ ] Make non-reduced-state data work, wavenet.
+- [ ] Obstacles, etc.
+
+---
+
+## Folder structure and refactoring comments
+
 /base - !!! Lots of stuff in here, needs filtering and organising into training, generation and models !!!
 /data
 	/extracted_data - Beatsaber Levels and Songs
@@ -32,21 +56,3 @@
 		/bash_scripts - Misc Bash scripts (Guillermo)
 		/experiment_name - Unknown options file (Andrea/Guillermo)
 /web - [DEV] The beginnings of a web api for level generation
-
----
-
-# TODOs
-
-- [ ] stage_two dataset uses `state_space_functions`, while general_beat_saber dataset uses `level_processing_functions`. Check if need to merge these two, as they have a fair of common functionality I think.
-- [ ] is there a way go make `get_reduced_tensors_from_level` in `level_processing_functions` faster? -- now that we've fixed the bug, and made the sequence length longer, it's slowed down training :(
-- [ ] Finish writing main README
-- [ ] Finish writing training README, for stage_two.
-- [x] make stage_two_dataset work with new beat saber data.
-- [x] fix importing. E.g. base_options.py imports from `base`, that doesn't exist now....
-- [x] Make DDC port
-- [ ] Train on new data
-- [ ] Testing code. Use perplexity, as in NLP literature
-- [ ] GUI/website
-- [ ] Make stage two that uses multi_mel features, or even the DDC embeddings as its inputs
-- [ ] Make non-reduced-state data work, wavenet.
-- [ ] Obstacles, etc.

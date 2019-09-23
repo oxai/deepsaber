@@ -1,12 +1,65 @@
 Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
 
-## Quickest testing procedure:
+Welcome to the readme for DeepSaber, an automatic generator of BeatSaber levels. There is a lot of stuff here, fruit of a lot of work by the team in [OxAI Labs](oxai.org/labs). Contact me at guillermo . valle at oxai.org , or on twitter (@guillefix) for any questions/suggestions!
+
+# TLDR generation
+
+_Requirements/Dependencies_
+- numpy
+- librosa
+- pytorch
+- Nvidia GPU with CUDA [:/ unfortunately, I don't think it works without GPU. TODO: make generation work without GPU, even if slower.]
+
+For the above, you can install any unmet python dependencies using e.g. `pip install` [package].
+
+(Do this first time generating) Download pre-trained weights from https://mega.nz/#!4UYixCxb!BPXPa9ajhIX8KvGQbbrqsH7cRT0pNmFbLFlWzBbDW3Q, and extract the contents (two folders with four files in total) inside the folder `scripts/training/`.
+
+Then, *to generate a level simply run* (if on linux):
+
+`cd scripts/generation`
+`./script_generate.sh [path to song]`
+
+where you should substitute `[path to song]` with the path to the song which you want to use to generate the level, which should be on *wav* format (sorry). Also it doesn't like spaces in the filename :P . Generation should take about 3 minutes for a 3 minutes song, but it grows (I think squared-ly) with the length, and it will depend on how good your GPU is (mine is a gtx 1070).
+
+This will generate a zip with the Beat Saber level which should be found in `scripts/generation/generated`. You should be able to put it in the custom levels folders in the current version of DeepSaber (as of end of 2019).
+
+I also recommending reading about how to use the "open_in_browser" option, described in the next section, which is quite a nice feature to visualize the generated quickly and easy to set up if you have dropbox.
+
+# Further generation options
+
+[TODO] make this more user friendly.
+
+If you open the script `scripts/generation/script_generate.sh` in your editor, you can see other options. You can change `exp1` and `exp2`, as well as the corresponding `cpt1` and `cpt2`. These correspond to "experiments" and "checkpoints", and determine where to get the pre-trained network weights. The checkpoints are found in folders inside `scripts/training`, and `cpt1`/`cpt2`, just specify which of the saved iterations to use. If you train your own models, you can change those to generate using your trained models. You can also change them to explore different pre-trained versions available at https://mega.nz/#!VEo3XAxb!7juvH_R_6IjG1Iv_sVn1yGFqFY3sQVuFyvlbbdDPyk4 (for example DeepSaber 1 used the latest in "block_placement_new_nohumreg" for stage 1 and the latest in "block_selection_new"), but the one you downloaded above is the latest one (DeepSaber 2, trained on a more curated dataset), so should typically work best (but there is always some stochasticity and subjectivity so).
+
+You can also change the variable `type` from `deepsaber` to `ddc` to use [DDC](https://github.com/chrisdonahue/ddc) as the stage 1 (where in times to put notes), while still using deepsaber for stage 2 (which notes to put at each instant for which stage 1 decides to put something). But this requires setting up DDC first. If you do, then just pass the generated stepmania file as a third command argument, and it should work the same.
+
+There is also an "open in browser" option (which is activated by uncommenting the line `#--open_in_browser` inside the `deepsaber` if block), which is very useful for testing, as it gives you a link with a level visualizer on the broser. To set it up, you just need to set up the script `scripts/generation/dropbox_uploader.sh`. This is very easy, just run the script, and it will guide you with how to link it to your dropbox account (you need one.).
+
+A useful parameter to change also is the `--peak threshold`. It is currently set at about `0.33`, but you can experiment with it. Putting it higher, makes it output less notes, and putting it lower, makes more notes.
+
+If you dig deeper, you can also disable the option `--use_beam_search`, but the outputs are then usually quite random -- you can also try setting the `--temperature` parameter lower to make it a less so, but beam search is typically better.
+
+Digging even deeper, there is a very hidden option :P inside `scripts/generation/generate_stage2.py` in line 59, there `opt["beam_size"] = 17`. You can change this number if you want. Making it larger means the generation will take longer but it will typically be of higher quality (it's as if the model thinks harder about it), and making it smaller has the opposite effect, but can be a good thing to try if you want fast generation for some reason.
+
+You could change `opt["n_best"] = 1` to something greater than 1, and change some other code, to get outputs that model thought "less likely" and explore what the model can generate [contact me for more details].
+
+# Example of whole pipeline
+
+_Requirements/Dependencies_
+- numpy
+- librosa
+- pytorch
+- mpi4py (only for training->data_processing)
+
+This is a quick run through the whole pipeline, from getting data, to training to generating:
 
 Run all this in root folder of repo
 
-_Get data_
+_Get example data_
 
 `wget -O DataSample.tar.gz https://www.dropbox.com/s/2i75ebqmm5yd15c/DataSample.tar.gz?dl=1`
+
+[Can also download the whole dataset here: https://mega.nz/#!sABVnYYJ!ZWImW0OSCD_w8Huazxs3Vr0p_2jCqmR44IB9DCKWxac]
 
 `tar xzvf DataSample.tar.gz`
 
@@ -28,11 +81,21 @@ _Data augmentation (optional)_
 
 _extract features_
 
-Dependencies: librosa, mpi4py (and mpi itself). TODO: make mpi an optional dependency
+Dependencies: librosa, mpi4py (and mpi itself). TODO: make mpi an optional dependency.
+
+You can change the "`Expert,ExpertPlus`" with any comma-separated (and with no spaces) list of difficulties to train on levels of those difficulties.
 
 `mpiexec -n $(nproc) python3 scripts/feature_extraction/process_songs.py data/extracted_data Expert,ExpertPlus --feature_name multi_mel --feature_size 80`
 
 `mpiexec -n $(nproc) python3 scripts/feature_extraction/process_songs.py data/extracted_data Expert,ExpertPlus --feature_name mel --feature_size 100`
+
+_pregenerate level tensors (new fix that makes stage 1 training much faster)_
+
+The way this works is that we need to run this command for each difficulty level we want to train on. Here Expert and ExpertPlus
+
+`mpiexec -n 12 python3 scripts/feature_extraction/process_songs_tensors.py ../../data/DataSample/ Expert --replace_existing --feature_name multi_mel --feature_size 80`
+
+`mpiexec -n 12 python3 scripts/feature_extraction/process_songs_tensors.py ../../data/DataSample/ ExpertPlus --replace_existing --feature_name multi_mel --feature_size 80`
 
 _training_
 
@@ -44,13 +107,13 @@ Train Stage 1. Either of two options:
 
 Train Stage 2: `scripts/training/debug_script_block_selection.sh`
 
-_generation_
+_generation (using the model trained as above)_
 
-In the command below, after training substitute "checkpoint1" with the latest iteration number which appears saved in the folder `scripts/training/test_block_placement` or `scripts/training/test_ddc_block_placement` if used ddc; substitute "checkpoint2" with the latest iteration number which appears saved in the folder `scripts/training/test_block_selection`. The files in those folders have the form `iter_[checkpoint]_net_.pth`
+To generate with the models trained as above, you need to edit `scripts/generation/script_generate.sh` and change the variable `exp1` to the experiment name from which we want to get the trained weights: if following the example above it would be either `test_block_placement` or `test_ddc_block_placement` if used ddc; change the variable `exp2` to `test_block_selection`, change `cpt1` to the latest block placement iteration, and `cpt2` to the latest block selection iteration. The latest iterations can be found by looking for files in the folders in `scripts/training/` with the names of the different experiments have the form `iter_[checkpoint]_net_.pth`.
 
-The last argument is the path to a song in wav format
+<!-- The last argument is the path to a song in wav format
 
-`scripts/generation/script_generate.sh deepsaber [checkpoint1] [checkpoint2] [path to some song in wav format]`
+`scripts/generation/script_generate.sh deepsaber [checkpoint1] [checkpoint2] [path to some song in wav format]` -->
 
 To use the ddc options, or the "open in browser" option requires more setting up (specially the former). But the above should generate a zip file with the level.
 
@@ -59,6 +122,8 @@ To use the ddc options, or the "open in browser" option requires more setting up
 * The DDC option requires setting up DDC (https://github.com/chrisdonahue/ddc), which now includes a docker component, and requires its own series of steps. But hopefully the new trained model will supersede this.
 
 # Getting the data
+
+[TODO] Here we describe the scripts to scrap Beastsaver and BeastSaber to get the training data
 
 ### _download data_
 
@@ -82,22 +147,12 @@ _data preprocessing_
 
 ##_training_
 
-`scripts/training/train.py`
-
 `scripts/training/script_block_placement.sh`
 
-# generate
+See more at readme in `scripts/training/README.md`
 
----------------
 
-# Beatsaber level generator @OxAI
-
-## Requirements
-- numpy
-- librosa
-- pytorch
-
-## Minimal Example of Usage
+<!-- ## Minimal Example of Usage
 ```python
 from base.options.train_options import TrainOptions
 from base.data import create_dataset, create_dataloader
@@ -119,9 +174,9 @@ for epoch in range(opt.epoch_count, opt.nepoch + opt.nepoch_decay):
             print(losses)
     print(f'End of epoch {i}')
     model.update_learning_rate()
-```
+``` -->
 
-### Dataset
+<!-- ### Dataset
 Steps for creating a custom dataset with custom command line options:
 *  Create a file 'datasetname_dataset.py' in the 'data' folder, where datasetname is your custom name.
 *  Import the class BaseDataset from base.data.base_dataset
@@ -229,4 +284,4 @@ Steps for creating a custom model with custom command line options:
 
 # Notes
 1.  If the output of your dataset is a dictionary: data = {'input': input\_tensor, 'target': target\_tensor}, you can use model.set_input(data) to store input and target into your model for use in forward.
-2.  Store the nn.Module instance in another file (e.g. networks.py) for better abstraction.
+2.  Store the nn.Module instance in another file (e.g. networks.py) for better abstraction. -->

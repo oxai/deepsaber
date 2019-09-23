@@ -68,19 +68,50 @@ def make_level_from_notes(notes, bpm, song_name, args, upload_to_dropbox=False, 
      u'_obstacles': [],
      }
 
-    info_json = {"_version": "2.0.0",
-    "_songName":song_name,
-    "_songSubName":song_name,
-    "_authorName":"DeepSaber",
-    "_beatsPerMinute":bpm,
-    "_previewStartTime":12,
-    "_previewDuration":10,
-    "_coverImageFilename":"cover.jpg",
-    "_environmentName":"NiceEnvironment",
-    "_songFileName":"song.ogg",
-    "_difficultyBeatmapSets": [{"_beatmapCharacteristicName": "Standard","_difficultyBeatmaps": [
-        {"_difficulty":"Expert","_difficultyRank":5,"_noteJumpSpeed": 12,"_noteJumpStartBeatOffset": 0,"_beatMapFile":"Expert.json"}
-    ]}]}
+    info_json = {
+      "_version": "2.0.0",
+      "_songName": song_name,
+      "_songSubName": "",
+      "_songAuthorName": "DeepSaber",
+      "_levelAuthorName": "DeepSaber",
+      "_beatsPerMinute": bpm,
+      "_songTimeOffset": 0,
+      "_shuffle": 0,
+      "_shufflePeriod": 0.5,
+      "_previewStartTime": 12,
+      "_previewDuration": 10,
+      "_songFilename": "song.egg",
+      "_coverImageFilename": "cover.jpg",
+      "_environmentName": "NiceEnvironment",
+      "_customData": {
+        "_contributors": [],
+        "_customEnvironment": "",
+        "_customEnvironmentHash": ""
+      },
+      "_difficultyBeatmapSets": [
+        {
+          "_beatmapCharacteristicName": "Standard",
+          "_difficultyBeatmaps": [
+            {
+              "_difficulty": "Expert",
+              "_difficultyRank": 7,
+              "_beatmapFilename": "Expert.dat",
+              "_noteJumpMovementSpeed": 10,
+              "_noteJumpStartBeatOffset": 0,
+              "_customData": {
+                "_difficultyLabel": "",
+                "_editorOffset": 0,
+                "_editorOldOffset": 0,
+                "_warnings": [],
+                "_information": [],
+                "_suggestions": [],
+                "_requirements": []
+              }
+            }
+          ]
+        }
+      ]
+    }
 
     try:
         try:
@@ -110,7 +141,7 @@ def make_level_from_notes(notes, bpm, song_name, args, upload_to_dropbox=False, 
     with open(json_file, "w") as f:
         f.write(json.dumps(song_json))
 
-    level_folder = generated_folder+song_name
+    level_folder = generated_folder+signature_string
     if not os.path.exists(level_folder):
         os.makedirs(level_folder)
 

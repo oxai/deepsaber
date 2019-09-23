@@ -17,6 +17,7 @@ For the above, you can install any unmet python dependencies using e.g. `pip ins
 Then, *to generate a level simply run* (if on linux):
 
 `cd scripts/generation`
+
 `./script_generate.sh [path to song]`
 
 where you should substitute `[path to song]` with the path to the song which you want to use to generate the level, which should be on *wav* format (sorry). Also it doesn't like spaces in the filename :P . Generation should take about 3 minutes for a 3 minutes song, but it grows (I think squared-ly) with the length, and it will depend on how good your GPU is (mine is a gtx 1070).

@@ -5,6 +5,7 @@ base/.idea
 data/extracted_data/*
 data/metadata/*
 data/statespace/*
+!data/statespace/sorted_states.pkl
 DataE/
 DataE_old/
 DataSmol/

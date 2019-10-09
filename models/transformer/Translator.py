@@ -43,7 +43,10 @@ class Translator(object):
 
         # model = model.to(self.device)
 
-        self.model = model.net.module
+        if self.opt.cuda:
+            self.model = model.net.module
+        else:
+            self.model = model.net
         self.model.eval()
 
     def translate_batch(self, src_seq, src_pos, src_mask, sequence_length):

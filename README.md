@@ -1,6 +1,6 @@
 Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
 
-Welcome to the readme for DeepSaber, an automatic generator of BeatSaber levels. There is a lot of stuff here, fruit of a lot of work by the team in [OxAI Labs](oxai.org/labs). Contact me at guillermo . valle at oxai.org , or on twitter (@guillefix) for any questions/suggestions!
+Welcome to the readme for DeepSaber, an automatic generator of BeatSaber levels. There is a lot of stuff here, fruit of a lot of work by the team in [OxAI Labs](http://oxai.org/labs). Contact me at guillermo . valle at oxai.org , or on twitter (@guillefix) for any questions/suggestions!
 
 # TLDR generation
 
@@ -8,15 +8,17 @@ _Requirements/Dependencies_
 - numpy
 - librosa
 - pytorch
-- Nvidia GPU with CUDA [:/ unfortunately, I don't think it works without GPU. TODO: make generation work without GPU, even if slower.]
+- Nvidia GPU with CUDA [:/ unfortunately, stage 2 is too slow in CPU (although it should work in theory.., after removing "cuda" options in "./scrit_generate.sh" below]
+- [sox](http://sox.sourceforge.net/) (e.g. `sudo apt-get install sox`)
 
-For the above, you can install any unmet python dependencies using e.g. `pip install` [package].
+For numpy/librosa/pytorch, you can install any unmet python dependencies using e.g. `pip install` [package]. For pytorch see here: https://pytorch.org/get-started/locally/
 
-(Do this first time generating) Download pre-trained weights from https://mega.nz/#!4UYixCxb!BPXPa9ajhIX8KvGQbbrqsH7cRT0pNmFbLFlWzBbDW3Q, and extract the contents (two folders with four files in total) inside the folder `scripts/training/`.
+(Do this first time generating) Download pre-trained weights from https://mega.nz/#!tJBxTC5C!nXspSCKfJ6PYJjdKkFVzIviYEhr0BSg8zXINBqC5rpA, and extract the contents (two folders with four files in total) inside the folder `scripts/training/`.
 
 Then, *to generate a level simply run* (if on linux):
 
 `cd scripts/generation`
+
 `./script_generate.sh [path to song]`
 
 where you should substitute `[path to song]` with the path to the song which you want to use to generate the level, which should be on *wav* format (sorry). Also it doesn't like spaces in the filename :P . Generation should take about 3 minutes for a 3 minutes song, but it grows (I think squared-ly) with the length, and it will depend on how good your GPU is (mine is a gtx 1070).
@@ -24,6 +26,22 @@ where you should substitute `[path to song]` with the path to the song which you
 This will generate a zip with the Beat Saber level which should be found in `scripts/generation/generated`. You should be able to put it in the custom levels folders in the current version of DeepSaber (as of end of 2019).
 
 I also recommending reading about how to use the "open_in_browser" option, described in the next section, which is quite a nice feature to visualize the generated quickly and easy to set up if you have dropbox.
+
+*Pro tip*: If the generated level doesn't look good (this is deep learning, it's hard to give guarantees :P), try changing in `./script_generate.sh`
+
+```sh
+cpt2=2150000
+#cpt2=1200000
+#cpt2=1450000
+```
+to
+```sh
+#cpt2=2150000
+#cpt2=1200000
+cpt2=1450000
+```
+See below for explanation
+
 
 # Further generation options
 

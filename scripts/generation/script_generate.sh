@@ -22,7 +22,7 @@ cpt2=2150000
 
 py=python3
 
-mkdir generate
+mkdir generated
 
 if [ "$type" = "end2end" ]; then
   $py generate_end2end.py --song_path $song_path --experiment_name $exp1 --checkpoint $cpt1 \

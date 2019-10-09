@@ -13,7 +13,7 @@ _Requirements/Dependencies_
 
 For numpy/librosa/pytorch, you can install any unmet python dependencies using e.g. `pip install` [package]. For pytorch see here: https://pytorch.org/get-started/locally/
 
-(Do this first time generating) Download pre-trained weights from https://mega.nz/#!4UYixCxb!BPXPa9ajhIX8KvGQbbrqsH7cRT0pNmFbLFlWzBbDW3Q, and extract the contents (two folders with four files in total) inside the folder `scripts/training/`.
+(Do this first time generating) Download pre-trained weights from https://mega.nz/#!tJBxTC5C!nXspSCKfJ6PYJjdKkFVzIviYEhr0BSg8zXINBqC5rpA, and extract the contents (two folders with four files in total) inside the folder `scripts/training/`.
 
 Then, *to generate a level simply run* (if on linux):
 

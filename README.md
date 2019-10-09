@@ -27,6 +27,20 @@ This will generate a zip with the Beat Saber level which should be found in `scr
 
 I also recommending reading about how to use the "open_in_browser" option, described in the next section, which is quite a nice feature to visualize the generated quickly and easy to set up if you have dropbox.
 
+*Pro tip*: If the generated level doesn't look good (this is deep learning, it's hard to give guarantees :P), try changing in `./script_generate.sh`
+
+```sh
+cpt2=2150000
+#cpt2=1200000
+#cpt2=1450000
+```
+to
+```sh
+#cpt2=2150000
+#cpt2=1200000
+cpt2=1450000
+```
+
 # Further generation options
 
 [TODO] make this more user friendly.

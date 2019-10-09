@@ -30,6 +30,7 @@ parser.add_argument('--peak_threshold', type=float, default=0.0148)
 parser.add_argument('--checkpoint', type=str, default="latest")
 parser.add_argument('--temperature', type=float, default=1.00)
 parser.add_argument('--bpm', type=float, default=None)
+parser.add_argument('--cuda', action="store_true")
 
 args = parser.parse_args()
 
@@ -47,9 +48,15 @@ song_name = Path(song_path).stem
 ##loading opt object from experiment
 opt = json.loads(open("../training/"+experiment_name+"opt.json","r").read())
 # we assume we have 1 GPU in generating machine :P
-opt["gpu_ids"] = [0]
+if args.cuda:
+    opt["gpu_ids"] = [0]
+else:
+    opt["gpu_ids"] = []
 opt["load_iter"] = int(checkpoint)
-opt["cuda"] = True
+if args.cuda:
+    opt["cuda"] = True
+else:
+    opt["cuda"] = False
 opt["experiment_name"] = args.experiment_name.split("/")[0]
 if "dropout" not in opt: #for older experiments
     opt["dropout"] = 0.0

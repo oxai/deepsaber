@@ -33,6 +33,7 @@ parser.add_argument('--bpm', type=float, default=None)
 parser.add_argument('--generate_full_song', action="store_true")
 parser.add_argument('--use_beam_search', action="store_true")
 parser.add_argument('--open_in_browser', action="store_true")
+parser.add_argument('--cuda', action="store_true")
 
 args = parser.parse_args()
 
@@ -52,11 +53,17 @@ print("STAGE TWO!")
 #loading opt object from experiment, and constructing Struct object after adding some things
 opt = json.loads(open("../training/"+experiment_name+"opt.json","r").read())
 # extra things Beam search wants
-opt["gpu_ids"] = [0]
+if args.cuda:
+    opt["gpu_ids"] = [0]
+else:
+    opt["gpu_ids"] = []
 opt["load_iter"] = int(checkpoint)
-opt["cuda"] = True
+if args.cuda:
+    opt["cuda"] = True
+else:
+    opt["cuda"] = False
 opt["batch_size"] = 1
-opt["beam_size"] = 17
+opt["beam_size"] = 20
 opt["n_best"] = 1
 # opt["using_bpm_time_division"] = True
 opt["continue_train"] = False
@@ -88,4 +95,4 @@ times_real = [t*60/args.bpm for t in state_times]
 notes2 = stage_two_states_to_json_notes(generated_sequence, state_times, args.bpm, hop, opt.sampling_rate, state_rank=unique_states)
 # print("Bad notes:", np.unique(np.diff(times_real)[np.diff(times_real)<=constants.HUMAN_DELTA], return_counts=True))
 
-make_level_from_notes(notes2, args.bpm, song_name, args, upload_to_dropbox=True, open_in_browser=args.open_in_browser)
+make_level_from_notes(notes2, args.bpm, song_name, args, upload_to_dropbox=args.open_in_browser, open_in_browser=args.open_in_browser)

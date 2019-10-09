@@ -127,7 +127,10 @@ class DDCModel(BaseModel):
         input_shape = input.shape
         input = input.to(self.device)
         input = input.permute(0,4,1,2,3) # batch/window x time x temporal_context x frequency_features x mel_window_sizes
-        return F.softmax(self.net.module.forward(input),2)
+        if self.opt.cuda:
+            return F.softmax(self.net.module.forward(input),2)
+        else:
+            return F.softmax(self.net.forward(input),2)
 
 
 class DDCNet(nn.Module):

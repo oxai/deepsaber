@@ -133,7 +133,7 @@ class DDCModel(BaseModel):
                 return F.softmax(self.net.module.forward(input),2)
         else:
             with torch.no_grad():
-                self.net.module.eval()
+                self.net.eval()
                 return F.softmax(self.net.forward(input),2)
 
 

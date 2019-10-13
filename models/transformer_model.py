@@ -199,15 +199,18 @@ class TransformerModel(BaseModel):
 
         ## actually generate level ##
         translator = Translator(opt,self)
+        translator.model.eval()
         # need to pass to beam .advance, the length of sequence :P ... I think it makes sense
         if opt.tgt_vector_input:
             raise NotImplementedError("Need to implement beam search for Transformer target vector inputs (when we attach deltas to target sequence)")
         else:
             if use_beam_search:
-                all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
-                generated_sequence = all_hyp[0][0]
+                with torch.no_grad():
+                    all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
+                    generated_sequence = all_hyp[0][0]
             else:
-                generated_sequence = translator.sample_translation(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length, temperature)
+                with torch.no_grad():
+                    generated_sequence = translator.sample_translation(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length, temperature)
         # return state_times, all_hyp[0] # we are for now only supporting single batch generation..
         return state_times, generated_sequence
 

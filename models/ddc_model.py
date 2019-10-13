@@ -128,9 +128,13 @@ class DDCModel(BaseModel):
         input = input.to(self.device)
         input = input.permute(0,4,1,2,3) # batch/window x time x temporal_context x frequency_features x mel_window_sizes
         if self.opt.cuda:
-            return F.softmax(self.net.module.forward(input),2)
+            with torch.no_grad():
+                self.net.module.eval()
+                return F.softmax(self.net.module.forward(input),2)
         else:
-            return F.softmax(self.net.forward(input),2)
+            with torch.no_grad():
+                self.net.module.eval()
+                return F.softmax(self.net.forward(input),2)
 
 
 class DDCNet(nn.Module):

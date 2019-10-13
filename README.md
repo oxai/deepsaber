@@ -5,13 +5,22 @@ Welcome to the readme for DeepSaber, an automatic generator of BeatSaber levels.
 # TLDR generation
 
 _Requirements/Dependencies_
+
+From Pypi, using pip:
 - numpy
 - librosa
-- pytorch
-- Nvidia GPU with CUDA [:/ unfortunately, stage 2 is too slow in CPU (although it should work in theory.., after removing "cuda" options in "./scrit_generate.sh" below]
-- [sox](http://sox.sourceforge.net/) (e.g. `sudo apt-get install sox`)
+- pytorch (installed as `torch` or via https://pytorch.org/get-started/locally/)
+- pandas
+- matplotlib
 
-For numpy/librosa/pytorch, you can install any unmet python dependencies using e.g. `pip install` [package]. For pytorch see here: https://pytorch.org/get-started/locally/
+From your favorite package manager:
+- [sox](http://sox.sourceforge.net/) (e.g. `sudo apt-get install sox`)
+- ffmpeg
+
+Reccommended hardware:
+- Nvidia GPU with CUDA [:/ unfortunately, stage 2 is too slow in CPU (although it should work in theory.., after removing "cuda" options in "./scrit_generate.sh" below]
+
+
 
 (Do this first time generating) Download pre-trained weights from https://mega.nz/#!tJBxTC5C!nXspSCKfJ6PYJjdKkFVzIviYEhr0BSg8zXINBqC5rpA, and extract the contents (two folders with four files in total) inside the folder `scripts/training/`.
 

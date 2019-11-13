@@ -12,6 +12,7 @@ From Pypi, using pip:
 - pytorch (installed as `torch` or via https://pytorch.org/get-started/locally/)
 - pandas
 - matplotlib
+- pillow
 
 From your favorite package manager:
 - [sox](http://sox.sourceforge.net/) (e.g. `sudo apt-get install sox`)

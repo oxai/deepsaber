@@ -160,10 +160,13 @@ def make_level_from_notes(notes, bpm, song_name, args, upload_to_dropbox=False, 
     # sf.write(level_folder+"/song.ogg", y, sr, format='ogg', subtype='vorbis')
     import subprocess
     def run_bash_command(bashCommand):
-        # print(bashCommand)
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-        output, error = process.communicate()
-        return output
+        print(bashCommand)
+        try:
+            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+            output, error = process.communicate()
+            return output
+        except:
+            print("couldn't run bash command, try running it manually")
 
     # bashCommand = "sox -t wav -b 16 "+song_path+" -t ogg "+ level_folder+"/song.ogg"
     bashCommand = "ffmpeg -y -i "+song_path+" -c:a libvorbis -q:a 4 "+ level_folder+"/song.ogg"

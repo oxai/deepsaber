@@ -27,7 +27,7 @@ mkdir generated
 if [ "$type" = "end2end" ]; then
   $py generate_end2end.py --song_path $song_path --experiment_name $exp1 --checkpoint $cpt1 \
       --temperature 1.00 \
-      --open_in_browser \
+      # --open_in_browser \
       --bpm 128
 fi
 
@@ -40,7 +40,7 @@ if [ "$type" = "ddc" ]; then
     --ddc_diff 3 | tail -1 | ( read json_file;
   $py generate_stage2.py --song_path $song_path --json_file $json_file --experiment_name $exp2 --checkpoint $cpt2 --bpm 128 --temperature 1.00 \
     --use_beam_search \
-    --open_in_browser \
+    # --open_in_browser \
     #--generate_full_song \
   )
 fi
@@ -52,7 +52,7 @@ if [ "$type" = "deepsaber" ]; then
     $py generate_stage2.py --cuda --song_path $song_path --json_file $json_file --experiment_name $exp2 --checkpoint $cpt2 --bpm 128 \
         --temperature 1.00 \
         --use_beam_search \
-      --open_in_browser \
+      # --open_in_browser \
       #--generate_full_song \
     )
 

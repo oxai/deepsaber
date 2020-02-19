@@ -51,7 +51,7 @@ def extract_features(song_path, args, opt):
 
     return hop, features
 
-def make_level_from_notes(notes, bpm, song_name, args, upload_to_dropbox=False, open_in_browser=False):
+def make_level_from_notes(notes, bpm, song_name, args, upload_to_dropbox=False, open_in_browser=False, copy_to_root=False):
     temperature = args.temperature
     try:
         checkpoint = args.checkpoint
@@ -183,6 +183,9 @@ def make_level_from_notes(notes, bpm, song_name, args, upload_to_dropbox=False, 
         demo_link = "https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/"+link[15:-2].decode("utf-8") +'1'
         print(demo_link)
         # run_bash_command("google-chrome "+demo_link)
+    if copy_to_root:
+        bashCommand = "cp "+generated_folder+song_name+"_"+signature_string+".zip ../../../"
+        run_bash_command(bashCommand)
     # zip -r test_song11 test_song11.wav
     # https://supermedium.com/beatsaver-viewer/?zip=https://cors-anywhere.herokuapp.com/https://www.dropbox.com/s/q67idk87u2f4rhf/test_song11.zip?dl=1
     # sox -t wav -b 16 ~/code/test_song11.wav -t ogg song.ogg

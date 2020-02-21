@@ -177,7 +177,7 @@ class TransformerModel(BaseModel):
             truncated_sequence_length = min(len(states),opt.max_token_seq_len)
         else:
             truncated_sequence_length = len(states)
-        indices = indices[:truncated_sequence_length]
+        indices = torch.tensor(indices[:truncated_sequence_length]).to(torch.int64)
         delta_forward = delta_forward[:,:truncated_sequence_length]
         delta_backward = delta_backward[:,:truncated_sequence_length]
 
@@ -206,7 +206,7 @@ class TransformerModel(BaseModel):
         else:
             if use_beam_search:
                 with torch.no_grad():
-                    all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos, src_mask,truncated_sequence_length)
+                    all_hyp, all_scores = translator.translate_batch(song_sequence.permute(0,2,1).float(), src_pos.long(), src_mask.long(),truncated_sequence_length)
                     generated_sequence = all_hyp[0][0]
             else:
                 with torch.no_grad():

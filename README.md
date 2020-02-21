@@ -33,9 +33,15 @@ Then, *to generate a level simply run* (if on linux):
 
 `./script_generate.sh [path to song]`
 
+Or on windows:
+
+`.\script_generate.ps1 [path to song]
+
 where you should substitute `[path to song]` with the path to the song which you want to use to generate the level, which should be on *wav* format (sorry). Also it doesn't like spaces in the filename :P . Generation should take about 3 minutes for a 3 minutes song, but it grows (I think squared-ly) with the length, and it will depend on how good your GPU is (mine is a gtx 1070).
 
 This will generate a zip with the Beat Saber level which should be found in `scripts/generation/generated`. You should be able to put it in the custom levels folders in the current version of DeepSaber (as of end of 2019).
+
+On windows, you'll have to convert the song .wav to an .ogg file (and subsequently `song.egg` manually. You can use the ffmpeg invocation from the error messages of the script with a windows build, or use audacity or handbrake or whatever GUI you like.
 
 I also recommending reading about how to use the "open_in_browser" option, described in the next section, which is quite a nice feature to visualize the generated quickly and easy to set up if you have dropbox.
 

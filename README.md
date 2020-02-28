@@ -1,8 +1,10 @@
-Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
+Google colab (allows you to generate levels on the browser!): https://colab.research.google.com/drive/1a-wN-f7xXjpaqq3tKpR29rtkc-kabo3b#scrollTo=YvhabvameUo4
 
 Join our discord here! https://discord.gg/T6djf8N
 
 Welcome to the readme for DeepSaber, an automatic generator of BeatSaber levels. There is a lot of stuff here, fruit of a lot of work by the team in [OxAI Labs](http://oxai.org/labs). Contact me at guillermo . valle at oxai.org , or on twitter (@guillefix) for any questions/suggestions!
+
+Google Doc: https://docs.google.com/document/d/1UDSphLiWsrbdr4jliFq8kzrJlUVKpF2asaL65GnnfoM/edit
 
 # TLDR generation
 

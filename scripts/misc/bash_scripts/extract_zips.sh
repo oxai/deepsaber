@@ -8,7 +8,7 @@ do
     then
       unzip ../"$zip"
       cd ..
-      # rm -f $zip # Uncomment to delete the original zip file
+       rm -f $zip # Uncomment to delete the original zip file
     else
       echo "Could not unpack $zip - cd failed"
     fi

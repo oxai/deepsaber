@@ -154,12 +154,12 @@ class DDCNet(nn.Module):
         # batch/window x time x temporal_context x frequency_features x mel_window_sizes
         # print(x.shape)
         [N,L,deltaT,dim,winsizes] = x.shape
-        x = x.view(N*L,deltaT,dim,winsizes)
+        x = x.reshape(N*L,deltaT,dim,winsizes)
         x = x.permute(0,3,1,2)
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
         # print(x.shape)
-        x = x.view(N,L,20*7*8) #  batch x time x CNN_features
+        x = x.reshape(N,L,20*7*8) #  batch x time x CNN_features
         # x = F.relu(self.fc1(x))
         # x = F.relu(self.fc2(x))
         lstm_out, _ = self.lstm(x)

@@ -174,8 +174,11 @@ def make_level_from_notes(notes, bpm, song_name, args, upload_to_dropbox=False, 
     bashCommand = "mv "+level_folder+"/song.ogg"+" "+ level_folder+"/song.egg"
     run_bash_command(bashCommand)
 
-    bashCommand = "zip -r "+generated_folder+song_name+"_"+signature_string+".zip "+level_folder
+    wd = os.getcwd()
+    os.chdir(generated_folder)
+    bashCommand = "zip -r "+signature_string+".zip "+signature_string+"/*"
     run_bash_command(bashCommand)
+    os.chdir(wd)
     if open_in_browser:
 
         bashCommand = "./dropbox_uploader.sh upload "+generated_folder+song_name+"_"+signature_string+".zip /deepsaber_generated/"

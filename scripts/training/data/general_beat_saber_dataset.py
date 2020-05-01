@@ -45,7 +45,7 @@ class GeneralBeatSaberDataset(BaseDataset):
         self.info_jsons = []
         self.audio_files = []
         self.feature_files = {}
-        self.blocks_reduced_files = []
+        # self.blocks_reduced_files = []
         self.blocks_reduced_classes_files = []
 
         # cleaning up data, from songs which are too short
@@ -74,11 +74,11 @@ class GeneralBeatSaberDataset(BaseDataset):
 
             for diff in self.opt.level_diff.split(","):
                 try:
-                    blocks_reduced_file = path.__str__()+"_"+diff+"_blocks_reduced_.npy"
+                    # blocks_reduced_file = path.__str__()+"_"+diff+"_blocks_reduced_.npy"
                     blocks_reduced_classes_file = path.__str__()+diff+"_blocks_reduced_classes_.npy"
-                    blocks_reduced = np.load(blocks_reduced_file)
+                    # blocks_reduced = np.load(blocks_reduced_file)
                     blocks_reduced_classes = np.load(blocks_reduced_classes_file)
-                    self.blocks_reduced_files.append(blocks_reduced_file)
+                    # self.blocks_reduced_files.append(blocks_reduced_file)
                     self.blocks_reduced_classes_files.append(blocks_reduced_classes_file)
                     level = list(path.parent.glob('./'+diff+'.dat'))[0]
                     if len(json.load(open(level,"r"))["_notes"]) == 0:

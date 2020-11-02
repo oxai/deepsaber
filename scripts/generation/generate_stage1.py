@@ -91,7 +91,7 @@ song = torch.tensor(features).unsqueeze(0)
 
 #generate level
 # first_samples basically works as a padding, for the first few outputs, which don't have any "past part" of the song to look at.
-first_samples = torch.full((1,opt.output_channels,receptive_field//2),constants.START_STATE)
+first_samples = torch.full((1,opt.output_channels,receptive_field//2),constants.START_STATE,dtype=torch.float)
 print("Generating level timings... (sorry I'm a bit slow)")
 if opt.concat_outputs: #whether to concatenate the generated outputs as new inputs (AUTOREGRESSIVE)
     output,peak_probs = model.net.module.generate(song.size(-1)-opt.time_shifts+1,song,time_shifts=opt.time_shifts,temperature=temperature,first_samples=first_samples)

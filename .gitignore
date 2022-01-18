@@ -15,7 +15,6 @@ AugData/*
 Readings/
 Driver.py
 base/generated
-scripts/generation/generated
 **/__pycache__/*
 venv
 **/*.pth
@@ -24,7 +23,6 @@ AugData.tar.gz
 base/*.out
 sandbox_scrap.py
 .DS_Store
-scripts/training/experiments
 data/old_data
 data/DataSample
 data/DataSample.tar.tz

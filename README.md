@@ -1,7 +1,9 @@
 Google colab (allows you to generate levels on the browser!): https://colab.research.google.com/drive/1a-wN-f7xXjpaqq3tKpR29rtkc-kabo3b#scrollTo=YvhabvameUo4
 
 -> When you want to use level visualizer in this colab, you have to make zip file. After generated, there will be two folders and two files in your gdrive. Compress folders and files with the same name, create a file with a .zip extension, and upload it to Google Drive. 
+
 -> Get direct-to-file Google-drive links : https://sites.google.com/site/gdocs2direct/ The Google drive url format has changed, so it cannot be created with the page that colab code presented.
+
 -> Remember to substitute & with %26
 
 Join our discord here! https://discord.gg/T6djf8N
